@@ -1,0 +1,580 @@
+{
+  "commit": "0dd9116fd72c107e385e0e134ac0a0a16dce9389",
+  "model": {
+    "model": "microsoft/unixcoder-base",
+    "revision": "5604afdc964f6c53782a6813140ade5216b99006",
+    "device": "cpu",
+    "pooling": "mean, L2-normalised",
+    "max_tokens": 512,
+    "texts_truncated": 0
+  },
+  "youden_threshold": 0.43594549006892286,
+  "reports": [
+    {
+      "name": "dev fixtures",
+      "dataset_hash": "1754164a4b788e7f1497c8b6bb57ce25cd81d50228ca622d6efcc38c2a30d9c9",
+      "model": {
+        "model": "microsoft/unixcoder-base",
+        "revision": "5604afdc964f6c53782a6813140ade5216b99006",
+        "device": "cpu",
+        "pooling": "mean, L2-normalised",
+        "max_tokens": 512,
+        "texts_truncated": 0
+      },
+      "n": 29,
+      "verdict_changes": 0,
+      "auc": 0.5694444444444444,
+      "cases": [
+        {
+          "case_id": "api-001-missing-username-400",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.6271302255547315
+          },
+          "case_score": 0.6271302255547315
+        },
+        {
+          "case_id": "api-002-validation-without-400",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.601961612701416,
+            "R2": 0.12482845037153067
+          },
+          "case_score": 0.12482845037153067
+        },
+        {
+          "case_id": "api-003-wrong-status-code",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.6561165452003479
+          },
+          "case_score": 0.6561165452003479
+        },
+        {
+          "case_id": "api-004-todo-comment",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {},
+          "case_score": 0.0
+        },
+        {
+          "case_id": "api-005-idempotency",
+          "gold": "UNCERTAIN",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.12297175824642181
+          },
+          "case_score": 0.12297175824642181
+        },
+        {
+          "case_id": "errors-001-db-failure",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.41510772705078125,
+            "R2": 0.08969738123997338,
+            "R3": 0.3587040901184082
+          },
+          "case_score": 0.08969738123997338
+        },
+        {
+          "case_id": "errors-002-swallowed-exception",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.47801104056900984,
+            "R2": 0.26393456840125135,
+            "R3": 0.2834295203345728
+          },
+          "case_score": 0.26393456840125135
+        },
+        {
+          "case_id": "errors-003-one-of-two-exceptions",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.48616334713478965,
+            "R2": 0.42582174693475644
+          },
+          "case_score": 0.42582174693475644
+        },
+        {
+          "case_id": "errors-004-unrelated-type-hints",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.12041700604063309
+          },
+          "case_score": 0.12041700604063309
+        },
+        {
+          "case_id": "errors-005-question-only",
+          "gold": "UNCERTAIN",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.4104781640145974
+          },
+          "case_score": 0.4104781640145974
+        },
+        {
+          "case_id": "errors-006-log-before-reraise",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.45016512274742126
+          },
+          "case_score": 0.45016512274742126
+        },
+        {
+          "case_id": "naming-001-rename-parameter",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.44155761251196934
+          },
+          "case_score": 0.44155761251196934
+        },
+        {
+          "case_id": "naming-002-partial-rename",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.666297415870274,
+            "R2": 0.4300057888031006
+          },
+          "case_score": 0.4300057888031006
+        },
+        {
+          "case_id": "naming-003-comment-mentions-name",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {},
+          "case_score": 0.0
+        },
+        {
+          "case_id": "naming-004-unrelated-log-change",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.35956983084319005
+          },
+          "case_score": 0.35956983084319005
+        },
+        {
+          "case_id": "naming-005-vague-request",
+          "gold": "UNCERTAIN",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.03990441053536001
+          },
+          "case_score": 0.03990441053536001
+        },
+        {
+          "case_id": "naming-006-rename-function-and-callers",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.4750355809884571
+          },
+          "case_score": 0.4750355809884571
+        },
+        {
+          "case_id": "testing-001-empty-username-test",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.5248425006866455
+          },
+          "case_score": 0.5248425006866455
+        },
+        {
+          "case_id": "testing-002-no-test-added",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.6018060567147799
+          },
+          "case_score": 0.6018060567147799
+        },
+        {
+          "case_id": "testing-003-test-named-but-wrong-path",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.23506271839141846
+          },
+          "case_score": 0.23506271839141846
+        },
+        {
+          "case_id": "testing-004-one-of-two-cases",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.26579435263838486,
+            "R2": 0.5165417194366455
+          },
+          "case_score": 0.26579435263838486
+        },
+        {
+          "case_id": "testing-005-test-for-wrong-function",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.5798439729120716
+          },
+          "case_score": 0.5798439729120716
+        },
+        {
+          "case_id": "validation-001-none-check",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.5152694564736537
+          },
+          "case_score": 0.5152694564736537
+        },
+        {
+          "case_id": "validation-002-check-after-save",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.7278884377612546
+          },
+          "case_score": 0.7278884377612546
+        },
+        {
+          "case_id": "validation-003-already-present",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {},
+          "case_score": 0.0
+        },
+        {
+          "case_id": "validation-004-docstring-only",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.7068989276885986
+          },
+          "case_score": 0.7068989276885986
+        },
+        {
+          "case_id": "validation-005-range-without-type",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.4303333676258764,
+            "R2": 0.8506727725668414
+          },
+          "case_score": 0.4303333676258764
+        },
+        {
+          "case_id": "validation-006-wrong-variable",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.4431949257850647
+          },
+          "case_score": 0.4431949257850647
+        },
+        {
+          "case_id": "validation-007-logging-change",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.09769199043512344
+          },
+          "case_score": 0.09769199043512344
+        }
+      ]
+    },
+    {
+      "name": "held-out",
+      "dataset_hash": "d5a64d31c46ef7bbf586d73c0ff1cf93a6a76f606cdd3f485b63a03cb36ac0ae",
+      "model": {
+        "model": "microsoft/unixcoder-base",
+        "revision": "5604afdc964f6c53782a6813140ade5216b99006",
+        "device": "cpu",
+        "pooling": "mean, L2-normalised",
+        "max_tokens": 512,
+        "texts_truncated": 0
+      },
+      "n": 24,
+      "verdict_changes": 0,
+      "auc": 0.7366071428571429,
+      "cases": [
+        {
+          "case_id": "h-api-404-without-log",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.5784786939620972,
+            "R2": 0.20330972969532013
+          },
+          "case_score": 0.20330972969532013
+        },
+        {
+          "case_id": "h-api-422-instead-of-400",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.7765677241602272
+          },
+          "case_score": 0.7765677241602272
+        },
+        {
+          "case_id": "h-api-abort-404",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.7406878316812415
+          },
+          "case_score": 0.7406878316812415
+        },
+        {
+          "case_id": "h-api-fastapi-422",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.7388196872257814
+          },
+          "case_score": 0.7388196872257814
+        },
+        {
+          "case_id": "h-errors-avoided-with-get",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.21200837194919586
+          },
+          "case_score": 0.21200837194919586
+        },
+        {
+          "case_id": "h-errors-formatting-only",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.6181892156600952
+          },
+          "case_score": 0.6181892156600952
+        },
+        {
+          "case_id": "h-errors-no-config-error",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.3797255611092521
+          },
+          "case_score": 0.3797255611092521
+        },
+        {
+          "case_id": "h-errors-return-none",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.5484352438709286,
+            "R2": 0.21130104132300861
+          },
+          "case_score": 0.21130104132300861
+        },
+        {
+          "case_id": "h-log-in-branch",
+          "gold": "SATISFIED",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.6754184365272522
+          },
+          "case_score": 0.6754184365272522
+        },
+        {
+          "case_id": "h-naming-arrow",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.3069639205932617
+          },
+          "case_score": 0.3069639205932617
+        },
+        {
+          "case_id": "h-naming-class",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.6875213980674744
+          },
+          "case_score": 0.6875213980674744
+        },
+        {
+          "case_id": "h-naming-partial-scope",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.2827885150909424
+          },
+          "case_score": 0.2827885150909424
+        },
+        {
+          "case_id": "h-testing-already-covered",
+          "gold": "SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {},
+          "case_score": 0.0
+        },
+        {
+          "case_id": "h-testing-parametrize-none",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.587943350550136
+          },
+          "case_score": 0.587943350550136
+        },
+        {
+          "case_id": "h-testing-renamed-only",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.2297860359890504
+          },
+          "case_score": 0.2297860359890504
+        },
+        {
+          "case_id": "h-uncertain-thread-safe",
+          "gold": "UNCERTAIN",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.4180246591567993
+          },
+          "case_score": 0.4180246591567993
+        },
+        {
+          "case_id": "h-uncertain-unicode",
+          "gold": "UNCERTAIN",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.40741726756095886
+          },
+          "case_score": 0.40741726756095886
+        },
+        {
+          "case_id": "h-validation-docstring-only",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {},
+          "case_score": 0.0
+        },
+        {
+          "case_id": "h-validation-early-return",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.3172992657005349
+          },
+          "case_score": 0.3172992657005349
+        },
+        {
+          "case_id": "h-validation-helper-call",
+          "gold": "SATISFIED",
+          "mvp": "UNCERTAIN",
+          "phase7": "UNCERTAIN",
+          "scores": {
+            "R1": 0.5886115782625424
+          },
+          "case_score": 0.5886115782625424
+        },
+        {
+          "case_id": "h-validation-isinstance",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.7558145377525411
+          },
+          "case_score": 0.7558145377525411
+        },
+        {
+          "case_id": "h-validation-logs-only",
+          "gold": "NOT_SATISFIED",
+          "mvp": "NOT_SATISFIED",
+          "phase7": "NOT_SATISFIED",
+          "scores": {
+            "R1": 0.6400727415128196
+          },
+          "case_score": 0.6400727415128196
+        },
+        {
+          "case_id": "h-validation-moved-to-helper",
+          "gold": "SATISFIED",
+          "mvp": "SATISFIED",
+          "phase7": "SATISFIED",
+          "scores": {
+            "R1": 0.7263974384306334
+          },
+          "case_score": 0.7263974384306334
+        },
+        {
+          "case_id": "h-validation-two-of-one",
+          "gold": "PARTIALLY_SATISFIED",
+          "mvp": "PARTIALLY_SATISFIED",
+          "phase7": "PARTIALLY_SATISFIED",
+          "scores": {
+            "R1": 0.5727946758270264,
+            "R2": 0.23426401615142822
+          },
+          "case_score": 0.23426401615142822
+        }
+      ]
+    }
+  ]
+}

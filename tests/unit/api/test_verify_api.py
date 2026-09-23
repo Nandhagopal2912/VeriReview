@@ -103,3 +103,23 @@ def test_bad_repository_is_422(client: TestClient, repository: str) -> None:
     )
 
     assert response.status_code == 422
+
+
+def test_model_pipeline_without_the_nlp_group_is_501(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The service image has no PyTorch: choosing the model pipeline must fail clearly."""
+    import verireview.evidence.semantic as semantic_evidence
+
+    def missing_torch(texts: list[str]) -> None:
+        raise ModuleNotFoundError("No module named 'torch'", name="torch")
+
+    monkeypatch.setattr(semantic_evidence, "default_code_encoder", lambda: missing_torch)
+    case = load_fixture(FIXTURES / "validation-001-none-check").case
+
+    response = client.post(
+        "/verify", json={"case": case.model_dump(mode="json"), "pipeline": "phase7-semantic"}
+    )
+
+    assert response.status_code == 501
+    assert "nlp" in response.json()["detail"] and "torch" in response.json()["detail"]

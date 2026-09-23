@@ -451,8 +451,8 @@ ML dependencies are **deliberately excluded** until Phase 6 (plan: "Phase 0 — 
 | D4 | Add GitHub Actions CI in Phase 0 | Phase 0 | ✅ Approved |
 | D5 | Pre-existing implementation policy (plan §18) | Phase 2 | ✅ Accepted (ADR-001): SATISFIED on final code, confidence ≤ MEDIUM |
 | D6 | GitHub auth for dev (fine-grained PAT, read-only) | Phase 1 | Fine-grained PAT, public repos only |
-| D7 | Which code-aware model | Phase 7 | Decide from Phase 6 results |
-| D8 | LLM provider (if any) for Phase 7 evidence interpreter | Phase 7 | Defer |
+| D7 | Which code-aware model | Phase 7 | ✅ Approved: UniXcoder (`microsoft/unixcoder-base`, pinned revision), zero-shot, CPU. Evidence only (ADR-002) |
+| D8 | LLM provider (if any) for Phase 7 evidence interpreter | Phase 7 | ✅ Deferred by the project owner (would send repo content to an external API); revisit after Phase 10 |
 | D9 | Source repos for real-world benchmark | Phase 9 | Well-maintained public Python repos with active review culture |
 
 ---

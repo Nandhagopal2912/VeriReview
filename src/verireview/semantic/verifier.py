@@ -3,9 +3,15 @@
 Decision: no added code → NOT_SATISFIED; else SATISFIED when similarity ≥ threshold,
 NOT_SATISFIED otherwise. It never says PARTIALLY_SATISFIED or UNCERTAIN: one similarity number
 cannot express "half done" or "unclear". That limitation is part of what the baseline measures.
+
+Views of the change (Phase 7): ``added`` = every added line, comments included (Phase 6);
+``code`` = added code only, comments and docstrings removed (`semantic.code_view`). Comparing
+the two separates the effect of the model from the effect of what it is shown.
 """
 
+from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Literal
 
 from verireview.contracts import (
     Confidence,
@@ -17,26 +23,38 @@ from verireview.contracts import (
     Verdict,
     VerificationResult,
 )
+from verireview.semantic.code_view import code_change_text
 from verireview.semantic.scorers import Scorer
 from verireview.semantic.text import change_text, comment_text
+
+View = Literal["added", "code"]
+VIEWS: dict[View, Callable[[ReviewCase], str]] = {
+    "added": change_text,
+    "code": code_change_text,
+}
 
 
 @dataclass
 class SimilarityVerifier:
     scorer: Scorer
     threshold: float
+    view: View = "added"
 
     @property
     def version(self) -> str:
-        return f"baseline-{self.scorer.name}-1"
+        view = "" if self.view == "added" else f"-{self.view}"  # Phase 6 names unchanged
+        return f"baseline-{self.scorer.name}{view}-1"
+
+    def change(self, case: ReviewCase) -> str:
+        return VIEWS[self.view](case)
 
     def score(self, case: ReviewCase) -> float:
-        return self.scorer.score(comment_text(case), change_text(case))
+        return self.scorer.score(comment_text(case), self.change(case))
 
     def run(
         self, case: ReviewCase, requirement: ReviewRequirement | None = None
     ) -> VerificationResult:
-        change = change_text(case)
+        change = self.change(case)
         if not change.strip():
             # Explicit, not via the score: a threshold of 0 must not accept "nothing added".
             passed, detail = False, "No code was added after the comment."

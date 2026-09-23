@@ -9,10 +9,12 @@ from collections.abc import Callable
 from verireview.evidence.locality import change_locality_evidence
 from verireview.evidence.requirement import requirement_evidence
 from verireview.evidence.rules import rule_evidence
+from verireview.evidence.semantic import SemanticRelevanceStage
 from verireview.evidence.structure import structural_evidence
 from verireview.evidence.tests import changed_tests_evidence
 from verireview.requirements import extraction_stage
 from verireview.requirements.stub import whole_comment_requirement
+from verireview.semantic import Encoder
 from verireview.verification.ambiguity import ambiguity_gate
 from verireview.verification.pipeline import Decision, Pipeline
 from verireview.verification.preliminary import locality_aggregator
@@ -25,6 +27,7 @@ STRUCTURAL_VERSION = "phase3-structure-1"
 REQUIREMENTS_VERSION = "phase4-requirements-1"
 RULES_VERSION = "phase5-rules-1"
 MVP_VERSION = "mvp-1"
+SEMANTIC_VERSION = "phase7-semantic-1"
 
 
 def preliminary_pipeline() -> Pipeline:
@@ -83,12 +86,29 @@ def mvp_pipeline() -> Pipeline:
     )
 
 
+def semantic_pipeline(encoder: Encoder | None = None) -> Pipeline:
+    """Phase 7: the MVP plus code-model relevance evidence (UniXcoder, needs the `nlp` group).
+
+    The semantic evidence is neutral and the aggregator is the MVP's, so verdicts are identical
+    to ``mvp`` (pinned by a test). The model loads on first use, not here. ``encoder`` replaces
+    UniXcoder (tests use a fake one).
+    """
+    mvp = mvp_pipeline()
+    return Pipeline(
+        version=SEMANTIC_VERSION,
+        requirement_stage=mvp.requirement_stage,
+        evidence_stages=[*mvp.evidence_stages, SemanticRelevanceStage(encoder)],
+        aggregator=mvp.aggregator,
+    )
+
+
 PIPELINES: dict[str, Callable[[], Pipeline]] = {
     "phase2-locality": preliminary_pipeline,
     "phase3-structure": structural_pipeline,
     "phase4-requirements": requirements_pipeline,
     "phase5-rules": rules_pipeline,
     "mvp": mvp_pipeline,
+    "phase7-semantic": semantic_pipeline,
 }
 DEFAULT_PIPELINE = "mvp"
 
@@ -104,6 +124,7 @@ __all__ = [
     "PRELIMINARY_VERSION",
     "REQUIREMENTS_VERSION",
     "RULES_VERSION",
+    "SEMANTIC_VERSION",
     "STRUCTURAL_VERSION",
     "Decision",
     "Pipeline",
@@ -112,5 +133,6 @@ __all__ = [
     "preliminary_pipeline",
     "requirements_pipeline",
     "rules_pipeline",
+    "semantic_pipeline",
     "structural_pipeline",
 ]

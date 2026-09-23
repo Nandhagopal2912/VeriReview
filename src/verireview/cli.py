@@ -10,16 +10,21 @@ Local verification (no network):
     verireview eval-fixtures [--root DIR] [--out F]   evaluate the pipeline on all fixtures
     verireview extract "COMMENT" [--code FILE]        show extracted requirements
     verireview eval-requirements                      score extraction vs gold (dev + held-out)
-    verireview eval-baselines [--scorers …]           NLP baselines vs. rules (dev + held-out)
+    verireview eval-baselines [--scorers …] [--views …]  NLP baselines vs. rules (dev + held-out)
+    verireview eval-semantic                          code-model evidence: signal, verdict changes
+    verireview eval-injection [--pipeline NAME]       prompt-injection robustness (dev + held-out)
 
-    All three accept --pipeline NAME (default: the latest phase).
+    verify-fixture, verify-case, eval-fixtures and eval-injection accept --pipeline NAME
+    (default: mvp).
 """
 
 import argparse
 import io
+import json
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Collection, Sequence
 from pathlib import Path
+from typing import TYPE_CHECKING, cast
 
 from pydantic import ValidationError
 
@@ -27,7 +32,7 @@ from verireview.api.verify import VerifyResponse
 from verireview.config import get_settings
 from verireview.contracts import ReviewCase, VerificationResult
 from verireview.dataset import FixtureError, iter_fixtures, load_fixture
-from verireview.evaluation import dataset_hash, evaluate
+from verireview.evaluation import Verifier, dataset_hash, evaluate
 from verireview.evaluation.requirements import (
     ExtractionReport,
     evaluate_extraction,
@@ -43,6 +48,9 @@ from verireview.policy import configured_policy, decide
 from verireview.requirements import CodeContext, extract_requirements
 from verireview.threads import ThreadNotFoundError, reconstruct_threads
 from verireview.verification import DEFAULT_PIPELINE, PIPELINES, get_pipeline
+
+if TYPE_CHECKING:
+    from verireview.semantic import Scorer, View
 
 DEFAULT_FIXTURES = Path("dataset/fixtures")
 DEFAULT_HELDOUT = Path("dataset/requirements/heldout.jsonl")
@@ -75,7 +83,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "eval-requirements":
             return _eval_requirements(args.root, args.heldout, args.out)
         if args.command == "eval-baselines":
-            return _eval_baselines(args.root, args.heldout, args.scorers, args.out)
+            return _eval_baselines(args.root, args.heldout, args.scorers, args.views, args.out)
+        if args.command == "eval-semantic":
+            return _eval_semantic(args.root, args.heldout, args.out)
+        if args.command == "eval-injection":
+            return _eval_injection(args)
         return _eval_fixtures(args.root, args.out, args.pipeline, args.gold_requirements)
     except (FixtureError, ValidationError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -218,35 +230,55 @@ def _eval_requirements(root: Path, heldout: Path, out: Path | None) -> int:
     return 0
 
 
-def _eval_baselines(root: Path, heldout: Path, scorers: str, out: Path | None) -> int:
-    # Imported here: the embedding scorer pulls in the optional `nlp` group.
-    from verireview.evaluation.baselines import BaselineReport, current_commit, run_baseline
-    from verireview.semantic import EmbeddingScorer, LexicalScorer, Scorer, TfidfScorer
+def _scorers() -> "dict[str, Callable[[], Scorer]]":
+    from verireview.semantic import CodeModelScorer, EmbeddingScorer, LexicalScorer, TfidfScorer
 
-    available: dict[str, Callable[[], Scorer]] = {
+    return {
         "lexical": LexicalScorer,
         "tfidf": TfidfScorer,
         "embedding": EmbeddingScorer,
+        "unixcoder": CodeModelScorer,
     }
-    names = [s.strip() for s in scorers.split(",") if s.strip()]
+
+
+def _choices(value: str, available: Collection[str], what: str) -> list[str] | None:
+    names = [s.strip() for s in value.split(",") if s.strip()]
     unknown = [n for n in names if n not in available]
     if unknown:
         print(
-            f"error: unknown scorer(s) {unknown}; choose from {sorted(available)}", file=sys.stderr
+            f"error: unknown {what}(s) {unknown}; choose from {sorted(available)}", file=sys.stderr
         )
+        return None
+    return names
+
+
+def _eval_baselines(root: Path, heldout: Path, scorers: str, views: str, out: Path | None) -> int:
+    # Imported here: the embedding and code-model scorers need the optional `nlp` group.
+    from verireview.evaluation.baselines import BaselineReport, current_commit, run_baseline
+    from verireview.semantic import VIEWS
+
+    available = _scorers()
+    names = _choices(scorers, available, "scorer")
+    chosen_views = _choices(views, VIEWS, "view")
+    if names is None or chosen_views is None:
         return 2
     dev, held = list(iter_fixtures(root)), list(iter_fixtures(heldout))
-    results = [run_baseline(available[n](), dev, held, root, heldout) for n in names]
+    results = [
+        run_baseline(available[n](), dev, held, root, heldout, cast("View", v))
+        for n in names
+        for v in chosen_views
+    ]
     rules = [
         evaluate(get_pipeline(DEFAULT_PIPELINE), fx, r) for fx, r in ((dev, root), (held, heldout))
     ]
 
-    print(f"{'verifier':30}{'set':10}{'acc':>7}{'mF1':>7}{'FAR':>7}{'FBR':>7}  threshold")
+    print(f"{'verifier':34}{'set':10}{'acc':>7}{'mF1':>7}{'FAR':>7}{'FBR':>7}  threshold")
     rows = []
     for r in results:
-        rows.append((f"{r.scorer} [accuracy-tuned]", r.dev, r.heldout, f"{r.threshold:.3f}"))
+        label = _baseline_label(r.scorer, r.view)
+        rows.append((f"{label} [accuracy-tuned]", r.dev, r.heldout, f"{r.threshold:.3f}"))
         rows.append(
-            (f"{r.scorer} [Youden]", r.dev_youden, r.heldout_youden, f"{r.youden_threshold:.3f}")
+            (f"{label} [Youden]", r.dev_youden, r.heldout_youden, f"{r.youden_threshold:.3f}")
         )
     rows.append((f"rules ({DEFAULT_PIPELINE})", rules[0], rules[1], "-"))
     for name, dev_report, held_report, threshold in rows:
@@ -254,15 +286,114 @@ def _eval_baselines(root: Path, heldout: Path, scorers: str, out: Path | None) -
             m = evaluation.metrics
             far, fbr = _rate(m.false_acceptance_rate), _rate(m.false_blocking_rate)
             scores = f"{m.accuracy:7.3f}{m.macro_f1:7.3f}{far:>7}{fbr:>7}"
-            print(f"{name:30}{label:10}{scores}  {threshold}")
+            print(f"{name:34}{label:10}{scores}  {threshold}")
     print("\nROC-AUC, valid vs invalid resolution (0.5 = no signal):")
     for r in results:
-        print(f"  {r.scorer:12} dev {_rate(r.auc_dev)}   held-out {_rate(r.auc_heldout)}")
+        label = _baseline_label(r.scorer, r.view)
+        print(f"  {label:16} dev {_rate(r.auc_dev)}   held-out {_rate(r.auc_heldout)}")
     if out is not None:
         payload = BaselineReport(commit=current_commit(), results=results)
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(payload.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
         print(f"\nwrote {out}", file=sys.stderr)
+    return 0
+
+
+def _baseline_label(scorer: str, view: str) -> str:
+    return scorer if view == "added" else f"{scorer}/{view}"
+
+
+def _eval_semantic(root: Path, heldout: Path, out: Path | None) -> int:
+    from verireview.evaluation.baselines import current_commit
+    from verireview.evaluation.semantic import (
+        evaluate_semantic_evidence,
+        operating_point,
+        youden_threshold,
+    )
+    from verireview.semantic import default_code_encoder
+
+    encoder = default_code_encoder()
+    reports = [
+        evaluate_semantic_evidence(name, list(iter_fixtures(r)), r, encoder)
+        for name, r in (("dev fixtures", root), ("held-out", heldout))
+    ]
+    threshold = youden_threshold(reports[0])  # dev only; held-out uses it unchanged
+    for report in reports:
+        far, fbr = operating_point(report, threshold)
+        print(f"\n== {report.name}  (n={report.n}, dataset {report.dataset_hash[:12]})")
+        print(f"verdict changes vs mvp        {report.verdict_changes}")
+        print(f"ROC-AUC valid vs invalid      {_rate(report.auc)}  (weakest requirement)")
+        print(
+            f"if relevance >= {threshold:.3f} meant SATISFIED (dev Youden): "
+            f"false acceptance {_rate(far)}, false blocking {_rate(fbr)}"
+        )
+        print(f"  {'case':42}{'gold':22}{'mvp':22}relevance")
+        for c in report.cases:
+            mark = "" if c.mvp == c.gold else "   <- rules wrong or undecided"
+            print(f"  {c.case_id:42}{c.gold.value:22}{c.mvp.value:22}{c.case_score:.2f}{mark}")
+    model = reports[-1].model  # recorded after both sets, so truncation counts are complete
+    print(f"\nmodel: {model}")
+    if out is not None:
+        payload = {
+            "commit": current_commit(),
+            "model": model,
+            "youden_threshold": threshold,
+            "reports": [r.model_dump(mode="json") for r in reports],
+        }
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"wrote {out}", file=sys.stderr)
+    return 0
+
+
+def _eval_injection(args: argparse.Namespace) -> int:
+    from verireview.evaluation.baselines import current_commit
+    from verireview.evaluation.injection import INJECTIONS, Site, injection_report
+    from verireview.semantic import SimilarityVerifier, comment_text
+
+    dev, held = list(iter_fixtures(args.root)), list(iter_fixtures(args.heldout))
+    verifier: Verifier
+    if args.baseline:
+        available = _scorers()
+        if args.baseline not in available or args.threshold is None:
+            print(
+                f"error: --baseline needs one of {sorted(available)} and --threshold",
+                file=sys.stderr,
+            )
+            return 2
+        baseline = SimilarityVerifier(available[args.baseline](), args.threshold, args.view)
+        corpus = [comment_text(f.case) for f in dev] + [baseline.change(f.case) for f in dev]
+        baseline.scorer.fit(corpus)  # dev only, as in Phase 6
+        verifier = baseline
+    else:
+        verifier = get_pipeline(args.pipeline)
+    reports = [injection_report(verifier, fx) for fx in (dev, held)]
+
+    print(f"verifier: {verifier.version}; {len(INJECTIONS)} injected texts per site")
+    print(f"{'site':22}{'dev':>14}{'held-out':>14}   (outcome changes / variants)")
+    for site in Site:
+        cells = []
+        for report in reports:
+            changed = sum(f.site == site for f in report.flips)
+            cells.append(f"{changed}/{report.by_site[site]}")
+        print(f"{site.value:22}{cells[0]:>14}{cells[1]:>14}")
+    total = [f"{len(r.flips)}/{r.variants}" for r in reports]
+    print(f"{'total':22}{total[0]:>14}{total[1]:>14}")
+    for report, name in zip(reports, ("dev", "held-out"), strict=True):
+        for flip in report.flips:
+            print(
+                f"  changed ({name}): {flip.case_id} {flip.site.value} #{flip.injection}: "
+                f"{flip.expected.verdict.value} -> {flip.actual.verdict.value}"
+            )
+    if args.out is not None:
+        payload = {
+            "commit": current_commit(),
+            "injections": list(INJECTIONS),
+            "reports": [r.model_dump(mode="json") for r in reports],
+        }
+        args.out.parent.mkdir(parents=True, exist_ok=True)
+        args.out.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"wrote {args.out}", file=sys.stderr)
     return 0
 
 
@@ -358,11 +489,37 @@ def _parser() -> argparse.ArgumentParser:
     eval_base.add_argument(
         "--scorers",
         default="lexical,tfidf,embedding",
-        help="comma-separated: lexical, tfidf, embedding (embedding needs `uv sync --group nlp`)",
+        help="comma-separated: lexical, tfidf, embedding, unixcoder "
+        "(embedding and unixcoder need `uv sync --group nlp`)",
+    )
+    eval_base.add_argument(
+        "--views",
+        default="added",
+        help="comma-separated views of the change: added (all added lines, Phase 6), "
+        "code (comments and docstrings removed, Phase 7)",
     )
     eval_base.add_argument("--out", type=Path, help="write the JSON report here")
 
-    for command in (verify_fixture, verify_case, eval_fixtures):
+    eval_sem = sub.add_parser(
+        "eval-semantic", help="Phase 7 code-model evidence (needs the nlp group): signal, verdicts"
+    )
+    eval_sem.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
+    eval_sem.add_argument("--heldout", type=Path, default=DEFAULT_HELDOUT_FIXTURES)
+    eval_sem.add_argument("--out", type=Path, help="write the JSON report here")
+
+    eval_inj = sub.add_parser(
+        "eval-injection", help="plant prompt injections in every fixture; outcomes must not change"
+    )
+    eval_inj.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
+    eval_inj.add_argument("--heldout", type=Path, default=DEFAULT_HELDOUT_FIXTURES)
+    eval_inj.add_argument(
+        "--baseline", help="test a similarity baseline instead of a pipeline (needs --threshold)"
+    )
+    eval_inj.add_argument("--threshold", type=float, help="baseline threshold (e.g. from Phase 6)")
+    eval_inj.add_argument("--view", choices=["added", "code"], default="added")
+    eval_inj.add_argument("--out", type=Path, help="write the JSON report here")
+
+    for command in (verify_fixture, verify_case, eval_fixtures, eval_inj):
         command.add_argument(
             "--pipeline",
             choices=sorted(PIPELINES),

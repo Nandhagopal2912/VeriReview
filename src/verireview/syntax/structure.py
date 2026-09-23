@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from tree_sitter import Node
 
 from verireview.syntax.facts import CodeFacts, Fact
-from verireview.syntax.parser import node_text
+from verireview.syntax.parser import node_text, parse
 
 _BLOCK_OWNERS = frozenset({"function_definition", "class_definition", "module"})
 
@@ -30,6 +30,25 @@ def _tokens(node: Node) -> Iterator[str]:
         return
     for child in node.children:
         yield from _tokens(child)
+
+
+def code_only(source: str) -> str:
+    """``source`` with comments and docstrings blanked out (spaces); line numbers are unchanged.
+
+    Used by the code model (Phase 7) so that a comment repeating the reviewer's words cannot
+    count as code, the lexical trap measured in Phase 6.
+    """
+    data = bytearray(source.encode("utf-8"))
+    stack = [parse(source).root_node]
+    while stack:
+        node = stack.pop()
+        if node.type == "comment" or _is_docstring(node):
+            for i in range(node.start_byte, node.end_byte):
+                if data[i] not in b"\r\n":
+                    data[i] = 0x20
+            continue
+        stack.extend(node.children)
+    return data.decode("utf-8")
 
 
 def _is_docstring(node: Node) -> bool:

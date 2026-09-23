@@ -1950,6 +1950,7 @@ dev = [
 nlp = [
     { name = "scikit-learn" },
     { name = "sentence-transformers" },
+    { name = "transformers" },
 ]
 
 [package.metadata]
@@ -1978,6 +1979,7 @@ dev = [
 nlp = [
     { name = "scikit-learn", specifier = ">=1.9.1" },
     { name = "sentence-transformers", specifier = ">=6.1.0" },
+    { name = "transformers", specifier = ">=5.17.0" },
 ]
 
 [[package]]

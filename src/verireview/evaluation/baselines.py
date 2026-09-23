@@ -14,6 +14,9 @@ whether the scores carry signal. So we also report
   NOT / PARTIALLY)? 0.5 = no signal. UNCERTAIN cases are left out.
 - a balanced operating point: the dev threshold maximising Youden's J (TPR - FPR) on the same
   valid-vs-invalid split, evaluated on held-out unchanged.
+
+Phase 7 runs the same protocol with a ``view`` of the change: ``added`` (all added lines, as in
+Phase 6) or ``code`` (comments and docstrings removed).
 """
 
 import subprocess
@@ -26,11 +29,12 @@ from pydantic import BaseModel
 from verireview.contracts import Verdict
 from verireview.dataset import Fixture
 from verireview.evaluation.runner import EvaluationReport, evaluate
-from verireview.semantic import Scorer, SimilarityVerifier, change_text, comment_text
+from verireview.semantic import Scorer, SimilarityVerifier, View, comment_text
 
 
 class BaselineResult(BaseModel):
     scorer: str
+    view: View = "added"
     config: dict[str, Any]
     threshold: float  # pre-specified criterion: dev 4-class accuracy
     dev: EvaluationReport
@@ -70,10 +74,10 @@ def run_baseline(
     heldout: Sequence[Fixture],
     dev_root: Path,
     heldout_root: Path,
+    view: View = "added",
 ) -> BaselineResult:
-    corpus = [comment_text(f.case) for f in dev] + [change_text(f.case) for f in dev]
-    scorer.fit(corpus)
-    probe = SimilarityVerifier(scorer, threshold=0.0)
+    probe = SimilarityVerifier(scorer, threshold=0.0, view=view)
+    scorer.fit([comment_text(f.case) for f in dev] + [probe.change(f.case) for f in dev])
     dev_scores = {f.meta.case_id: probe.score(f.case) for f in dev}
     heldout_scores = {f.meta.case_id: probe.score(f.case) for f in heldout}
 
@@ -84,9 +88,11 @@ def run_baseline(
 
     threshold = tune_threshold(dev_s, dev_gold)
     youden = tune_threshold_youden(dev_s, dev_gold)
-    verifier, balanced = SimilarityVerifier(scorer, threshold), SimilarityVerifier(scorer, youden)
+    verifier = SimilarityVerifier(scorer, threshold, view)
+    balanced = SimilarityVerifier(scorer, youden, view)
     return BaselineResult(
         scorer=scorer.name,
+        view=view,
         config=scorer.describe(),
         threshold=threshold,
         dev=evaluate(verifier, dev, dev_root),

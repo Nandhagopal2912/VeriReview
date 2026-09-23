@@ -92,5 +92,12 @@ def verify_github(request: GitHubVerifyRequest, policy: Policy, reader: Reader) 
 
 
 def _verify(case: ReviewCase, pipeline: str, policy: PolicyConfig) -> VerifyResponse:
-    result = get_pipeline(pipeline).run(case)
+    try:
+        result = get_pipeline(pipeline).run(case)
+    except ModuleNotFoundError as exc:  # e.g. phase7-semantic without the optional `nlp` group
+        raise HTTPException(
+            status.HTTP_501_NOT_IMPLEMENTED,
+            f"pipeline {pipeline!r} needs the optional `nlp` dependency group "
+            f"(missing module {exc.name!r}), which this service does not install",
+        ) from exc
     return VerifyResponse(result=result, policy=decide(result, policy))

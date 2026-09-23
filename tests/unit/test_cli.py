@@ -205,3 +205,79 @@ def test_eval_baselines_rejects_unknown_scorer(capsys: pytest.CaptureFixture[str
 def test_bad_fixture_path_exits_1(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["verify-fixture", str(tmp_path / "missing")]) == 1
     assert "error:" in capsys.readouterr().err
+
+
+def test_eval_baselines_code_view(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = tmp_path / "baselines.json"
+    heldout = FIXTURES.parent / "heldout_fixtures"
+
+    code = cli.main(
+        [
+            "eval-baselines",
+            "--root",
+            str(FIXTURES),
+            "--heldout",
+            str(heldout),
+            "--scorers",
+            "lexical",
+            "--views",
+            "added,code",
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert code == 0
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert [(r["scorer"], r["view"]) for r in report["results"]] == [
+        ("lexical", "added"),
+        ("lexical", "code"),
+    ]
+    assert "lexical/code [Youden]" in capsys.readouterr().out
+
+
+def test_eval_baselines_rejects_unknown_view(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["eval-baselines", "--views", "tokens"]) == 2
+    assert "unknown view" in capsys.readouterr().err
+
+
+def test_eval_injection_reports_no_outcome_change(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "injection.json"
+
+    assert cli.main(["eval-injection", "--root", str(FIXTURES), "--out", str(out)]) == 0
+
+    printed = capsys.readouterr().out
+    assert "verifier: mvp-1" in printed
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert [len(r["flips"]) for r in report["reports"]] == [0, 0]
+
+
+def test_eval_injection_can_test_a_baseline(capsys: pytest.CaptureFixture[str]) -> None:
+    args = ["eval-injection", "--baseline", "lexical", "--threshold", "0.174"]
+
+    assert cli.main(args) == 0
+    assert "changed (dev):" in capsys.readouterr().out
+
+
+def test_eval_injection_baseline_needs_a_threshold(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["eval-injection", "--baseline", "lexical"]) == 2
+    assert "--threshold" in capsys.readouterr().err
+
+
+def test_eval_semantic_with_a_stand_in_model(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import verireview.semantic
+    from helpers.semantic import fake_encoder
+
+    monkeypatch.setattr(verireview.semantic, "default_code_encoder", lambda: fake_encoder)
+    monkeypatch.setattr(fake_encoder, "describe", lambda: {"model": "fake"}, raising=False)
+    out = tmp_path / "semantic.json"
+
+    assert cli.main(["eval-semantic", "--out", str(out)]) == 0
+
+    assert "verdict changes vs mvp        0" in capsys.readouterr().out
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert [r["name"] for r in report["reports"]] == ["dev fixtures", "held-out"]

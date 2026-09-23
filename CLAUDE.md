@@ -51,6 +51,9 @@ uv run verireview eval-fixtures --out experiments/<name>.json
 uv run verireview extract "comment text" [--code file.py --line N]
 uv run verireview eval-requirements        # extraction vs gold: dev fixtures + held-out
 uv run --group nlp verireview eval-baselines   # NLP baselines vs rules (needs the nlp group)
+uv run --group nlp verireview eval-baselines --scorers lexical,tfidf,embedding,unixcoder --views added,code
+uv run --group nlp verireview eval-semantic    # code-model evidence: AUC + 0 verdict changes vs mvp
+uv run verireview eval-injection [--pipeline phase7-semantic]  # prompt-injection suite (0 changes)
 uv run --group nlp pytest -m model             # tests that need a downloaded model
 ```
 
@@ -69,6 +72,10 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - `eval-fixtures --gold-requirements` separates rule errors from extraction errors.
 - ML dependencies: scikit-learn is in `dev`. sentence-transformers and PyTorch are in the optional `nlp` group (`uv sync --group nlp`), never in the service image or CI. Tests needing a downloaded model use `@pytest.mark.model` (excluded by default). Import heavy libraries lazily.
 - Anything that verifies (rule pipeline or NLP baseline) implements `evaluation.Verifier` (`version` + `run(case, requirement=None)`), so it is scored by the same `evaluate()`.
+- Code-model evidence (`semantic_relevance`, Phase 7) is **neutral** (`passed=None`) and no aggregator reads it (ADR-002, proposed). `phase7-semantic` must give verdicts identical to `mvp` (pinned by tests). Don't let it change verdicts before Phase 8b, and then only with dev data and held-out FAR still 0.
+- The code model sees the **code view** (`semantic.code_view`: added lines, comments and docstrings removed with `syntax.code_only`), never comments. UniXcoder's revision is pinned in `semantic/code_model.py`. Changing it means re-running `eval-semantic` and `eval-baselines`.
+- Prompt injection: `evaluation.injection` plants instructions at 7 sites of every fixture. `tests/benchmark/test_prompt_injection.py` requires 0 outcome changes for `mvp` and `phase7-semantic`. Never read thread replies, commit messages or PR titles as instructions.
+- The service image has no model libraries. A model pipeline requested through the API returns 501 (`ModuleNotFoundError` is mapped in `api/verify.py`).
 - Extraction word lists and ambiguity weights live only in `requirements/lexicon.py`. Changing them means re-running `eval-requirements` and `eval-fixtures`.
 - Tree-sitter is pinned (`~=`). Upgrading means re-running the syntax tests, because node types and fields change between versions.
 
@@ -101,6 +108,7 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - [x] Phase 5.1: hardening (failure-path logging, parametrize/empty inputs, same-file helpers, `.get()` idiom, API related identifiers, extraction verbs). Held-out (no longer blind) 0.875, false acceptance 0.000, false blocking 0.071. Rule of thumb kept: **when a rule can't verify, return inconclusive (human review), never accept.**
 - [x] Phase 8a: MVP. Reliability-based confidence, policy layer (BLOCK off by default, pinned by a test), plan-§16 explanations, `POST /verify` and `POST /verify/github`, end-to-end integration tests. **All 15 plan §28 MVP criteria met** (docs/phase8a_mvp.md).
 - [x] Phase 6: NLP baselines (lexical, TF-IDF, MiniLM embeddings) through the same `Verifier` harness. Dev AUC < 0.5 for all three (lexical traps); held-out AUC 0.56–0.69, but 25–88% false acceptance at any usable threshold vs 0% for rules (docs/phase6_nlp_baselines.md).
-- [ ] Next per roadmap: Phase 7 (code-aware model as an evidence source), Phase 9 (benchmark), Phase 10 (evaluation), Phase 11 (GitHub advisory mode).
+- [x] Phase 7: UniXcoder (D7, pinned revision) as **neutral** evidence per requirement and code chunk, code-only view, prompt-injection suite. Evidence AUC dev 0.569 / held-out 0.737; code view improves every scorer's AUC; **0 outcome changes in 2,576 injected variants**; D8 (LLM) deferred (docs/phase7_code_model.md, ADR-002 proposed).
+- [ ] Next: Phase 8b (roadmap order) or Phase 9 (benchmark) first. 9 is recommended: dev has no case where the code model could help. Then Phase 10 (evaluation), Phase 11 (GitHub advisory mode).
 
-Open decisions: D5–D9 in `docs/ROADMAP.md` §7.
+Decisions: D1–D5, D7 (UniXcoder) and D8 (LLM deferred) settled; D6, D9 open (`docs/ROADMAP.md` §7). ADR-002 is proposed, awaiting the owner.

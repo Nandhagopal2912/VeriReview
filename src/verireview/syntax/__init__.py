@@ -15,7 +15,7 @@ from verireview.syntax.facts import (
 )
 from verireview.syntax.location import ResolutionMethod, TargetResolution, resolve_target
 from verireview.syntax.parser import parse
-from verireview.syntax.structure import FactDiff, diff_facts, structural_tokens
+from verireview.syntax.structure import FactDiff, code_only, diff_facts, structural_tokens
 from verireview.syntax.symbols import Symbol, enclosing_symbol, find_symbol, index_symbols
 
 __all__ = [
@@ -30,6 +30,7 @@ __all__ = [
     "Return",
     "Symbol",
     "TargetResolution",
+    "code_only",
     "diff_facts",
     "enclosing_symbol",
     "extract_facts",

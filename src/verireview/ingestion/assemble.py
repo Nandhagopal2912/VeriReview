@@ -8,6 +8,7 @@ from pathlib import PurePosixPath
 from verireview.contracts import ChangedFile, ReviewCase, WindowFlag
 from verireview.gh.api import GitHubReader, RepoRef
 from verireview.gh.models import GhChangedFile
+from verireview.ingestion.anchor import locate_comment_line
 from verireview.ingestion.window import build_window
 from verireview.threads import find_thread, reconstruct_threads
 
@@ -47,15 +48,25 @@ def ingest_review_case(
             break
 
     before_code = _normalise(reader.get_file(repo, before_path, window.start_commit_sha))
+    anchor_line: int | None = None
     if before_code is None:
         flags.append(WindowFlag.BEFORE_CODE_UNAVAILABLE)
+    elif thread.side != "LEFT":
+        anchor_line = locate_comment_line(
+            before_code, thread.diff_hunk, thread.side, thread.original_line
+        )
+        if anchor_line is None:
+            flags.append(WindowFlag.ANCHOR_NOT_FOUND)
+        elif anchor_line != thread.original_line:
+            flags.append(WindowFlag.ANCHOR_LINE_MISMATCH)
     after_code = _normalise(reader.get_file(repo, after_path, window.end_commit_sha))
     if after_code is None and before_code is not None:
         flags.append(WindowFlag.FILE_DELETED)
 
     test_files: dict[str, str] = {}
     for f in changed:
-        if f.is_test and f.status != "removed" and len(test_files) < MAX_TEST_FILES:
+        # Only the PR's own test changes; upstream (base-drift) tests are not evidence.
+        if f.is_test and f.in_pr and f.status != "removed" and len(test_files) < MAX_TEST_FILES:
             content = _normalise(reader.get_file(repo, f.path, window.end_commit_sha))
             if content is not None:
                 test_files[f.path] = content
@@ -71,6 +82,7 @@ def ingest_review_case(
         window=window.model_copy(update={"flags": _dedupe(flags)}),
         file_path=after_path,
         before_code=before_code,
+        anchor_line=anchor_line,
         after_code=after_code,
         unified_diff=make_unified_diff(before_code, after_code, before_path, after_path),
         changed_files=changed,
@@ -114,22 +126,34 @@ def _changed_files(
     end: str,
     flags: list[WindowFlag],
 ) -> list[ChangedFile]:
+    """Files changed within the window, each marked with whether the PR itself changes it.
+
+    A compare across a rebase or a merge of the base branch also contains upstream changes
+    (live check: pallets/click#2622 listed 15 unrelated test files). The PR's own file list
+    tells them apart.
+    """
     if start == end:
         return []
+    pr_files = reader.list_pull_files(repo, pull_number)
     raw: list[GhChangedFile] | None = reader.compare_files(repo, start, end)
     if raw is None:
         # Start commit unreachable (e.g. force-push): the whole PR's files are the best we have.
         flags.append(WindowFlag.CHANGED_FILES_FROM_WHOLE_PR)
-        raw = reader.list_pull_files(repo, pull_number)
-    return [
+        raw = pr_files
+    in_pr = {f.filename for f in pr_files}
+    changed = [
         ChangedFile(
             path=f.filename,
             status=f.status,
             previous_path=f.previous_filename,
             is_test=is_test_path(f.filename),
+            in_pr=f.filename in in_pr,
         )
         for f in raw
     ]
+    if any(not f.in_pr for f in changed):
+        flags.append(WindowFlag.BASE_DRIFT_POSSIBLE)
+    return changed
 
 
 def _normalise(code: str | None) -> str | None:

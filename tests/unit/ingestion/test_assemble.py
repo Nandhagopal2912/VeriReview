@@ -137,6 +137,43 @@ def test_unreachable_start_commit_uses_whole_pr_files() -> None:
     )
 
 
+def test_anchor_line_found_from_diff_hunk() -> None:
+    case = ingest()
+
+    assert case.anchor_line == 2  # matches original_line, so no mismatch flag
+    assert WindowFlag.ANCHOR_LINE_MISMATCH not in case.window.flags
+
+
+def test_anchor_mismatch_is_flagged() -> None:
+    shifted = (
+        '# header\n\n\ndef save_user(db, username):\n    db.insert("users", {"name": username})\n'
+    )
+    reader = _Reader(files={("shop/user_service.py", C2): shifted})
+
+    case = ingest_review_case(reader, REPO, 7, 5001)
+
+    assert case.anchor_line == 5
+    assert case.thread.original_line == 2
+    assert WindowFlag.ANCHOR_LINE_MISMATCH in case.window.flags
+
+
+def test_base_drift_files_are_marked_and_their_tests_ignored() -> None:
+    # Pattern from pallets/click#2622: a rebase pulls upstream files into the compare.
+    window_files = [
+        GhChangedFile(filename="shop/user_service.py", status="modified"),
+        GhChangedFile(filename="tests/test_user_service.py", status="added"),
+        GhChangedFile(filename="tests/test_upstream.py", status="modified"),
+    ]
+    reader = _Reader(compare=window_files, override_compare=True)
+
+    case = ingest_review_case(reader, REPO, 7, 5001)
+
+    drift = [f.path for f in case.changed_files if not f.in_pr]
+    assert drift == ["tests/test_upstream.py"]
+    assert WindowFlag.BASE_DRIFT_POSSIBLE in case.window.flags
+    assert list(case.test_files) == ["tests/test_user_service.py"]
+
+
 def test_crlf_is_normalised() -> None:
     reader = _Reader(files={("shop/user_service.py", C2): "a\r\nb\r\n"})
 

@@ -75,12 +75,17 @@ def gh_comment(
     )
 
 
-def gh_commit(sha: str, committed_at: str | None) -> GhCommit:
-    signature = {"name": "Alice", "date": committed_at} if committed_at else None
+def gh_commit(sha: str, committed_at: str | None, authored_at: str | None = None) -> GhCommit:
+    """``authored_at`` defaults to ``committed_at`` (a plain, non-rewritten commit)."""
+    authored = authored_at or committed_at
     return GhCommit.model_validate(
         {
             "sha": sha,
-            "commit": {"message": f"commit {sha[:7]}", "author": signature, "committer": signature},
+            "commit": {
+                "message": f"commit {sha[:7]}",
+                "author": {"name": "Alice", "date": authored} if authored else None,
+                "committer": {"name": "Alice", "date": committed_at} if committed_at else None,
+            },
             "author": {"login": "dev-alice"},
         }
     )

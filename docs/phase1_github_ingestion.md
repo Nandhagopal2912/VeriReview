@@ -15,9 +15,11 @@ verireview ingest OWNER/REPO PR --comment-id ID
   ├─ GET  /repos/{r}/issues/{n}/timeline        → force-push events
   ├─ GET  /repos/{r}/pulls/{n}/commits          → ordered commits (max 250)
   │        └─ ingestion.build_window()          → ResolutionWindow + flags
+  ├─ GET  /repos/{r}/pulls/{n}/files            → the PR's own files (base-drift filter)
   ├─ GET  /repos/{r}/compare/{start}...{end}    → files changed in the window
-  │        (fallback: /pulls/{n}/files when start is unreachable)
+  │        (fallback: the PR's files when start is unreachable)
   ├─ GET  /repos/{r}/contents/{path}?ref=start  → before_code
+  │        └─ locate_comment_line()             → anchor_line (from diff_hunk text)
   ├─ GET  /repos/{r}/contents/{path}?ref=end    → after_code (+ changed test files)
   │        └─ make_unified_diff()               → unified_diff
   └─ ReviewCase → JSON file / stdout and PostgreSQL (review_cases + normalised tables)
@@ -37,7 +39,10 @@ These are based on GitHub's documented behaviour. **Check them against live data
 | F6 | Commit dates are client-set; there is no push timestamp in the API. | Commit order comes from the PR commit list. Timestamps are only used to exclude commits written before the comment, and as a fallback. |
 | F7 | Force-pushes appear as `head_ref_force_pushed` timeline events; old SHAs may disappear from the PR. | `original_commit_not_in_pr`, `history_rewritten`, `ordered_by_timestamp` flags. |
 | F8 | The PR commits endpoint returns at most 250 commits. | Flag `commit_list_truncated`. |
-| F9 | `line` is `null` for outdated comments; `original_line` stays. | Both are stored; later phases use `original_line` against `before_code`. |
+| F9 | `line` is `null` for outdated comments; `original_line` stays. | Both stored. |
+| F10 | **Live:** `original_line` can disagree with the file at `original_commit_id` (click#2811: off by 3, file byte-identical to the commit). | `anchor_line` is found by matching `diff_hunk` text. Later phases use `anchor_line`, not `original_line`. |
+| F11 | **Live:** a rebase resets committer dates but keeps author dates, and `--amend` also keeps the author date. | In rewritten history, "authored before / committed after" commits are `ambiguous_rewritten_commits`, not guessed. |
+| F12 | **Live:** compare across a rebase or base merge includes upstream changes (click#2622: 15 unrelated test files). | `ChangedFile.in_pr` via the PR's file list. Only in-PR test files are collected. Flag `base_drift_possible`. |
 
 ## Window flags (how reliable a case is)
 
@@ -54,9 +59,14 @@ These are based on GitHub's documented behaviour. **Check them against live data
 | `before_code_unavailable` | File at the reviewed commit could not be fetched. |
 | `file_deleted` / `file_renamed` | Commented file was deleted / renamed within the window. |
 | `changed_files_from_whole_pr` | Compare failed, so changed files cover the whole PR, not just the window. |
+| `ambiguous_rewritten_commits` | Rewritten history contains commits that could be rebased old work or amended responses. |
+| `base_drift_possible` | The window includes upstream changes. The diff of the commented file may contain unrelated edits. |
+| `anchor_line_mismatch` | `anchor_line` ≠ GitHub's `original_line`. Trust `anchor_line`. |
+| `anchor_not_found` | The `diff_hunk` text is not in `before_code`, so the commented code can't be located reliably. |
 
-Later phases should treat a case with `history_rewritten`, `before_code_unavailable` or
-`ordered_by_timestamp` as a candidate for `UNCERTAIN`.
+Later phases should treat a case with `history_rewritten`, `before_code_unavailable`,
+`anchor_not_found` or `ordered_by_timestamp` as a candidate for `UNCERTAIN`. With
+`base_drift_possible`, only diff hunks near the target symbol should count as evidence.
 
 ## Security
 

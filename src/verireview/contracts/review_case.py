@@ -9,7 +9,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-SCHEMA_VERSION = "1"
+# v2 (Phase 1 live check): ambiguous_rewritten_commits, ChangedFile.in_pr, anchor_line, new flags.
+SCHEMA_VERSION = "2"
 
 
 class CommitRef(BaseModel):
@@ -68,6 +69,10 @@ class WindowFlag(StrEnum):
     FILE_DELETED = "file_deleted"
     FILE_RENAMED = "file_renamed"
     CHANGED_FILES_FROM_WHOLE_PR = "changed_files_from_whole_pr"
+    AMBIGUOUS_REWRITTEN_COMMITS = "ambiguous_rewritten_commits"
+    BASE_DRIFT_POSSIBLE = "base_drift_possible"
+    ANCHOR_LINE_MISMATCH = "anchor_line_mismatch"
+    ANCHOR_NOT_FOUND = "anchor_not_found"
 
 
 class ResolutionWindow(BaseModel):
@@ -80,6 +85,11 @@ class ResolutionWindow(BaseModel):
     start_commit_sha: str
     end_commit_sha: str
     subsequent_commits: list[CommitRef]
+    ambiguous_rewritten_commits: list[CommitRef] = Field(
+        default_factory=list,
+        description="History rewritten: authored before but committed after the comment "
+        "(rebased old work or an amended response; cannot tell which).",
+    )
     excluded_pre_comment_commits: list[CommitRef] = Field(default_factory=list)
     flags: list[WindowFlag] = Field(default_factory=list)
 
@@ -89,6 +99,11 @@ class ChangedFile(BaseModel):
     status: str
     previous_path: str | None = None
     is_test: bool = False
+    in_pr: bool = Field(
+        default=True,
+        description="Also changed by the PR itself. False = changed in the window only because "
+        "upstream commits were merged/rebased in (base drift).",
+    )
 
 
 class ReviewCase(BaseModel):
@@ -103,6 +118,12 @@ class ReviewCase(BaseModel):
     window: ResolutionWindow
     file_path: str = Field(description="Commented file's path at the end of the window.")
     before_code: str | None
+    anchor_line: int | None = Field(
+        default=None,
+        description="1-based line in before_code the comment points at, found by matching "
+        "diff_hunk text. Prefer this over thread.original_line, which GitHub sometimes "
+        "reports inconsistently with the commit content.",
+    )
     after_code: str | None
     unified_diff: str = Field(description="before_code → after_code for file_path ('' if none).")
     changed_files: list[ChangedFile]

@@ -5,6 +5,7 @@ verireview ingest  OWNER/REPO PR --comment-id ID  build a ReviewCase (JSON) and 
 """
 
 import argparse
+import io
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -18,6 +19,7 @@ from verireview.threads import ThreadNotFoundError, reconstruct_threads
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    _utf8_output()
     args = _parser().parse_args(argv)
     try:
         repo = RepoRef(args.repo)
@@ -91,6 +93,13 @@ def _ingest(
         file=sys.stderr,
     )
     return 0
+
+
+def _utf8_output() -> None:
+    """Review comments contain arbitrary Unicode; a Windows console defaults to cp1252."""
+    for stream in (sys.stdout, sys.stderr):
+        if isinstance(stream, io.TextIOWrapper):
+            stream.reconfigure(encoding="utf-8", errors="replace")
 
 
 def _parser() -> argparse.ArgumentParser:

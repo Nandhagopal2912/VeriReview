@@ -65,7 +65,12 @@ def save_review_case(session: Session, case: ReviewCase) -> int:
             },
             ["thread_id", "github_id"],
         )
-    for commit in [*case.window.excluded_pre_comment_commits, *case.window.subsequent_commits]:
+    window = case.window
+    for commit in [
+        *window.excluded_pre_comment_commits,
+        *window.ambiguous_rewritten_commits,
+        *window.subsequent_commits,
+    ]:
         _upsert(
             session,
             CommitRow,

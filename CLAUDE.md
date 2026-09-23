@@ -66,7 +66,7 @@ uv run verireview ingest OWNER/REPO PR --comment-id ID [--out f.json] [--no-db]
 ## Current status
 
 - [x] Phase 0: project skeleton, FastAPI `/health` and `/health/db`, PostgreSQL + Alembic baseline, Docker, CI
-- [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check on ≥10 real threads pending.
+- [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check: 8/10 real threads done (docs/phase1_live_checks.md). Use `anchor_line`, not `original_line`.
 - [ ] Phase 2: local verifier and fixtures (ADR-001: pre-existing implementation policy)
 - [ ] Phase 3: diff + AST
 - [ ] Phase 4: requirement representation

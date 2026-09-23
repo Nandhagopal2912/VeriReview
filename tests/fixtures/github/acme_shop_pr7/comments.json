@@ -33,7 +33,7 @@
     "commit_id": "4444444444444444444444444444444444444444",
     "original_commit_id": "2222222222222222222222222222222222222222",
     "diff_hunk": "@@ -0,0 +1,4 @@\n+def save_user(db, username):\n+    db.insert(\"users\", {\"name\": username})\n",
-    "body": "Good point, will do.",
+    "body": "Good point → will do.",
     "user": {
       "login": "dev-alice"
     },

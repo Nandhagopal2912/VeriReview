@@ -53,8 +53,12 @@ class Pipeline:
     evidence_stages: Sequence[EvidenceStage]
     aggregator: Aggregator
 
-    def run(self, case: ReviewCase) -> VerificationResult:
-        requirement = self.requirement_stage(case)
+    def run(
+        self, case: ReviewCase, requirement: ReviewRequirement | None = None
+    ) -> VerificationResult:
+        """Verify ``case``. Passing ``requirement`` skips extraction (e.g. gold requirements,
+        to measure the rules independently of extraction errors)."""
+        requirement = requirement or self.requirement_stage(case)
         drafts = [item for stage in self.evidence_stages for item in stage(case, requirement)]
         evidence = [e.model_copy(update={"id": f"E{i}"}) for i, e in enumerate(drafts, start=1)]
         decision = self.aggregator(case, requirement, evidence)

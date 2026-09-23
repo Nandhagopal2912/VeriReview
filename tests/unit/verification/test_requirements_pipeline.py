@@ -52,7 +52,7 @@ def test_every_fixture_yields_a_valid_cited_result(fixture: Fixture) -> None:
         assert f"[{e.id}] {e.detail}" in result.explanation
 
 
-def test_default_pipeline_is_phase4() -> None:
-    assert DEFAULT_PIPELINE == "phase4-requirements"
-    assert set(PIPELINES) == {"phase2-locality", "phase3-structure", "phase4-requirements"}
-    assert get_pipeline().version == REQUIREMENTS_VERSION
+def test_phase4_stays_registered_for_comparison() -> None:
+    assert DEFAULT_PIPELINE != "phase4-requirements"  # superseded by phase 5, still runnable
+    assert "phase4-requirements" in PIPELINES
+    assert get_pipeline("phase4-requirements").version == REQUIREMENTS_VERSION

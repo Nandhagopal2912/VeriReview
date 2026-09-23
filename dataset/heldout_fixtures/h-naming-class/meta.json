@@ -1,0 +1,20 @@
+{
+  "case_id": "h-naming-class",
+  "category": "naming",
+  "file_path": "net/pool.py",
+  "target_symbol": "Mgr",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The class and its only use were renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename class Mgr to ConnectionManager",
+      "target": "Mgr",
+      "condition": null,
+      "expected_behavior": "renamed everywhere"
+    }
+  ]
+}

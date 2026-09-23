@@ -1,0 +1,20 @@
+{
+  "case_id": "h-api-fastapi-422",
+  "category": "api_behavior",
+  "file_path": "api/orders.py",
+  "target_symbol": "create_order",
+  "comment_line": 8,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A negative quantity raises HTTPException with status 422.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Respond 422 when quantity is negative",
+      "target": "quantity",
+      "condition": "quantity < 0",
+      "expected_behavior": "HTTP 422"
+    }
+  ]
+}

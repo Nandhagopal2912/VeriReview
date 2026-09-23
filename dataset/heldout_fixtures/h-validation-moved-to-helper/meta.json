@@ -1,0 +1,20 @@
+{
+  "case_id": "h-validation-moved-to-helper",
+  "category": "validation",
+  "file_path": "users/store.py",
+  "target_symbol": "save",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The emptiness check lives in a new helper that save() calls before inserting (plan §9 pattern).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check username is not empty before saving",
+      "target": "username",
+      "condition": "username empty",
+      "expected_behavior": "reject"
+    }
+  ]
+}

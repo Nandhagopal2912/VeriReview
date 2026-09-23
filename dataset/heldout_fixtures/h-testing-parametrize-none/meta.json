@@ -1,0 +1,20 @@
+{
+  "case_id": "h-testing-parametrize-none",
+  "category": "testing",
+  "file_path": "people/age.py",
+  "target_symbol": "parse_age",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A parametrized test feeds None to parse_age and expects ValueError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Test parse_age with None",
+      "target": "parse_age",
+      "condition": "value is None",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

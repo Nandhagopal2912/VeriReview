@@ -1,0 +1,20 @@
+{
+  "case_id": "h-validation-isinstance",
+  "category": "validation",
+  "file_path": "net/server.py",
+  "target_symbol": "listen",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An isinstance check on port raises TypeError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check port is an int",
+      "target": "port",
+      "condition": "port is not int",
+      "expected_behavior": "TypeError"
+    }
+  ]
+}

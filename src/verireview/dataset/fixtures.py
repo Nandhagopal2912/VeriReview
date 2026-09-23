@@ -156,6 +156,11 @@ def load_fixture(directory: Path) -> Fixture:
         test_files={
             p: tests_after[p] for p in tests_after if tests_before.get(p) != tests_after[p]
         },
+        test_files_before={
+            p: tests_before[p]
+            for p in tests_before
+            if p in tests_after and tests_before[p] != tests_after[p]
+        },
         ingested_at=_COMMENT_AT,
     )
     gold = ReviewRequirement(
@@ -163,6 +168,9 @@ def load_fixture(directory: Path) -> Fixture:
         target_file=meta.file_path,
         target_symbol=meta.target_symbol,
         requirements=meta.requirements,
+        # The annotation marks ambiguous requests via hard_case; gold extraction would flag them.
+        ambiguity=1.0 if meta.hard_case == HardCase.AMBIGUOUS else 0.0,
+        ambiguity_reasons=["annotated as ambiguous"] if meta.hard_case == HardCase.AMBIGUOUS else [],
         source="manual",
     )
     return Fixture(meta=meta, case=case, gold_requirement=gold)

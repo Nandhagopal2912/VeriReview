@@ -1,0 +1,20 @@
+{
+  "case_id": "h-validation-early-return",
+  "category": "validation",
+  "file_path": "cart/summary.py",
+  "target_symbol": "first_item_name",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An emptiness guard returns before `items[0]` is accessed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Return early when items is empty",
+      "target": "items",
+      "condition": "items is empty",
+      "expected_behavior": "return early"
+    }
+  ]
+}

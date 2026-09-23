@@ -36,11 +36,17 @@ class EvaluationReport(BaseModel):
 
 
 def evaluate(
-    pipeline: Pipeline, fixtures: Sequence[Fixture], dataset_root: Path
+    pipeline: Pipeline,
+    fixtures: Sequence[Fixture],
+    dataset_root: Path,
+    gold_requirements: bool = False,
 ) -> EvaluationReport:
+    """Run ``pipeline`` on every fixture. ``gold_requirements`` replaces extraction with the
+    annotated requirements, isolating verification errors from extraction errors."""
     outcomes = []
     for fixture in fixtures:
-        result = pipeline.run(fixture.case)
+        override = fixture.gold_requirement if gold_requirements else None
+        result = pipeline.run(fixture.case, override)
         outcomes.append(
             CaseOutcome(
                 case_id=fixture.meta.case_id,
@@ -52,7 +58,7 @@ def evaluate(
             )
         )
     return EvaluationReport(
-        pipeline_version=pipeline.version,
+        pipeline_version=pipeline.version + ("+gold-requirements" if gold_requirements else ""),
         dataset_hash=dataset_hash(dataset_root),
         metrics=compute_metrics([(o.expected, o.predicted) for o in outcomes]),
         accuracy_by_category=_accuracy_by(outcomes, lambda o: o.category),

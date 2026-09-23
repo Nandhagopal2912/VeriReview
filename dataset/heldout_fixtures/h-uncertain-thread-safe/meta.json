@@ -1,0 +1,20 @@
+{
+  "case_id": "h-uncertain-thread-safe",
+  "category": "other",
+  "file_path": "cache/store.py",
+  "target_symbol": "remember",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "A question, not a request; whether adding a lock answers it needs the reviewer.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "other",
+      "description": "Make remember thread-safe (asked as a question)",
+      "target": "remember",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -59,6 +59,9 @@ uv run verireview eval-requirements        # extraction vs gold: dev fixtures + 
 - Pipelines are registered by name in `verification/__init__.py` (`PIPELINES`). Add a new one per phase and keep old ones runnable (`--pipeline`), for the ablation study.
 - Structural facts come from `syntax.extract_facts` (calls, conditions, raises, handlers, returns). Rules should query these, not regex the source.
 - `dataset/requirements/heldout.jsonl` is a **blind** held-out set (hash pinned in `tests/benchmark`). Never edit it to make the extractor pass. Improve the extractor on dev fixtures and report held-out honestly.
+- `dataset/heldout_fixtures/` is a **blind** verdict set (hash pinned in `tests/benchmark/test_rule_verdicts.py`). Never tune rules against it. A benchmark test requires its false-acceptance rate to stay 0.
+- Rules live in `rules/` (one module per category) and query structure via `rules/analysis.py` (guards, handlers, responses, test functions). A new rule must emit evidence with locations and have positive, negative and adversarial tests in `tests/rules/`.
+- `eval-fixtures --gold-requirements` separates rule errors from extraction errors.
 - Extraction word lists and ambiguity weights live only in `requirements/lexicon.py`. Changing them means re-running `eval-requirements` and `eval-fixtures`.
 - Tree-sitter is pinned (`~=`). Upgrading means re-running the syntax tests, because node types and fields change between versions.
 
@@ -87,7 +90,7 @@ uv run verireview eval-requirements        # extraction vs gold: dev fixtures + 
 - [x] Phase 2: contracts, fixture loader, pipeline skeleton, 29 dev fixtures, eval harness. Locality baseline: acc 0.241, FAR 1.0 (docs/phase2_local_verifier.md). ADR-001 accepted: pre-existing implementation = SATISFIED (final code), confidence ≤ MEDIUM, `already_present` evidence.
 - [x] Phase 3: diff (unidiff/difflib), Tree-sitter symbols + facts, location resolution (100% of fixtures), structural evidence. `phase3-structure-1`: acc 0.310, FAR 0.889 (docs/phase3_diff_ast.md).
 - [x] Phase 4: rule-based requirement extraction (utterance types, clause split, expansion, categories, targets, suggestion blocks, ambiguity) + ambiguity gate. Held-out blind: count 0.844, category F1 0.909. `phase4-requirements-1`: acc 0.414 (docs/phase4_requirements.md).
-- [ ] Phase 5: rule engine
+- [x] Phase 5: rule engine (naming, validation, testing, error handling, API) + rule aggregator. Dev 1.000; **held-out blind 0.625 (gold reqs 0.750), false acceptance 0.000, false blocking 0.429** (docs/phase5_rules.md).
 - [ ] Phase 8a: evidence aggregation (MVP)
 
 Open decisions: D5–D9 in `docs/ROADMAP.md` §7.

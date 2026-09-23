@@ -1,0 +1,1 @@
+Return early if `items` is empty instead of crashing on `items[0]`.

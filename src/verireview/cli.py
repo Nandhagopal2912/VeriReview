@@ -70,7 +70,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "eval-requirements":
             return _eval_requirements(args.root, args.heldout, args.out)
-        return _eval_fixtures(args.root, args.out, args.pipeline)
+        return _eval_fixtures(args.root, args.out, args.pipeline, args.gold_requirements)
     except (FixtureError, ValidationError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -155,12 +155,12 @@ def _print_result(result: VerificationResult, as_json: bool) -> None:
     print(result.model_dump_json(indent=2) if as_json else result.explanation)
 
 
-def _eval_fixtures(root: Path, out: Path | None, pipeline: str) -> int:
+def _eval_fixtures(root: Path, out: Path | None, pipeline: str, gold: bool) -> int:
     fixtures = list(iter_fixtures(root))
     if not fixtures:
         print(f"error: no fixtures under {root}", file=sys.stderr)
         return 1
-    report = evaluate(get_pipeline(pipeline), fixtures, root)
+    report = evaluate(get_pipeline(pipeline), fixtures, root, gold_requirements=gold)
     m = report.metrics
     print(f"pipeline {report.pipeline_version}  dataset {report.dataset_hash[:12]}  n={m.n}")
     print(f"accuracy {m.accuracy:.3f}   macro-F1 {m.macro_f1:.3f}")
@@ -172,8 +172,8 @@ def _eval_fixtures(root: Path, out: Path | None, pipeline: str) -> int:
     for verdict, cm in m.per_class.items():
         print(f"  {verdict.value:20}{cm.precision:8.2f}{cm.recall:8.2f}{cm.f1:7.2f}{cm.support:8}")
     print("\nconfusion (rows = expected, cols = predicted: S / P / N / U)")
-    for gold, row in m.confusion.items():
-        print(f"  {gold.value:20}" + "".join(f"{count:5}" for count in row.values()))
+    for expected, row in m.confusion.items():
+        print(f"  {expected.value:20}" + "".join(f"{count:5}" for count in row.values()))
     print("\naccuracy by category:  " + _fmt(report.accuracy_by_category))
     print("accuracy by hard case: " + _fmt(report.accuracy_by_hard_case))
     wrong = [c for c in report.cases if not c.correct]
@@ -273,6 +273,11 @@ def _parser() -> argparse.ArgumentParser:
     eval_fixtures = sub.add_parser("eval-fixtures", help="evaluate the pipeline on all fixtures")
     eval_fixtures.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
     eval_fixtures.add_argument("--out", type=Path, help="write the JSON report here")
+    eval_fixtures.add_argument(
+        "--gold-requirements",
+        action="store_true",
+        help="use annotated requirements instead of extraction (isolates rule errors)",
+    )
 
     extract = sub.add_parser("extract", help="extract structured requirements from a comment")
     extract.add_argument("comment")

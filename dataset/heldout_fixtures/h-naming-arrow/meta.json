@@ -1,0 +1,20 @@
+{
+  "case_id": "h-naming-arrow",
+  "category": "naming",
+  "file_path": "calc/sum.py",
+  "target_symbol": "add_all",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "`tmp` renamed to `result` everywhere.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename tmp to result",
+      "target": "tmp",
+      "condition": null,
+      "expected_behavior": "renamed"
+    }
+  ]
+}

@@ -44,7 +44,8 @@ _CONDITION_START = re.compile(r"^\s*(if|when|whenever|where|unless|in case)\b", 
 _IN_CLAUSE_CONDITION = re.compile(r"\b(when|if|whenever|unless|in case)\b\s+(.+)$", re.I)
 _BACKTICK_IDENT = re.compile(r"`\.?([A-Za-z_][\w.]*)(?:\([^`]*\))?`")
 _WORD = re.compile(r"[A-Za-z_]\w*")
-_RAISED = re.compile(r"\b(?:raise|throw)s?\s+(?:an?\s+)?`?([A-Z]\w*)", re.I)
+# Only the verb is case-insensitive: with re.I, [A-Z] would also match "raise *it*".
+_RAISED = re.compile(r"\b(?i:raise|throw)s?\s+(?:an?\s+)?`?([A-Z]\w*)")
 _TEST_OBJECTS = re.compile(r"\btests?\b.*?\bfor\s+(?:both\s+)?(.+)$", re.I)
 _TEST_ITEM_SPLIT = re.compile(
     r"\s*,\s*(?:and\s+)?|\s+(?:and|or)\s+(?:one\s+)?(?:for\s+)?(?:the\s+)?", re.I

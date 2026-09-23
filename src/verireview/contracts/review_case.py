@@ -10,7 +10,8 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 # v2 (Phase 1 live check): ambiguous_rewritten_commits, ChangedFile.in_pr, anchor_line, new flags.
-SCHEMA_VERSION = "2"
+# v3 (Phase 5): test_files_before, so rules can tell new tests from existing ones.
+SCHEMA_VERSION = "3"
 
 
 class CommitRef(BaseModel):
@@ -129,6 +130,10 @@ class ReviewCase(BaseModel):
     changed_files: list[ChangedFile]
     test_files: dict[str, str] = Field(
         default_factory=dict, description="Changed test files: path → contents at window end."
+    )
+    test_files_before: dict[str, str] = Field(
+        default_factory=dict,
+        description="The same changed test files at window start (absent = newly added).",
     )
     ingested_at: datetime
 

@@ -92,13 +92,15 @@ def extract_facts(root: Node) -> CodeFacts:
     returns: list[Return] = []
     identifiers: set[str] = set()
 
-    for node in _descendants(root):
+    for node in descendants(root):
         match node.type:
             case "identifier":
                 identifiers.add(node_text(node))
             case "call":
                 function = node.child_by_field_name("function")
-                calls.append(Call("call", _norm(node), start_line(node), callee=_callee(function)))
+                calls.append(
+                    Call("call", normalized_text(node), start_line(node), callee=_callee(function))
+                )
             case "if_statement" | "elif_clause" | "while_statement":
                 condition = node.child_by_field_name("condition")
                 if condition is not None:
@@ -109,27 +111,27 @@ def extract_facts(root: Node) -> CodeFacts:
                         if node.type == "while_statement"
                         else "if"
                     )
-                    conditions.append(_condition(condition, kind))
+                    conditions.append(condition_fact(condition, kind))
             case "assert_statement":
                 if node.named_children:
-                    conditions.append(_condition(node.named_children[0], "assert"))
+                    conditions.append(condition_fact(node.named_children[0], "assert"))
             case "conditional_expression":
                 if len(node.named_children) >= 2:
-                    conditions.append(_condition(node.named_children[1], "ternary"))
+                    conditions.append(condition_fact(node.named_children[1], "ternary"))
             case "raise_statement":
                 raises.append(
-                    Raise("raise", _norm(node), start_line(node), exception=_raised(node))
+                    Raise("raise", normalized_text(node), start_line(node), exception=_raised(node))
                 )
             case "except_clause":
-                handlers.append(_handler(node))
+                handlers.append(handler_fact(node))
             case "return_statement":
                 value = node.named_children[0] if node.named_children else None
                 returns.append(
                     Return(
                         "return",
-                        _norm(node),
+                        normalized_text(node),
                         start_line(node),
-                        value=_norm(value) if value else "",
+                        value=normalized_text(value) if value else "",
                     )
                 )
 
@@ -143,7 +145,7 @@ def extract_facts(root: Node) -> CodeFacts:
     )
 
 
-def _descendants(root: Node) -> Iterator[Node]:
+def descendants(root: Node) -> Iterator[Node]:
     stack = [root]
     while stack:
         node = stack.pop()
@@ -151,19 +153,19 @@ def _descendants(root: Node) -> Iterator[Node]:
         stack.extend(reversed(node.children))
 
 
-def _norm(node: Node) -> str:
+def normalized_text(node: Node) -> str:
     return " ".join(node_text(node).split())
 
 
 def _callee(function: Node | None) -> str:
-    return _norm(function) if function is not None else ""
+    return normalized_text(function) if function is not None else ""
 
 
-def _condition(node: Node, kind: ConditionKind) -> Condition:
-    names = {node_text(n) for n in _descendants(node) if n.type == "identifier"}
+def condition_fact(node: Node, kind: ConditionKind) -> Condition:
+    names = {node_text(n) for n in descendants(node) if n.type == "identifier"}
     return Condition(
         "condition",
-        _norm(node),
+        normalized_text(node),
         start_line(node),
         condition_kind=kind,
         identifiers=frozenset(names),
@@ -173,18 +175,18 @@ def _condition(node: Node, kind: ConditionKind) -> Condition:
 
 
 def _checks_none(node: Node) -> bool:
-    for n in _descendants(node):
+    for n in descendants(node):
         if n.type == "comparison_operator" and any(c.type == "none" for c in n.named_children):
             return True
     return False
 
 
 def _checks_empty(node: Node) -> bool:
-    for n in _descendants(node):
+    for n in descendants(node):
         if n.type == "not_operator":
             return True
         if n.type == "comparison_operator":
-            operands = [_norm(c) for c in n.named_children]
+            operands = [normalized_text(c) for c in n.named_children]
             if any(o in _EMPTY_LITERALS for o in operands) or any(
                 o.startswith("len(") for o in operands
             ):
@@ -198,22 +200,22 @@ def _raised(node: Node) -> str | None:
         if child.is_named and node.field_name_for_child(index) != "cause":
             if child.type == "call":
                 return _callee(child.child_by_field_name("function"))
-            return _norm(child)
+            return normalized_text(child)
     return None
 
 
-def _handler(node: Node) -> Handler:
+def handler_fact(node: Node) -> Handler:
     value = node.child_by_field_name("value")
     exceptions: tuple[str, ...] = ()
     if value is not None:
         target = value.named_children[0] if value.type == "as_pattern" else value
         items = target.named_children if target.type == "tuple" else [target]
-        exceptions = tuple(_norm(i) for i in items)
+        exceptions = tuple(normalized_text(i) for i in items)
     body = next((c for c in node.named_children if c.type == "block"), None)
     statements = [s for s in (body.named_children if body else []) if s.type != "comment"]
     swallows = all(_is_noop(s) for s in statements)
-    reraises = body is not None and any(n.type == "raise_statement" for n in _descendants(body))
-    header = _norm(node).split(":", 1)[0]
+    reraises = body is not None and any(n.type == "raise_statement" for n in descendants(body))
+    header = normalized_text(node).split(":", 1)[0]
     return Handler(
         "handler",
         header,

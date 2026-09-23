@@ -1,0 +1,28 @@
+{
+  "case_id": "h-errors-return-none",
+  "category": "error_handling",
+  "file_path": "parse/numbers.py",
+  "target_symbol": "to_int",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "ValueError from int() is caught and None is returned.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch ValueError from int()",
+      "target": "int",
+      "condition": null,
+      "expected_behavior": "caught"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Return None on failure",
+      "target": "to_int",
+      "condition": "conversion fails",
+      "expected_behavior": "return None"
+    }
+  ]
+}

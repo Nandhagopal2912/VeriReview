@@ -1,0 +1,1 @@
+Return 404 when the item is missing and log the lookup failure.

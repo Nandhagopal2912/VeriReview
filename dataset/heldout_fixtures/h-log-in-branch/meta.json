@@ -1,0 +1,20 @@
+{
+  "case_id": "h-log-in-branch",
+  "category": "error_handling",
+  "file_path": "cache/reader.py",
+  "target_symbol": "cached",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A warning is logged in the cache-miss branch.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log a warning on cache miss",
+      "target": "cached",
+      "condition": "value is None",
+      "expected_behavior": "logger.warning"
+    }
+  ]
+}

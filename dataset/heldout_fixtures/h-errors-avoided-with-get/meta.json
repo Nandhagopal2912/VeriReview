@@ -1,0 +1,20 @@
+{
+  "case_id": "h-errors-avoided-with-get",
+  "category": "error_handling",
+  "file_path": "config/lookup.py",
+  "target_symbol": "setting",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Using dict.get() means a missing key no longer raises KeyError; it returns None instead.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle a missing key",
+      "target": "key",
+      "condition": "key missing",
+      "expected_behavior": "no KeyError"
+    }
+  ]
+}

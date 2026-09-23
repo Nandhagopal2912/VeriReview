@@ -64,12 +64,18 @@ def ingest_review_case(
         flags.append(WindowFlag.FILE_DELETED)
 
     test_files: dict[str, str] = {}
+    test_files_before: dict[str, str] = {}
     for f in changed:
         # Only the PR's own test changes; upstream (base-drift) tests are not evidence.
         if f.is_test and f.in_pr and f.status != "removed" and len(test_files) < MAX_TEST_FILES:
             content = _normalise(reader.get_file(repo, f.path, window.end_commit_sha))
             if content is not None:
                 test_files[f.path] = content
+                if f.status != "added":
+                    # Needed to tell new tests from existing ones (Phase 5 testing rule).
+                    old = reader.get_file(repo, f.previous_path or f.path, window.start_commit_sha)
+                    if old is not None:
+                        test_files_before[f.path] = _normalise(old) or ""
 
     return ReviewCase(
         case_id=ReviewCase.make_case_id(repo.full_name, pull.number, thread.root_comment_id),
@@ -87,6 +93,7 @@ def ingest_review_case(
         unified_diff=make_unified_diff(before_code, after_code, before_path, after_path),
         changed_files=changed,
         test_files=test_files,
+        test_files_before=test_files_before,
         ingested_at=datetime.now(UTC),
     )
 

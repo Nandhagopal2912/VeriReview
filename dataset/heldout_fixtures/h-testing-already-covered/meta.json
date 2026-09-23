@@ -1,0 +1,20 @@
+{
+  "case_id": "h-testing-already-covered",
+  "category": "testing",
+  "file_path": "cart/total.py",
+  "target_symbol": "cart_total",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "pre_existing",
+  "rationale": "An existing test already checks cart_total([]) == 0 (ADR-001: pre-existing).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Test an empty cart",
+      "target": "cart_total",
+      "condition": "items == []",
+      "expected_behavior": "0"
+    }
+  ]
+}

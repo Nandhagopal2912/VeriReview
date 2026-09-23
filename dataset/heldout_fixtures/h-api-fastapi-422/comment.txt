@@ -1,0 +1,1 @@
+Raise a 422 when `quantity` is negative.

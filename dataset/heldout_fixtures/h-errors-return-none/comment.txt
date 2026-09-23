@@ -1,0 +1,1 @@
+Wrap the `int()` conversion in a try/except `ValueError` and return `None` on failure.

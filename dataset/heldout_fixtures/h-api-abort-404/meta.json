@@ -1,0 +1,20 @@
+{
+  "case_id": "h-api-abort-404",
+  "category": "api_behavior",
+  "file_path": "web/profile.py",
+  "target_symbol": "show",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "`abort(404)` is called on the branch where the user is missing.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Respond 404 when the user is not found",
+      "target": "show",
+      "condition": "user is None",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "h-validation-two-of-one",
+  "category": "validation",
+  "file_path": "sched/window.py",
+  "target_symbol": "window",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "`start` is checked; `end` is not.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check start is not None",
+      "target": "start",
+      "condition": "start is None",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Check end is not None",
+      "target": "end",
+      "condition": "end is None",
+      "expected_behavior": "reject"
+    }
+  ]
+}

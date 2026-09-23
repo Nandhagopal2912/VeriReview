@@ -1,0 +1,20 @@
+{
+  "case_id": "h-validation-docstring-only",
+  "category": "validation",
+  "file_path": "billing/charge.py",
+  "target_symbol": "charge",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a docstring stating the precondition was added; nothing checks it.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check amount is positive",
+      "target": "amount",
+      "condition": "amount <= 0",
+      "expected_behavior": "reject"
+    }
+  ]
+}

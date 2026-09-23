@@ -1,0 +1,28 @@
+{
+  "case_id": "h-api-404-without-log",
+  "category": "api_behavior",
+  "file_path": "web/items.py",
+  "target_symbol": "item",
+  "comment_line": 13,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "404 is returned for a missing item, but nothing is logged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the item is missing",
+      "target": "item",
+      "condition": "found is None",
+      "expected_behavior": "HTTP 404"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log the lookup failure",
+      "target": "item",
+      "condition": "found is None",
+      "expected_behavior": "log"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Validate that `username` is not empty before saving.

@@ -1,0 +1,20 @@
+{
+  "case_id": "h-naming-partial-scope",
+  "category": "naming",
+  "file_path": "text/grid.py",
+  "target_symbol": "render",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "`i` is still used in the second loop of the same function.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename i to index",
+      "target": "i",
+      "condition": null,
+      "expected_behavior": "no `i` left"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "h-uncertain-unicode",
+  "category": "other",
+  "file_path": "text/slug.py",
+  "target_symbol": "slugify",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "A vague concern with no stated expectation; cannot be verified without the reviewer.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "other",
+      "description": "Handle unicode (unspecified)",
+      "target": "slugify",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

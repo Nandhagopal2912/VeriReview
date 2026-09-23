@@ -43,7 +43,7 @@ def test_ingest_writes_review_case_json(tmp_path: Path) -> None:
 
     payload = json.loads(out.read_text(encoding="utf-8"))
     assert payload["case_id"] == "acme/shop#7/5001"
-    assert payload["schema_version"] == "2"
+    assert payload["schema_version"] == "3"
 
 
 def test_ingest_prints_non_ascii_json(capsysbinary: pytest.CaptureFixture[bytes]) -> None:

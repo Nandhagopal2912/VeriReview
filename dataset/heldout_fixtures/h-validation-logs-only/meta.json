@@ -1,0 +1,20 @@
+{
+  "case_id": "h-validation-logs-only",
+  "category": "validation",
+  "file_path": "ml/blend.py",
+  "target_symbol": "blend",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "Out-of-range ratios are only logged; they are still used.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject ratio outside [0, 1]",
+      "target": "ratio",
+      "condition": "ratio < 0 or ratio > 1",
+      "expected_behavior": "reject"
+    }
+  ]
+}

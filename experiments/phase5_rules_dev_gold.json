@@ -1,0 +1,315 @@
+{
+  "pipeline_version": "phase5-rules-1+gold-requirements",
+  "dataset_hash": "1754164a4b788e7f1497c8b6bb57ce25cd81d50228ca622d6efcc38c2a30d9c9",
+  "metrics": {
+    "n": 29,
+    "accuracy": 1.0,
+    "macro_f1": 1.0,
+    "per_class": {
+      "SATISFIED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 8
+      },
+      "PARTIALLY_SATISFIED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 5
+      },
+      "NOT_SATISFIED": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 13
+      },
+      "UNCERTAIN": {
+        "precision": 1.0,
+        "recall": 1.0,
+        "f1": 1.0,
+        "support": 3
+      }
+    },
+    "confusion": {
+      "SATISFIED": {
+        "SATISFIED": 8,
+        "PARTIALLY_SATISFIED": 0,
+        "NOT_SATISFIED": 0,
+        "UNCERTAIN": 0
+      },
+      "PARTIALLY_SATISFIED": {
+        "SATISFIED": 0,
+        "PARTIALLY_SATISFIED": 5,
+        "NOT_SATISFIED": 0,
+        "UNCERTAIN": 0
+      },
+      "NOT_SATISFIED": {
+        "SATISFIED": 0,
+        "PARTIALLY_SATISFIED": 0,
+        "NOT_SATISFIED": 13,
+        "UNCERTAIN": 0
+      },
+      "UNCERTAIN": {
+        "SATISFIED": 0,
+        "PARTIALLY_SATISFIED": 0,
+        "NOT_SATISFIED": 0,
+        "UNCERTAIN": 3
+      }
+    },
+    "false_acceptance_rate": 0.0,
+    "false_blocking_rate": 0.0
+  },
+  "accuracy_by_category": {
+    "api_behavior": 1.0,
+    "error_handling": 1.0,
+    "naming": 1.0,
+    "testing": 1.0,
+    "validation": 1.0
+  },
+  "accuracy_by_hard_case": {
+    "ambiguous": 1.0,
+    "lexical_false_positive": 1.0,
+    "none": 1.0,
+    "partial": 1.0,
+    "pre_existing": 1.0,
+    "unrelated_change": 1.0,
+    "wrong_order": 1.0,
+    "wrong_target": 1.0,
+    "wrong_value": 1.0
+  },
+  "cases": [
+    {
+      "case_id": "api-001-missing-username-400",
+      "category": "api_behavior",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "api-002-validation-without-400",
+      "category": "api_behavior",
+      "hard_case": "partial",
+      "expected": "PARTIALLY_SATISFIED",
+      "predicted": "PARTIALLY_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "api-003-wrong-status-code",
+      "category": "api_behavior",
+      "hard_case": "wrong_value",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "api-004-todo-comment",
+      "category": "api_behavior",
+      "hard_case": "lexical_false_positive",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "api-005-idempotency",
+      "category": "api_behavior",
+      "hard_case": "ambiguous",
+      "expected": "UNCERTAIN",
+      "predicted": "UNCERTAIN",
+      "confidence": "LOW"
+    },
+    {
+      "case_id": "errors-001-db-failure",
+      "category": "error_handling",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "errors-002-swallowed-exception",
+      "category": "error_handling",
+      "hard_case": null,
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "errors-003-one-of-two-exceptions",
+      "category": "error_handling",
+      "hard_case": "partial",
+      "expected": "PARTIALLY_SATISFIED",
+      "predicted": "PARTIALLY_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "errors-004-unrelated-type-hints",
+      "category": "error_handling",
+      "hard_case": "unrelated_change",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "errors-005-question-only",
+      "category": "error_handling",
+      "hard_case": "ambiguous",
+      "expected": "UNCERTAIN",
+      "predicted": "UNCERTAIN",
+      "confidence": "LOW"
+    },
+    {
+      "case_id": "errors-006-log-before-reraise",
+      "category": "error_handling",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "naming-001-rename-parameter",
+      "category": "naming",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "naming-002-partial-rename",
+      "category": "naming",
+      "hard_case": "partial",
+      "expected": "PARTIALLY_SATISFIED",
+      "predicted": "PARTIALLY_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "naming-003-comment-mentions-name",
+      "category": "naming",
+      "hard_case": "lexical_false_positive",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "naming-004-unrelated-log-change",
+      "category": "naming",
+      "hard_case": "unrelated_change",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "naming-005-vague-request",
+      "category": "naming",
+      "hard_case": "ambiguous",
+      "expected": "UNCERTAIN",
+      "predicted": "UNCERTAIN",
+      "confidence": "LOW"
+    },
+    {
+      "case_id": "naming-006-rename-function-and-callers",
+      "category": "naming",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "testing-001-empty-username-test",
+      "category": "testing",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "testing-002-no-test-added",
+      "category": "testing",
+      "hard_case": "unrelated_change",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "testing-003-test-named-but-wrong-path",
+      "category": "testing",
+      "hard_case": "lexical_false_positive",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "testing-004-one-of-two-cases",
+      "category": "testing",
+      "hard_case": "partial",
+      "expected": "PARTIALLY_SATISFIED",
+      "predicted": "PARTIALLY_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "testing-005-test-for-wrong-function",
+      "category": "testing",
+      "hard_case": "wrong_target",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-001-none-check",
+      "category": "validation",
+      "hard_case": null,
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-002-check-after-save",
+      "category": "validation",
+      "hard_case": "wrong_order",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-003-already-present",
+      "category": "validation",
+      "hard_case": "pre_existing",
+      "expected": "SATISFIED",
+      "predicted": "SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-004-docstring-only",
+      "category": "validation",
+      "hard_case": "lexical_false_positive",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-005-range-without-type",
+      "category": "validation",
+      "hard_case": "partial",
+      "expected": "PARTIALLY_SATISFIED",
+      "predicted": "PARTIALLY_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-006-wrong-variable",
+      "category": "validation",
+      "hard_case": "wrong_target",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    },
+    {
+      "case_id": "validation-007-logging-change",
+      "category": "validation",
+      "hard_case": "unrelated_change",
+      "expected": "NOT_SATISFIED",
+      "predicted": "NOT_SATISFIED",
+      "confidence": "MEDIUM"
+    }
+  ]
+}

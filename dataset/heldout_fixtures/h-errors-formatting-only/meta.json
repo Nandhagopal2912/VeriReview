@@ -1,0 +1,20 @@
+{
+  "case_id": "h-errors-formatting-only",
+  "category": "error_handling",
+  "file_path": "math/ratio.py",
+  "target_symbol": "ratio",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only whitespace changed; division by zero still raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle divisor == 0",
+      "target": "divisor",
+      "condition": "divisor == 0",
+      "expected_behavior": null
+    }
+  ]
+}

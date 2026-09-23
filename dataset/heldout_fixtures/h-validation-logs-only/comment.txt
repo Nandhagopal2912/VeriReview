@@ -1,0 +1,1 @@
+Validate that `ratio` is between 0 and 1.

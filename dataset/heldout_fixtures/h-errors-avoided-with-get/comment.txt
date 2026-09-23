@@ -1,0 +1,1 @@
+Handle the `KeyError` when the key is missing.

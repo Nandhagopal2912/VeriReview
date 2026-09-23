@@ -1,0 +1,20 @@
+{
+  "case_id": "h-api-422-instead-of-400",
+  "category": "api_behavior",
+  "file_path": "web/forms.py",
+  "target_symbol": "submit",
+  "comment_line": 11,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The validation-error branch now returns 422.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 422 for validation errors",
+      "target": "submit",
+      "condition": "errors",
+      "expected_behavior": "HTTP 422"
+    }
+  ]
+}

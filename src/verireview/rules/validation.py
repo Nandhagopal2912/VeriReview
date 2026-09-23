@@ -35,6 +35,13 @@ _KINDS = {
     ),
 }
 _COMPARISON = re.compile(r"(<=|>=|<|>|\bin range\b)")
+_KIND_LABEL = {
+    "type": "Type check",
+    "none": "None check",
+    "empty": "Emptiness check",
+    "range": "Range check",
+    "any": "Check",
+}
 _VALIDATOR_NAME = re.compile(r"^_?(validate|check|ensure|verify|assert|require)", re.I)
 
 
@@ -61,7 +68,7 @@ def validation_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
                 requirement,
                 f"validation.{kind}_check",
                 True,
-                f"`{guard.condition.text}` checks `{_names(guard, target)}` and "
+                f"{_KIND_LABEL[kind]} `{guard.condition.text}` on `{_names(guard, target)}` "
                 f"{_rejection(guard)} (line {guard.line}).",
                 ctx.file,
                 guard.line,

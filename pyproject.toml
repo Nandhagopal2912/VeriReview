@@ -28,6 +28,13 @@ dev = [
     "pytest>=8.3",
     "pytest-cov>=6.0",
     "ruff>=0.8",
+    "scikit-learn>=1.9.1",  # TF-IDF baseline, testable in CI without PyTorch
+]
+# Phase 6+: embedding / code models. Heavy (PyTorch); not in the service image or CI.
+# Install with: uv sync --group nlp
+nlp = [
+    "scikit-learn>=1.9.1",
+    "sentence-transformers>=6.1.0",
 ]
 
 [build-system]
@@ -69,14 +76,20 @@ plugins = ["pydantic.mypy"]
 mypy_path = "src"
 packages = ["verireview"]
 
+[[tool.mypy.overrides]]
+# Untyped third-party ML libraries (and absent in the default install).
+module = ["sklearn.*", "sentence_transformers.*"]
+ignore_missing_imports = true
+
 # --- pytest ----------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["tests"]          # shared test helpers: `from helpers.github import ...`
 norecursedirs = ["fixtures"]    # fixture code (e.g. a fake repo's test_*.py) is data, not tests
-addopts = "--import-mode=importlib -m 'not integration'"
+addopts = "--import-mode=importlib -m 'not integration and not model'"
 markers = [
     "integration: needs a running PostgreSQL (run with: uv run pytest -m integration)",
+    "model: needs downloaded ML models + the nlp group (run with: uv run --group nlp pytest -m model)",
 ]
 
 [tool.coverage.run]

@@ -171,6 +171,37 @@ def test_eval_requirements_reports_both_sets(
     assert "category P/R/F1" in capsys.readouterr().out
 
 
+def test_eval_baselines_without_heavy_models(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "baselines.json"
+    heldout = FIXTURES.parent / "heldout_fixtures"
+
+    code = cli.main(
+        [
+            "eval-baselines",
+            "--root",
+            str(FIXTURES),
+            "--heldout",
+            str(heldout),
+            "--scorers",
+            "lexical,tfidf",
+            "--out",
+            str(out),
+        ]
+    )
+
+    assert code == 0
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert [r["scorer"] for r in report["results"]] == ["lexical", "tfidf"]
+    assert "ROC-AUC" in capsys.readouterr().out
+
+
+def test_eval_baselines_rejects_unknown_scorer(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["eval-baselines", "--scorers", "magic"]) == 2
+    assert "unknown scorer" in capsys.readouterr().err
+
+
 def test_bad_fixture_path_exits_1(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["verify-fixture", str(tmp_path / "missing")]) == 1
     assert "error:" in capsys.readouterr().err

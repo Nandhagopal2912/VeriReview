@@ -10,6 +10,7 @@ Local verification (no network):
     verireview eval-fixtures [--root DIR] [--out F]   evaluate the pipeline on all fixtures
     verireview extract "COMMENT" [--code FILE]        show extracted requirements
     verireview eval-requirements                      score extraction vs gold (dev + held-out)
+    verireview eval-baselines [--scorers …]           NLP baselines vs. rules (dev + held-out)
 
     All three accept --pipeline NAME (default: the latest phase).
 """
@@ -17,7 +18,7 @@ Local verification (no network):
 import argparse
 import io
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from pydantic import ValidationError
@@ -45,6 +46,7 @@ from verireview.verification import DEFAULT_PIPELINE, PIPELINES, get_pipeline
 
 DEFAULT_FIXTURES = Path("dataset/fixtures")
 DEFAULT_HELDOUT = Path("dataset/requirements/heldout.jsonl")
+DEFAULT_HELDOUT_FIXTURES = Path("dataset/heldout_fixtures")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -72,6 +74,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "eval-requirements":
             return _eval_requirements(args.root, args.heldout, args.out)
+        if args.command == "eval-baselines":
+            return _eval_baselines(args.root, args.heldout, args.scorers, args.out)
         return _eval_fixtures(args.root, args.out, args.pipeline, args.gold_requirements)
     except (FixtureError, ValidationError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -214,6 +218,54 @@ def _eval_requirements(root: Path, heldout: Path, out: Path | None) -> int:
     return 0
 
 
+def _eval_baselines(root: Path, heldout: Path, scorers: str, out: Path | None) -> int:
+    # Imported here: the embedding scorer pulls in the optional `nlp` group.
+    from verireview.evaluation.baselines import BaselineReport, current_commit, run_baseline
+    from verireview.semantic import EmbeddingScorer, LexicalScorer, Scorer, TfidfScorer
+
+    available: dict[str, Callable[[], Scorer]] = {
+        "lexical": LexicalScorer,
+        "tfidf": TfidfScorer,
+        "embedding": EmbeddingScorer,
+    }
+    names = [s.strip() for s in scorers.split(",") if s.strip()]
+    unknown = [n for n in names if n not in available]
+    if unknown:
+        print(
+            f"error: unknown scorer(s) {unknown}; choose from {sorted(available)}", file=sys.stderr
+        )
+        return 2
+    dev, held = list(iter_fixtures(root)), list(iter_fixtures(heldout))
+    results = [run_baseline(available[n](), dev, held, root, heldout) for n in names]
+    rules = [
+        evaluate(get_pipeline(DEFAULT_PIPELINE), fx, r) for fx, r in ((dev, root), (held, heldout))
+    ]
+
+    print(f"{'verifier':30}{'set':10}{'acc':>7}{'mF1':>7}{'FAR':>7}{'FBR':>7}  threshold")
+    rows = []
+    for r in results:
+        rows.append((f"{r.scorer} [accuracy-tuned]", r.dev, r.heldout, f"{r.threshold:.3f}"))
+        rows.append(
+            (f"{r.scorer} [Youden]", r.dev_youden, r.heldout_youden, f"{r.youden_threshold:.3f}")
+        )
+    rows.append((f"rules ({DEFAULT_PIPELINE})", rules[0], rules[1], "-"))
+    for name, dev_report, held_report, threshold in rows:
+        for label, evaluation in (("dev", dev_report), ("held-out", held_report)):
+            m = evaluation.metrics
+            far, fbr = _rate(m.false_acceptance_rate), _rate(m.false_blocking_rate)
+            scores = f"{m.accuracy:7.3f}{m.macro_f1:7.3f}{far:>7}{fbr:>7}"
+            print(f"{name:30}{label:10}{scores}  {threshold}")
+    print("\nROC-AUC, valid vs invalid resolution (0.5 = no signal):")
+    for r in results:
+        print(f"  {r.scorer:12} dev {_rate(r.auc_dev)}   held-out {_rate(r.auc_heldout)}")
+    if out is not None:
+        payload = BaselineReport(commit=current_commit(), results=results)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(payload.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"\nwrote {out}", file=sys.stderr)
+    return 0
+
+
 def _print_extraction(report: ExtractionReport) -> None:
     print(f"\n== {report.name}  (n={report.n}, dataset {report.dataset_hash[:12]})")
     print(f"requirement count exact  {report.count_exact:.3f}")
@@ -297,6 +349,18 @@ def _parser() -> argparse.ArgumentParser:
     eval_req.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
     eval_req.add_argument("--heldout", type=Path, default=DEFAULT_HELDOUT)
     eval_req.add_argument("--out", type=Path, help="write the JSON reports here")
+
+    eval_base = sub.add_parser(
+        "eval-baselines", help="Phase 6 NLP baselines vs. the rules, on dev and held-out"
+    )
+    eval_base.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
+    eval_base.add_argument("--heldout", type=Path, default=DEFAULT_HELDOUT_FIXTURES)
+    eval_base.add_argument(
+        "--scorers",
+        default="lexical,tfidf,embedding",
+        help="comma-separated: lexical, tfidf, embedding (embedding needs `uv sync --group nlp`)",
+    )
+    eval_base.add_argument("--out", type=Path, help="write the JSON report here")
 
     for command in (verify_fixture, verify_case, eval_fixtures):
         command.add_argument(

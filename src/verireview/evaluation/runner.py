@@ -1,16 +1,33 @@
-"""Run a pipeline over fixtures and produce a reproducible evaluation report."""
+"""Run a verifier over fixtures and produce a reproducible evaluation report."""
 
 import hashlib
 from collections import defaultdict
 from collections.abc import Callable, Sequence
 from pathlib import Path
+from typing import Protocol
 
 from pydantic import BaseModel
 
-from verireview.contracts import Confidence, Verdict
+from verireview.contracts import (
+    Confidence,
+    ReviewCase,
+    ReviewRequirement,
+    Verdict,
+    VerificationResult,
+)
 from verireview.dataset import Fixture
 from verireview.evaluation.metrics import Metrics, compute_metrics
-from verireview.verification import Pipeline
+
+
+class Verifier(Protocol):
+    """Anything that verifies a case: rule pipelines and NLP baselines alike (roadmap Phase 6)."""
+
+    @property
+    def version(self) -> str: ...
+
+    def run(
+        self, case: ReviewCase, requirement: ReviewRequirement | None = None
+    ) -> VerificationResult: ...
 
 
 class CaseOutcome(BaseModel):
@@ -36,7 +53,7 @@ class EvaluationReport(BaseModel):
 
 
 def evaluate(
-    pipeline: Pipeline,
+    pipeline: Verifier,
     fixtures: Sequence[Fixture],
     dataset_root: Path,
     gold_requirements: bool = False,

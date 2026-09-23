@@ -67,6 +67,6 @@ uv run verireview verify-case case.json            # a ReviewCase from `verirevi
 uv run verireview eval-fixtures --out experiments/<name>.json
 ```
 
-## Open decision
+## Decision record
 
-**ADR-001 (pre-existing implementation)** is *Proposed*. See `docs/adr/001-pre-existing-implementation.md`.
+**ADR-001 (pre-existing implementation)**: *Accepted*, Option 1. See `docs/adr/001-pre-existing-implementation.md`.

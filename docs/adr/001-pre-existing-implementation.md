@@ -1,6 +1,6 @@
 # ADR-001: Verdict when the requested behaviour already existed before the comment
 
-- **Status:** Proposed (awaiting project owner's decision)
+- **Status:** Accepted (project owner chose Option 1, 2026-09-23)
 - **Date:** 2026-09-23
 - **Phase:** 2 (required by plan §18: "Define explicitly … Document the chosen policy.")
 
@@ -31,7 +31,7 @@ No subsequent change did anything, but the final code meets the requirement.
 3. **A fifth verdict (e.g. `ALREADY_SATISFIED`).**
    - Con: changes the four-verdict contract (plan §4) and every metric, for a rare case.
 
-## Decision (recommended)
+## Decision
 
 **Option 1.** Verification judges the code at the end of the resolution window. When the
 requirement holds and the relevant code was not changed after the comment, the verdict is

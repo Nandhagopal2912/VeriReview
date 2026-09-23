@@ -8,6 +8,8 @@ Local verification (no network):
     verireview verify-fixture DIR                     verify one dev fixture
     verireview verify-case CASE.json                  verify an ingested ReviewCase
     verireview eval-fixtures [--root DIR] [--out F]   evaluate the pipeline on all fixtures
+
+    All three accept --pipeline NAME (default: the latest phase).
 """
 
 import argparse
@@ -27,7 +29,7 @@ from verireview.gh.client import GitHubClient
 from verireview.gh.errors import GitHubError
 from verireview.ingestion import ingest_review_case
 from verireview.threads import ThreadNotFoundError, reconstruct_threads
-from verireview.verification import preliminary_pipeline
+from verireview.verification import DEFAULT_PIPELINE, PIPELINES, get_pipeline
 
 DEFAULT_FIXTURES = Path("dataset/fixtures")
 
@@ -40,15 +42,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             return _github_command(args)
         if args.command == "verify-fixture":
             fixture = load_fixture(args.directory)
-            result = preliminary_pipeline().run(fixture.case)
+            result = get_pipeline(args.pipeline).run(fixture.case)
             _print_result(result, args.json)
             print(f"expected: {fixture.meta.expected_verdict.value}", file=sys.stderr)
             return 0
         if args.command == "verify-case":
             case = ReviewCase.model_validate_json(args.file.read_text(encoding="utf-8"))
-            _print_result(preliminary_pipeline().run(case), args.json)
+            _print_result(get_pipeline(args.pipeline).run(case), args.json)
             return 0
-        return _eval_fixtures(args.root, args.out)
+        return _eval_fixtures(args.root, args.out, args.pipeline)
     except (FixtureError, ValidationError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -133,12 +135,12 @@ def _print_result(result: VerificationResult, as_json: bool) -> None:
     print(result.model_dump_json(indent=2) if as_json else result.explanation)
 
 
-def _eval_fixtures(root: Path, out: Path | None) -> int:
+def _eval_fixtures(root: Path, out: Path | None, pipeline: str) -> int:
     fixtures = list(iter_fixtures(root))
     if not fixtures:
         print(f"error: no fixtures under {root}", file=sys.stderr)
         return 1
-    report = evaluate(preliminary_pipeline(), fixtures, root)
+    report = evaluate(get_pipeline(pipeline), fixtures, root)
     m = report.metrics
     print(f"pipeline {report.pipeline_version}  dataset {report.dataset_hash[:12]}  n={m.n}")
     print(f"accuracy {m.accuracy:.3f}   macro-F1 {m.macro_f1:.3f}")
@@ -207,6 +209,14 @@ def _parser() -> argparse.ArgumentParser:
     eval_fixtures = sub.add_parser("eval-fixtures", help="evaluate the pipeline on all fixtures")
     eval_fixtures.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
     eval_fixtures.add_argument("--out", type=Path, help="write the JSON report here")
+
+    for command in (verify_fixture, verify_case, eval_fixtures):
+        command.add_argument(
+            "--pipeline",
+            choices=sorted(PIPELINES),
+            default=DEFAULT_PIPELINE,
+            help=f"verification pipeline (default: {DEFAULT_PIPELINE})",
+        )
     return parser
 
 

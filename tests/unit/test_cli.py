@@ -104,6 +104,27 @@ def test_eval_fixtures_writes_report(tmp_path: Path, capsys: pytest.CaptureFixtu
     assert "accuracy" in capsys.readouterr().out
 
 
+def test_pipeline_can_be_selected(tmp_path: Path) -> None:
+    out = tmp_path / "report.json"
+
+    assert (
+        cli.main(
+            [
+                "eval-fixtures",
+                "--root",
+                str(FIXTURES),
+                "--pipeline",
+                "phase2-locality",
+                "--out",
+                str(out),
+            ]
+        )
+        == 0
+    )
+
+    assert json.loads(out.read_text(encoding="utf-8"))["pipeline_version"] == "phase2-locality-1"
+
+
 def test_bad_fixture_path_exits_1(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["verify-fixture", str(tmp_path / "missing")]) == 1
     assert "error:" in capsys.readouterr().err

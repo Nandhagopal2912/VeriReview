@@ -12,6 +12,10 @@ dependencies = [
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
     "sqlalchemy>=2.0.36",
+    # Pinned: the py-tree-sitter API and grammar node types change between minor versions.
+    "tree-sitter~=0.26.0",
+    "tree-sitter-python~=0.25.0",
+    "unidiff>=1.0.1",
     "uvicorn[standard]>=0.32",
 ]
 

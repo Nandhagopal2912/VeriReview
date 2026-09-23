@@ -14,9 +14,10 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Design: [VERIREVIEW_PLAN.md](VERIREVIEW_PLAN.md)
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-> Status: **Phase 2**. GitHub ingestion and a local verification pipeline with 29 dev
-> fixtures. The current verifier is a deliberately naive baseline (accuracy 0.24) that later
-> phases must beat. See [docs/phase2_local_verifier.md](docs/phase2_local_verifier.md).
+> Status: **Phase 3**. GitHub ingestion, and a local verification pipeline with Tree-sitter
+> structural analysis (symbol resolution and code facts), evaluated on 29 dev fixtures. The
+> verdict logic is still a baseline (accuracy 0.31). Rule-based verification arrives in Phase 5.
+> See [docs/phase3_diff_ast.md](docs/phase3_diff_ast.md).
 
 ## Verify and evaluate
 

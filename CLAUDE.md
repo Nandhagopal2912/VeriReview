@@ -54,6 +54,9 @@ uv run verireview eval-fixtures --out experiments/<name>.json
 - Every change to the pipeline must be re-evaluated with `eval-fixtures` and compared to the previous report (same dataset hash).
 - `dataset/` is excluded from ruff: fixture code is data and often deliberately flawed. Never reformat it, because that shifts the commented lines.
 - Fixture authoring: `meta.json` needs `rationale` and gold `requirements`. Partial cases need ≥ 2 requirements.
+- Pipelines are registered by name in `verification/__init__.py` (`PIPELINES`). Add a new one per phase and keep old ones runnable (`--pipeline`), for the ablation study.
+- Structural facts come from `syntax.extract_facts` (calls, conditions, raises, handlers, returns). Rules should query these, not regex the source.
+- Tree-sitter is pinned (`~=`). Upgrading means re-running the syntax tests, because node types and fields change between versions.
 
 ## GitHub ingestion notes
 
@@ -77,8 +80,8 @@ uv run verireview eval-fixtures --out experiments/<name>.json
 
 - [x] Phase 0: project skeleton, FastAPI `/health` and `/health/db`, PostgreSQL + Alembic baseline, Docker, CI
 - [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check: 8/10 real threads done (docs/phase1_live_checks.md). Use `anchor_line`, not `original_line`.
-- [x] Phase 2: contracts, fixture loader, pipeline skeleton, 29 dev fixtures, eval harness. Locality baseline: acc 0.241, FAR 1.0 (docs/phase2_local_verifier.md). ADR-001 still *Proposed*.
-- [ ] Phase 3: diff + AST
+- [x] Phase 2: contracts, fixture loader, pipeline skeleton, 29 dev fixtures, eval harness. Locality baseline: acc 0.241, FAR 1.0 (docs/phase2_local_verifier.md). ADR-001 accepted: pre-existing implementation = SATISFIED (final code), confidence ≤ MEDIUM, `already_present` evidence.
+- [x] Phase 3: diff (unidiff/difflib), Tree-sitter symbols + facts, location resolution (100% of fixtures), structural evidence. `phase3-structure-1`: acc 0.310, FAR 0.889 (docs/phase3_diff_ast.md).
 - [ ] Phase 4: requirement representation
 - [ ] Phase 5: rule engine
 - [ ] Phase 8a: evidence aggregation (MVP)

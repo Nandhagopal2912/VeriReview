@@ -22,6 +22,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from verireview.api.verify import VerifyResponse
 from verireview.config import get_settings
 from verireview.contracts import ReviewCase, VerificationResult
 from verireview.dataset import FixtureError, iter_fixtures, load_fixture
@@ -37,6 +38,7 @@ from verireview.gh.api import GitHubApi, RepoRef
 from verireview.gh.client import GitHubClient
 from verireview.gh.errors import GitHubError
 from verireview.ingestion import ingest_review_case
+from verireview.policy import configured_policy, decide
 from verireview.requirements import CodeContext, extract_requirements
 from verireview.threads import ThreadNotFoundError, reconstruct_threads
 from verireview.verification import DEFAULT_PIPELINE, PIPELINES, get_pipeline
@@ -152,7 +154,14 @@ def _ingest(
 
 
 def _print_result(result: VerificationResult, as_json: bool) -> None:
-    print(result.model_dump_json(indent=2) if as_json else result.explanation)
+    policy = decide(result, configured_policy())
+    if as_json:
+        print(VerifyResponse(result=result, policy=policy).model_dump_json(indent=2))
+        return
+    print(result.explanation)
+    print(
+        f"\nRecommended action:\n{policy.action.value} ({policy.mode.value} mode). {policy.reason}"
+    )
 
 
 def _eval_fixtures(root: Path, out: Path | None, pipeline: str, gold: bool) -> int:

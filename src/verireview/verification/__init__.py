@@ -16,6 +16,7 @@ from verireview.requirements.stub import whole_comment_requirement
 from verireview.verification.ambiguity import ambiguity_gate
 from verireview.verification.pipeline import Decision, Pipeline
 from verireview.verification.preliminary import locality_aggregator
+from verireview.verification.reliability import reliability_adjusted
 from verireview.verification.rules import rule_aggregator
 from verireview.verification.structural import structural_aggregator
 
@@ -23,6 +24,7 @@ PRELIMINARY_VERSION = "phase2-locality-1"
 STRUCTURAL_VERSION = "phase3-structure-1"
 REQUIREMENTS_VERSION = "phase4-requirements-1"
 RULES_VERSION = "phase5-rules-1"
+MVP_VERSION = "mvp-1"
 
 
 def preliminary_pipeline() -> Pipeline:
@@ -70,13 +72,25 @@ def rules_pipeline() -> Pipeline:
     )
 
 
+def mvp_pipeline() -> Pipeline:
+    """Phase 8a MVP: Phase 5 rules, with confidence lowered when the case itself is unreliable."""
+    rules = rules_pipeline()
+    return Pipeline(
+        version=MVP_VERSION,
+        requirement_stage=rules.requirement_stage,
+        evidence_stages=rules.evidence_stages,
+        aggregator=ambiguity_gate(reliability_adjusted(rule_aggregator)),
+    )
+
+
 PIPELINES: dict[str, Callable[[], Pipeline]] = {
     "phase2-locality": preliminary_pipeline,
     "phase3-structure": structural_pipeline,
     "phase4-requirements": requirements_pipeline,
     "phase5-rules": rules_pipeline,
+    "mvp": mvp_pipeline,
 }
-DEFAULT_PIPELINE = "phase5-rules"
+DEFAULT_PIPELINE = "mvp"
 
 
 def get_pipeline(name: str = DEFAULT_PIPELINE) -> Pipeline:
@@ -85,6 +99,7 @@ def get_pipeline(name: str = DEFAULT_PIPELINE) -> Pipeline:
 
 __all__ = [
     "DEFAULT_PIPELINE",
+    "MVP_VERSION",
     "PIPELINES",
     "PRELIMINARY_VERSION",
     "REQUIREMENTS_VERSION",
@@ -93,6 +108,7 @@ __all__ = [
     "Decision",
     "Pipeline",
     "get_pipeline",
+    "mvp_pipeline",
     "preliminary_pipeline",
     "requirements_pipeline",
     "rules_pipeline",

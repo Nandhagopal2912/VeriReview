@@ -74,6 +74,7 @@ def test_verify_fixture_prints_explanation(capsys: pytest.CaptureFixture[str]) -
     captured = capsys.readouterr()
     assert "Review request:" in captured.out
     assert "Result:\nSATISFIED" in captured.out
+    assert "Recommended action:\nALLOW (advisory mode)" in captured.out
     assert "expected: SATISFIED" in captured.err
 
 
@@ -88,9 +89,15 @@ def test_verify_case_accepts_an_ingested_case(
 
     assert cli.main(["verify-case", str(case_file), "--json"]) == 0
 
-    result = json.loads(capsys.readouterr().out)
-    assert result["case_id"] == "acme/shop#7/5001"
-    assert result["verdict"] in {"SATISFIED", "PARTIALLY_SATISFIED", "NOT_SATISFIED", "UNCERTAIN"}
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["result"]["case_id"] == "acme/shop#7/5001"
+    assert payload["result"]["verdict"] in {
+        "SATISFIED",
+        "PARTIALLY_SATISFIED",
+        "NOT_SATISFIED",
+        "UNCERTAIN",
+    }
+    assert payload["policy"]["blocks_merge"] is False
 
 
 def test_eval_fixtures_writes_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:

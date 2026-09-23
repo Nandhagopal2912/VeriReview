@@ -69,7 +69,13 @@ class Pipeline:
             per_requirement=decision.per_requirement,
             evidence=evidence,
             explanation=render_explanation(
-                case, requirement, evidence, decision.verdict, decision.confidence, decision.notes
+                case,
+                requirement,
+                evidence,
+                decision.verdict,
+                decision.confidence,
+                decision.notes,
+                decision.per_requirement,
             ),
             pipeline_version=self.version,
         )

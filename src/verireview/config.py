@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     github_timeout_s: float = 30.0
     github_max_retries: int = 3
 
+    # Policy (plan §27). Blocking stays off until Phase 12's evaluation; see policy/decision.py.
+    policy_mode: Literal["observe", "advisory", "human_review", "enforcement"] = "advisory"
+    policy_allow_block: bool = False
+
     @field_validator("github_token", mode="before")
     @classmethod
     def _blank_token_is_none(cls, value: object) -> object:

@@ -14,11 +14,22 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Design: [VERIREVIEW_PLAN.md](VERIREVIEW_PLAN.md)
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-> Status: **Phase 5**. GitHub ingestion, Tree-sitter structural analysis, requirement
-> extraction and deterministic per-category verification rules. Blind held-out result: accuracy
-> 0.625 with **zero false acceptances**. After the disclosed Phase 5.1 hardening: 0.875, still
-> zero false acceptances, with false blocking down from 43% to 7%.
-> See [docs/phase5_rules.md](docs/phase5_rules.md).
+> Status: **MVP complete (Phase 8a)**. All 15 plan §28 criteria are met: GitHub ingestion,
+> Tree-sitter structural analysis, requirement extraction, per-category verification rules,
+> evidence-citing explanations, a policy layer (advisory, **never blocks**) and an HTTP API.
+> Held-out accuracy 0.875 with **zero false acceptances** (not blind after Phase 5.1; blind
+> benchmark in Phase 9). See [docs/phase8a_mvp.md](docs/phase8a_mvp.md).
+
+## Verify via the API
+
+```bash
+docker compose up -d --build
+curl -X POST localhost:8000/verify/github -H "content-type: application/json" \
+     -d '{"repository": "owner/repo", "pull_number": 1, "comment_id": 123}'
+```
+
+The response holds the verdict, per-requirement status, evidence, explanation, and the policy
+decision (ALLOW / WARN / HUMAN_REVIEW; blocking is disabled).
 
 ```bash
 uv run verireview extract "Please validate username, return HTTP 400 on invalid input, and add a test."

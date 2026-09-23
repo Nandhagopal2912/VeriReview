@@ -1,0 +1,7 @@
+# Normalise all text to LF. VeriReview compares diffs and code line-by-line,
+# so CRLF from Windows checkouts would corrupt hunks and line numbers.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.pdf binary

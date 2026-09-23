@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: verireview
+          POSTGRES_PASSWORD: verireview
+          POSTGRES_DB: verireview
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U verireview"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      VERIREVIEW_ENVIRONMENT: test
+      VERIREVIEW_DATABASE_URL: postgresql+psycopg://verireview:verireview@localhost:5432/verireview
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        run: pip install uv==0.12.18
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Format check
+        run: uv run ruff format --check .
+
+      - name: Type check
+        run: uv run mypy
+
+      - name: Unit tests
+        run: uv run pytest --cov --cov-report=term-missing
+
+      - name: Migrations
+        run: uv run alembic upgrade head
+
+      - name: Integration tests
+        run: uv run pytest -m integration

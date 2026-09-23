@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-verireview}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-verireview}
+      POSTGRES_DB: ${POSTGRES_DB:-verireview}
+    ports:
+      # Host port 5433 avoids clashing with a locally installed PostgreSQL on 5432.
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    environment:
+      VERIREVIEW_ENVIRONMENT: ${VERIREVIEW_ENVIRONMENT:-development}
+      VERIREVIEW_LOG_LEVEL: ${VERIREVIEW_LOG_LEVEL:-INFO}
+      VERIREVIEW_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-verireview}:${POSTGRES_PASSWORD:-verireview}@db:5432/${POSTGRES_DB:-verireview}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  pgdata:

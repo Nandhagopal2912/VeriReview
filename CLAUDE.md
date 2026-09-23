@@ -41,7 +41,17 @@ uv run uvicorn verireview.main:app --reload
 uv run alembic upgrade head               # apply migrations
 uv run alembic revision --autogenerate -m "msg"
 docker compose up -d --build              # api on :8000 + postgres on host :5433 (5432 is taken by a local install)
+uv run verireview threads OWNER/REPO PR   # list review threads (comment ids)
+uv run verireview ingest OWNER/REPO PR --comment-id ID [--out f.json] [--no-db]
 ```
+
+## GitHub ingestion notes
+
+- Resolution state (`isResolved`) is GraphQL-only and needs `VERIREVIEW_GITHUB_TOKEN`. Without it, `is_resolved=None`.
+- There is no resolution timestamp in the API, so the window ends at PR head (flag `resolution_time_unknown`).
+- `ResolutionWindow.flags` tell you how reliable a case is. See `docs/phase1_github_ingestion.md`.
+- Test data: `tests/fixtures/github/acme_shop_pr7` (synthetic) served by `tests/helpers/github.py::FakeGitHub`.
+- `httpx2` quirk: pass `params=None`, not `{}`, when the URL already has a query string, or the query is dropped.
 
 ## Conventions
 
@@ -56,7 +66,7 @@ docker compose up -d --build              # api on :8000 + postgres on host :543
 ## Current status
 
 - [x] Phase 0: project skeleton, FastAPI `/health` and `/health/db`, PostgreSQL + Alembic baseline, Docker, CI
-- [ ] Phase 1: GitHub ingestion
+- [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check on ≥10 real threads pending.
 - [ ] Phase 2: local verifier and fixtures (ADR-001: pre-existing implementation policy)
 - [ ] Phase 3: diff + AST
 - [ ] Phase 4: requirement representation

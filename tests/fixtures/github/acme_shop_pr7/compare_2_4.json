@@ -1,0 +1,18 @@
+{
+  "status": "ahead",
+  "ahead_by": 2,
+  "files": [
+    {
+      "filename": "shop/user_service.py",
+      "status": "modified",
+      "additions": 2,
+      "deletions": 0
+    },
+    {
+      "filename": "tests/test_user_service.py",
+      "status": "added",
+      "additions": 8,
+      "deletions": 0
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+[
+  {
+    "sha": "1111111111111111111111111111111111111111",
+    "commit": {
+      "message": "Add user service skeleton",
+      "author": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T10:00:00Z"
+      },
+      "committer": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T10:00:00Z"
+      }
+    },
+    "author": {
+      "login": "dev-alice"
+    }
+  },
+  {
+    "sha": "2222222222222222222222222222222222222222",
+    "commit": {
+      "message": "Implement save_user",
+      "author": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T11:00:00Z"
+      },
+      "committer": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T11:00:00Z"
+      }
+    },
+    "author": {
+      "login": "dev-alice"
+    }
+  },
+  {
+    "sha": "3333333333333333333333333333333333333333",
+    "commit": {
+      "message": "Validate username before saving",
+      "author": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T13:30:00Z"
+      },
+      "committer": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T13:30:00Z"
+      }
+    },
+    "author": {
+      "login": "dev-alice"
+    }
+  },
+  {
+    "sha": "4444444444444444444444444444444444444444",
+    "commit": {
+      "message": "Add test for empty username",
+      "author": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T14:00:00Z"
+      },
+      "committer": {
+        "name": "Alice",
+        "email": "alice@example.com",
+        "date": "2026-01-01T14:00:00Z"
+      }
+    },
+    "author": {
+      "login": "dev-alice"
+    }
+  }
+]

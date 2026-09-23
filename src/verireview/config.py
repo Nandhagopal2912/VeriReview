@@ -3,7 +3,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import SecretStr
+from pydantic import SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +23,18 @@ class Settings(BaseSettings):
         "postgresql+psycopg://verireview:verireview@localhost:5433/verireview"
     )
     database_connect_timeout_s: int = 5
+
+    # GitHub. Without a token, only public REST data is available (60 requests/hour) and
+    # thread resolution state is unknown, because GraphQL requires authentication.
+    github_token: SecretStr | None = None
+    github_api_url: str = "https://api.github.com"
+    github_timeout_s: float = 30.0
+    github_max_retries: int = 3
+
+    @field_validator("github_token", mode="before")
+    @classmethod
+    def _blank_token_is_none(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
 
 
 @lru_cache

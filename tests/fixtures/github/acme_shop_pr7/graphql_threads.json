@@ -1,0 +1,42 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "reviewThreads": {
+          "pageInfo": {
+            "hasNextPage": false,
+            "endCursor": null
+          },
+          "nodes": [
+            {
+              "isResolved": true,
+              "isOutdated": true,
+              "resolvedBy": {
+                "login": "rev-bob"
+              },
+              "comments": {
+                "nodes": [
+                  {
+                    "fullDatabaseId": "5001"
+                  }
+                ]
+              }
+            },
+            {
+              "isResolved": false,
+              "isOutdated": false,
+              "resolvedBy": null,
+              "comments": {
+                "nodes": [
+                  {
+                    "fullDatabaseId": "5003"
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "number": 7,
+  "title": "Add user service",
+  "state": "open",
+  "html_url": "https://github.com/acme/shop/pull/7",
+  "user": {
+    "login": "dev-alice"
+  },
+  "base": {
+    "ref": "main",
+    "sha": "0000000000000000000000000000000000000000"
+  },
+  "head": {
+    "ref": "user-service",
+    "sha": "4444444444444444444444444444444444444444"
+  },
+  "body": "Adds save_user."
+}

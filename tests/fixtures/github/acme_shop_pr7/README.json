@@ -1,0 +1,3 @@
+{
+  "note": "Synthetic fixture shaped like GitHub REST/GraphQL responses (not recorded from a real repo). Scenario: reviewer asks on c2 for username validation + a test; developer pushes c3 (validation) and c4 (test); thread resolved."
+}

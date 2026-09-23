@@ -7,6 +7,7 @@ requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.14",
     "fastapi>=0.115",
+    "httpx2>=2.13.1",
     "psycopg[binary]>=3.2",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
@@ -14,9 +15,11 @@ dependencies = [
     "uvicorn[standard]>=0.32",
 ]
 
+[project.scripts]
+verireview = "verireview.cli:main"
+
 [dependency-groups]
 dev = [
-    "httpx2>=2.13.1",
     "mypy>=1.13",
     "pytest>=8.3",
     "pytest-cov>=6.0",
@@ -35,6 +38,7 @@ packages = ["src/verireview"]
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
+extend-exclude = ["tests/fixtures"]
 
 [tool.ruff.lint]
 select = [
@@ -63,6 +67,8 @@ packages = ["verireview"]
 # --- pytest ----------------------------------------------------------------
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["tests"]          # shared test helpers: `from helpers.github import ...`
+norecursedirs = ["fixtures"]    # fixture code (e.g. a fake repo's test_*.py) is data, not tests
 addopts = "--import-mode=importlib -m 'not integration'"
 markers = [
     "integration: needs a running PostgreSQL (run with: uv run pytest -m integration)",

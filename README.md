@@ -14,7 +14,18 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Design: [VERIREVIEW_PLAN.md](VERIREVIEW_PLAN.md)
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-> Status: **Phase 0**. Project skeleton only; no verification logic yet.
+> Status: **Phase 1**. GitHub ingestion works: review threads are reconstructed into
+> `ReviewCase` JSON. No verification logic yet.
+
+## Ingest a review thread
+
+```bash
+uv run verireview threads OWNER/REPO PR_NUMBER
+uv run verireview ingest OWNER/REPO PR_NUMBER --comment-id COMMENT_ID --out case.json --no-db
+```
+
+Set `VERIREVIEW_GITHUB_TOKEN` in `.env` to get thread resolution state (see
+[docs/phase1_github_ingestion.md](docs/phase1_github_ingestion.md)).
 
 ## Quickstart
 

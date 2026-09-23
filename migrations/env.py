@@ -5,6 +5,7 @@ from logging.config import fileConfig
 from alembic import context
 from sqlalchemy import create_engine, pool
 
+import verireview.db.models  # noqa: F401  (registers tables on Base.metadata)
 from verireview.config import get_settings
 from verireview.db.base import Base
 

@@ -23,6 +23,7 @@ from verireview.rules.base import (
     inconclusive,
     located,
     quoted_identifiers,
+    related_identifiers,
     requested_identifiers,
     unlocated,
 )
@@ -51,9 +52,21 @@ def api_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
             return _header(requirement, ctx)
         return inconclusive(requirement, "The request names no HTTP status to check.")
 
-    names = set(requested_identifiers(requirement, ctx))
-    conditional = bool(requirement.condition) or bool(names)
+    requested = requested_identifiers(requirement, ctx)
+    conditional = bool(requirement.condition) or bool(requested)
+    # "when the item is missing" may be tested on `found = get_item(item_id)`: the request's
+    # content words count as name tokens, then assignments carry them to derived variables.
+    seeds = requested + _content_words(text)
+    names = related_identifiers(seeds, ctx.after) & ctx.after.identifiers if seeds else set()
     sites = ctx.after.responses()
+    # A condition was stated but none of its values can be found in the code: the branch cannot
+    # be checked, so never accept "some branch returns the code" (Phase 5.1 adversarial test).
+    if conditional and not names and any(s.code in wanted and s.branch for s in sites):
+        return inconclusive(
+            requirement,
+            f"HTTP {'/'.join(map(str, wanted))} is returned conditionally, but the condition "
+            "in the request cannot be matched to the code.",
+        )
     evidence: list[Evidence] = []
     for code in wanted:
         hit = next((s for s in sites if s.code == code and _on_branch(s, names, conditional)), None)
@@ -93,6 +106,74 @@ def api_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
     return RuleOutcome(
         RuleStatus.SATISFIED, "The requested status is returned.", evidence, already_present=already
     )
+
+
+_STOPWORDS = frozenset(
+    [
+        "the",
+        "a",
+        "an",
+        "and",
+        "or",
+        "not",
+        "no",
+        "when",
+        "if",
+        "is",
+        "are",
+        "was",
+        "be",
+        "been",
+        "does",
+        "doesn",
+        "don",
+        "exist",
+        "exists",
+        "missing",
+        "return",
+        "returns",
+        "respond",
+        "with",
+        "for",
+        "on",
+        "in",
+        "of",
+        "to",
+        "from",
+        "this",
+        "that",
+        "it",
+        "its",
+        "http",
+        "status",
+        "code",
+        "error",
+        "errors",
+        "message",
+        "body",
+        "request",
+        "response",
+        "should",
+        "must",
+        "invalid",
+        "input",
+        "found",
+        "instead",
+        "right",
+        "now",
+        "currently",
+        "header",
+        "headers",
+        "raise",
+    ]
+)
+
+
+def _content_words(text: str) -> list[str]:
+    """Words that can name a value ("invoice", "user"); stop words and codes removed."""
+    plain = re.sub(r"`[^`]*`", " ", text)
+    words = [w.lower() for w in re.findall(r"[A-Za-z]{3,}", plain)]
+    return [w for w in dict.fromkeys(words) if w not in _STOPWORDS]
 
 
 def _wanted_codes(text: str) -> list[int]:

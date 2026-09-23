@@ -72,6 +72,7 @@ class Guard:
     kind: Literal["if", "elif", "assert"]
     raises: tuple[Raise, ...]
     returns: tuple[Return, ...]
+    calls: tuple[Call, ...] = ()  # calls in the guarded branch (e.g. a warning log)
 
     @property
     def rejects(self) -> bool:
@@ -142,6 +143,7 @@ class Scope:
                         kind,
                         facts.raises,
                         facts.returns,
+                        facts.calls,
                     )
                 )
             elif node.type == "assert_statement" and node.named_children:
@@ -197,6 +199,27 @@ class Scope:
     def text(self) -> str:
         return "\n".join(node_text(n) for n in self.nodes)
 
+    def assignments(self) -> list[tuple[str, frozenset[str]]]:
+        """(assigned name, identifiers on the right-hand side) for simple `x = …` statements."""
+        found = []
+        for n in self._walk():
+            if n.type != "assignment":
+                continue
+            left, right = n.child_by_field_name("left"), n.child_by_field_name("right")
+            if left is not None and right is not None and left.type == "identifier":
+                rhs = frozenset(node_text(d) for d in descendants(right) if d.type == "identifier")
+                found.append((node_text(left), rhs))
+        return found
+
+    def function(self, name: str) -> Node | None:
+        """The definition of function ``name`` in this scope, if any."""
+        for n in self._walk():
+            if n.type == "function_definition":
+                ident = n.child_by_field_name("name")
+                if ident is not None and node_text(ident) == name:
+                    return n
+        return None
+
     def loops_containing(self, line: int) -> bool:
         return any(
             n.type in ("for_statement", "while_statement") and start_line(n) <= line <= end_line(n)
@@ -228,6 +251,7 @@ class TestFunction:
     strings: tuple[str, ...]  # string literal contents, e.g. ("",) or ("   ",)
     numbers: tuple[float, ...]  # numeric literals, sign included
     uses_none: bool
+    empty_collection: bool  # an empty list/dict/tuple/set literal is used, e.g. total([])
     body_identifiers: frozenset[str]  # identifiers in the body (the name itself excluded)
     expected_exceptions: tuple[str, ...]  # from pytest.raises(X)
     tokens: tuple[str, ...] = field(compare=False, repr=False)
@@ -245,15 +269,22 @@ def find_test_functions(path: str, code: str) -> list[TestFunction]:
         if body is None:
             continue
         facts = extract_facts(body)
+        # Inputs may come from decorators too: @pytest.mark.parametrize("v", [None, ""]).
+        inputs = [body, *_decorators(symbol.node)]
         found.append(
             TestFunction(
                 path=path,
                 qualified_name=symbol.qualified_name,
                 line=symbol.start_line,
                 callees=tuple(c.callee for c in facts.calls),
-                strings=tuple(_strings(body)),
-                numbers=tuple(_numbers(body)),
-                uses_none=any(n.type == "none" for n in descendants(body)),
+                strings=tuple(s for n in inputs for s in _strings(n)),
+                numbers=tuple(v for n in inputs for v in _numbers(n)),
+                uses_none=any(d.type == "none" for n in inputs for d in descendants(n)),
+                empty_collection=any(
+                    d.type in _COLLECTIONS and not d.named_children
+                    for n in inputs
+                    for d in descendants(n)
+                ),
                 body_identifiers=facts.identifiers,
                 expected_exceptions=tuple(
                     _first_argument(c) for c in facts.calls if c.callee.endswith("raises")
@@ -275,7 +306,60 @@ def changed_test_functions(after: dict[str, str], before: dict[str, str]) -> lis
     return changed
 
 
+# ---------------------------------------------------------------- functions and calls
+
+
+def function_parameters(definition: Node) -> list[str]:
+    """Parameter names of a function definition, in order (`self`/`cls` excluded)."""
+    params = definition.child_by_field_name("parameters")
+    names: list[str] = []
+    for p in params.named_children if params is not None else []:
+        ident = (
+            p
+            if p.type == "identifier"
+            else next((c for c in p.named_children if c.type == "identifier"), None)
+        )
+        if ident is not None and node_text(ident) not in ("self", "cls"):
+            names.append(node_text(ident))
+    return names
+
+
+def call_arguments(call_text: str, callee: str) -> list[tuple[str | None, str]]:
+    """(keyword or None, argument text) for a call's top-level arguments."""
+    inside = call_text[len(callee) :].strip()
+    if not inside.startswith("(") or not inside.endswith(")"):
+        return []
+    args, depth, current = [], 0, ""
+    for ch in inside[1:-1]:
+        if ch == "," and depth == 0:
+            args.append(current.strip())
+            current = ""
+            continue
+        depth += ch in "([{"
+        depth -= ch in ")]}"
+        current += ch
+    if current.strip():
+        args.append(current.strip())
+    parsed: list[tuple[str | None, str]] = []
+    for a in args:
+        key, sep, value = a.partition("=")
+        if sep and key.strip().isidentifier() and not value.startswith("="):
+            parsed.append((key.strip(), value.strip()))
+        else:
+            parsed.append((None, a))
+    return parsed
+
+
 # ---------------------------------------------------------------- helpers
+
+_COLLECTIONS = frozenset({"list", "dictionary", "tuple", "set"})
+
+
+def _decorators(definition: Node) -> list[Node]:
+    parent = definition.parent
+    if parent is None or parent.type != "decorated_definition":
+        return []
+    return [c for c in parent.named_children if c.type == "decorator"]
 
 
 def _branch(node: Node) -> tuple[BranchCondition, ...]:

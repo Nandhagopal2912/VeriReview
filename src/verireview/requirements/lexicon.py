@@ -9,6 +9,7 @@ import re
 # Imperative verbs that start a requested change. A clause starting with one is a request.
 ACTION_VERBS = frozenset(
     [
+        "abort",
         "add",
         "adjust",
         "allow",
@@ -46,6 +47,8 @@ ACTION_VERBS = frozenset(
         "reraise",
         "reject",
         "remove",
+        "reply",
+        "respond",
         "rename",
         "replace",
         "retry",
@@ -134,7 +137,8 @@ ERROR_HANDLING = re.compile(
 )
 VALIDATION = re.compile(
     r"\b(validat\w*|check|null|none|empty|non-empty|blank|positive|negative|between|range|"
-    r"format|must be|is an? (int|str|string|integer|number)|guard|sanitiz\w*|required|missing)\b",
+    r"format|must be|is an? (int|str|string|integer|number)|guard|sanitiz\w*|required|missing|"
+    r"return early|early return|bail out|guard clause)\b",
     re.I,
 )
 # Raising these signals rejection of invalid input: a validation outcome, not error handling.

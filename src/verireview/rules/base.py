@@ -117,6 +117,25 @@ def requested_identifiers(requirement: Requirement, ctx: RuleContext) -> list[st
     return seen
 
 
+def related_identifiers(names: list[str], scope: Scope) -> set[str]:
+    """``names`` plus identifiers sharing a word with them and variables assigned from those.
+
+    "the item" → `item_id`, `get_item`, and `found` (from `found = get_item(item_id)`). Light
+    data flow, one assignment step at a time; used where the code's variable names differ from
+    the request's words.
+    """
+    tokens = {t for n in names for t in n.lower().split("_") if len(t) > 2}
+    related = set(names) | {i for i in scope.identifiers if tokens & set(i.lower().split("_"))}
+    changed = True
+    while changed:
+        changed = False
+        for target, rhs in scope.assignments():
+            if target not in related and rhs & related:
+                related.add(target)
+                changed = True
+    return related
+
+
 # ---------------------------------------------------------------- evidence builders
 
 

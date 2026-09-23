@@ -91,6 +91,7 @@ uv run verireview eval-requirements        # extraction vs gold: dev fixtures + 
 - [x] Phase 3: diff (unidiff/difflib), Tree-sitter symbols + facts, location resolution (100% of fixtures), structural evidence. `phase3-structure-1`: acc 0.310, FAR 0.889 (docs/phase3_diff_ast.md).
 - [x] Phase 4: rule-based requirement extraction (utterance types, clause split, expansion, categories, targets, suggestion blocks, ambiguity) + ambiguity gate. Held-out blind: count 0.844, category F1 0.909. `phase4-requirements-1`: acc 0.414 (docs/phase4_requirements.md).
 - [x] Phase 5: rule engine (naming, validation, testing, error handling, API) + rule aggregator. Dev 1.000; **held-out blind 0.625 (gold reqs 0.750), false acceptance 0.000, false blocking 0.429** (docs/phase5_rules.md).
+- [x] Phase 5.1: hardening (failure-path logging, parametrize/empty inputs, same-file helpers, `.get()` idiom, API related identifiers, extraction verbs). Held-out (no longer blind) 0.875, false acceptance 0.000, false blocking 0.071. Rule of thumb kept: **when a rule can't verify, return inconclusive (human review), never accept.**
 - [ ] Phase 8a: evidence aggregation (MVP)
 
 Open decisions: D5–D9 in `docs/ROADMAP.md` §7.

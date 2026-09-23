@@ -32,7 +32,10 @@ def _has_string(pred: Callable[[str], bool]) -> Callable[[TestFunction], bool]:
 
 # Case word in the request → how a test body demonstrates it.
 _CASES: dict[str, tuple[re.Pattern[str], Callable[[TestFunction], bool]]] = {
-    "empty": (re.compile(r"\bempty\b", re.I), _has_string(lambda s: s == "")),
+    "empty": (
+        re.compile(r"\bempty\b", re.I),
+        lambda t: "" in t.strings or t.empty_collection,  # "" or [] / {} / ()
+    ),
     "blank": (re.compile(r"\bblank\b", re.I), _has_string(lambda s: s.strip() == "")),
     "None": (re.compile(r"\b(none|null)\b", re.I), lambda t: t.uses_none),
     "negative": (re.compile(r"\bnegative\b", re.I), lambda t: any(n < 0 for n in t.numbers)),

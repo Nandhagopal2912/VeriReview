@@ -30,6 +30,8 @@ from verireview.rules.base import (
 )
 
 _BROAD = frozenset({"Exception", "BaseException", ""})
+# Idioms that make an exception impossible instead of catching it.
+_AVOIDANCE_IDIOMS = {"KeyError": ".get"}
 _LOG_CALL = re.compile(r"^(logger|logging|log|LOGGER|_logger|self\.log(ger)?)\.\w+$")
 # Only the verb is case-insensitive: with re.I, [A-Z] would also match "raise *after* logging".
 _RAISED = re.compile(r"\b(?i:raise|throw)s?\s+(?:an?\s+)?`?([A-Z]\w*)")
@@ -98,7 +100,7 @@ def _checklist(requirement: Requirement, ctx: RuleContext) -> list[_Check]:
         else [n for n in dict.fromkeys(lx.EXCEPTION_NAME.findall(text)) if n not in raised]
     )
     names = [n for n in requested_identifiers(requirement, ctx) if n not in caught + raised]
-    checks: list[_Check] = [_catch(e, names) for e in caught]
+    checks: list[_Check] = [_catch(e, names, ctx.before) for e in caught]
     if re.search(r"\bretr(y|ies|ied)\b", text, re.I):
         checks.append(_Check("retry", _retry))
     checks += [_raise(e, ctx.before) for e in raised]
@@ -128,7 +130,10 @@ def _log_values(text: str, ctx: RuleContext) -> list[str]:
 # ---------------------------------------------------------------- checks
 
 
-def _catch(exception: str, names: list[str]) -> _Check:
+def _catch(exception: str, names: list[str], before: Scope) -> _Check:
+    avoided_by = _AVOIDANCE_IDIOMS.get(exception)
+    before_idiom_calls = {c.text for c in before.facts.calls}
+
     def test(scope: Scope) -> tuple[bool, str, int | None]:
         for h in scope.handlers():
             caught = {e.split(".")[-1] for e in h.handler.exceptions} or {""}
@@ -139,6 +144,11 @@ def _catch(exception: str, names: list[str]) -> _Check:
         for g in scope.guards():
             if g.rejects and names and g.condition.identifiers & set(names):
                 return True, f"Guard `{g.condition.text}` prevents the failure.", g.line
+        if avoided_by is not None:
+            # A *new* idiomatic call that cannot raise, e.g. `config.get(key)` for KeyError.
+            for c in scope.facts.calls:
+                if c.callee.endswith(avoided_by) and c.text not in before_idiom_calls:
+                    return True, f"`{c.text}` avoids `{exception}` altogether.", c.line
         return False, f"No handler for `{exception}`.", None
 
     return _Check(f"catch {exception}", test)
@@ -165,19 +175,17 @@ def _raise(exception: str, before: Scope) -> _Check:
 
 def _log(names: list[str]) -> _Check:
     def test(scope: Scope) -> tuple[bool, str, int | None]:
-        for h in scope.handlers():
-            for call in h.calls:
-                if _LOG_CALL.match(call.callee):
-                    missing = [n for n in names if n not in call.text]
-                    if missing:
-                        return (
-                            False,
-                            f"`{call.text}` does not include "
-                            f"{', '.join(f'`{n}`' for n in missing)}.",
-                            call.line,
-                        )
-                    return True, f"`{call.text}` logs the failure.", call.line
-        return False, "No logging call in an exception handler.", None
+        # Failure paths: exception handlers, then conditional branches ("when the cache misses").
+        failure_path_calls = [c for h in scope.handlers() for c in h.calls] + [
+            c for g in scope.guards() for c in g.calls
+        ]
+        for call in (c for c in failure_path_calls if _LOG_CALL.match(c.callee)):
+            missing = [n for n in names if n not in call.text]
+            if missing:
+                listed = ", ".join(f"`{n}`" for n in missing)
+                return False, f"`{call.text}` does not include {listed}.", call.line
+            return True, f"`{call.text}` logs the failure.", call.line
+        return False, "No logging call on a failure path (handler or conditional branch).", None
 
     return _Check("log", test)
 

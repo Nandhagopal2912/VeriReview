@@ -15,9 +15,10 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
 > Status: **Phase 5**. GitHub ingestion, Tree-sitter structural analysis, requirement
-> extraction and deterministic per-category verification rules. On a blind held-out set: accuracy
-> 0.625 with **zero false acceptances** (no invalid fix accepted), but 43% of valid fixes are
-> blocked. The rules are safe but strict. See [docs/phase5_rules.md](docs/phase5_rules.md).
+> extraction and deterministic per-category verification rules. Blind held-out result: accuracy
+> 0.625 with **zero false acceptances**. After the disclosed Phase 5.1 hardening: 0.875, still
+> zero false acceptances, with false blocking down from 43% to 7%.
+> See [docs/phase5_rules.md](docs/phase5_rules.md).
 
 ```bash
 uv run verireview extract "Please validate username, return HTTP 400 on invalid input, and add a test."

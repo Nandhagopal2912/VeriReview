@@ -79,6 +79,43 @@ resolutions were rejected, because they used patterns the rules do not model.
 | `h-validation-early-return` | S → N (extracted only) | "Return early … instead of crashing" categorised as error handling | extraction gap |
 | `h-api-404-without-log` | P → N (extracted only) | "log the lookup failure" is checked against handlers only | rule gap (shared with `h-log-in-branch`) |
 
+## Phase 5.1: hardening (after the blind run, disclosed)
+
+Fixes for the gaps found above. Each fix has a positive test **and an adversarial counterpart** on
+new snippets (`tests/rules/test_hardening.py`); nothing was tuned on the held-out cases themselves.
+
+| # | Fix | Guarded against (adversarial test) |
+|---|---|---|
+| 1 | Logging on a failure path counts in `if` branches too, not only in `except` handlers | a log outside any failure path |
+| 2 | Test inputs include decorators (`@pytest.mark.parametrize`) | — |
+| 3 | Empty collections (`[]`, `{}`, `()`) count as "empty" | a non-empty collection |
+| 4 | **Same-file helpers are followed one level** (argument → parameter → rejecting guard of the requested kind). An **imported** helper named like a validator is **inconclusive → human review**, never accepted | helper that doesn't check; checks the wrong kind; is called after the operation; an unrelated imported call |
+| 5 | `.get()` newly avoiding a `KeyError` counts as handling it | a pre-existing `.get()` elsewhere |
+| 6 | API: request words ("the **invoice**") reach derived variables (`row = load_invoice(invoice_id)`) | a status on an unrelated branch (`if debug_mode:`) |
+| 7 | Extraction: `respond` / `reply` / `abort` are request verbs; "return early" is a validation cue | — |
+
+**A pre-existing false-acceptance risk was found by fix 6's adversarial test.** When the
+request's condition matched no identifier, the API rule accepted the status on *any* conditional
+branch. Now such cases are **inconclusive** (human review).
+
+### Results after hardening
+
+| Set | Requirements | Accuracy | False acceptance | False blocking |
+|---|---|---|---|---|
+| Dev (29) | extracted / gold | 1.000 / 1.000 | 0.000 / 0.000 | 0.000 / 0.000 |
+| Held-out (24), **not blind any more** | extracted | 0.625 → **0.875** | 0.000 → **0.000** | 0.429 → **0.071** |
+| Held-out (24), **not blind any more** | gold | 0.750 → **0.875** | 0.000 → **0.000** | 0.429 → **0.143** |
+
+Remaining held-out misses:
+- `h-validation-helper-call` → UNCERTAIN, as intended (imported validator, not analysable).
+- `h-log-in-branch` (extracted only): "Log a warning when …" is not recognised as error handling.
+- `h-testing-already-covered`: `ReviewCase` carries only *changed* test files, so an untouched
+  covering test is invisible (data limitation).
+- `h-errors-avoided-with-get` (gold only): the gold wording names no exception.
+
+**The held-out set is no longer a blind measure.** The next blind measurement is the Phase 9
+benchmark. Reports: `experiments/phase5_1_heldout_after_hardening*.json`.
+
 ## Roadmap targets
 
 | Target | Status |

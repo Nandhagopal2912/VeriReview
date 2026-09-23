@@ -1,7 +1,13 @@
 """Core data contracts: ReviewCase, ReviewRequirement, Evidence, VerificationResult."""
 
 from verireview.contracts.evidence import CodeLocation, Evidence, EvidenceSource
-from verireview.contracts.requirement import Requirement, RequirementCategory, ReviewRequirement
+from verireview.contracts.requirement import (
+    Requirement,
+    RequirementCategory,
+    ReviewRequirement,
+    Utterance,
+    UtteranceType,
+)
 from verireview.contracts.review_case import (
     SCHEMA_VERSION,
     ChangedFile,
@@ -35,6 +41,8 @@ __all__ = [
     "ReviewRequirement",
     "ReviewThread",
     "ThreadComment",
+    "Utterance",
+    "UtteranceType",
     "Verdict",
     "VerificationResult",
     "WindowFlag",

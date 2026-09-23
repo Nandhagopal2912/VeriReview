@@ -1,0 +1,967 @@
+[{
+  "name": "dev fixtures",
+  "dataset_hash": "1754164a4b788e7f1497c8b6bb57ce25cd81d50228ca622d6efcc38c2a30d9c9",
+  "n": 29,
+  "count_exact": 0.9655172413793104,
+  "category_precision": 0.9473684210526315,
+  "category_recall": 0.972972972972973,
+  "category_f1": 0.9599999999999999,
+  "actionable_accuracy": 1.0,
+  "ambiguity_precision": 1.0,
+  "ambiguity_recall": 0.6666666666666666,
+  "target_symbol_accuracy": 1.0,
+  "examples": [
+    {
+      "id": "api-001-missing-username-400",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "api-002-validation-without-400",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "validation",
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "validation",
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "api-003-wrong-status-code",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "api-004-todo-comment",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.2,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "api-005-idempotency",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 0.75,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-001-db-failure",
+      "gold_count": 2,
+      "predicted_count": 3,
+      "gold_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-002-swallowed-exception",
+      "gold_count": 3,
+      "predicted_count": 3,
+      "gold_categories": [
+        "error_handling",
+        "error_handling",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-003-one-of-two-exceptions",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-004-unrelated-type-hints",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-005-question-only",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 0.4,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "errors-006-log-before-reraise",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-001-rename-parameter",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-002-partial-rename",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "naming",
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming",
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-003-comment-mentions-name",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-004-unrelated-log-change",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-005-vague-request",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "naming-006-rename-function-and-callers",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "testing-001-empty-username-test",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "testing-002-no-test-added",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "testing-003-test-named-but-wrong-path",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "testing-004-one-of-two-cases",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "testing",
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing",
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "testing-005-test-for-wrong-function",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-001-none-check",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-002-check-after-save",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-003-already-present",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-004-docstring-only",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-005-range-without-type",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "validation",
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation",
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-006-wrong-variable",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    },
+    {
+      "id": "validation-007-logging-change",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": true
+    }
+  ]
+},
+{
+  "name": "held-out",
+  "dataset_hash": "13fe739965b0fa8300fea5b289a3e9bf70f57f87d2900da3202c0b41eafd973c",
+  "n": 32,
+  "count_exact": 0.84375,
+  "category_precision": 0.9210526315789473,
+  "category_recall": 0.8974358974358975,
+  "category_f1": 0.9090909090909091,
+  "actionable_accuracy": 0.9375,
+  "ambiguity_precision": 1.0,
+  "ambiguity_recall": 1.0,
+  "target_symbol_accuracy": null,
+  "examples": [
+    {
+      "id": "h01",
+      "gold_count": 2,
+      "predicted_count": 1,
+      "gold_categories": [
+        "other",
+        "other"
+      ],
+      "predicted_categories": [
+        "other"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h02",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h03",
+      "gold_count": 0,
+      "predicted_count": 0,
+      "gold_categories": [],
+      "predicted_categories": [],
+      "gold_ambiguous": null,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h04",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h05",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h06",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "testing",
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing",
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h07",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h08",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 0.6,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h09",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h10",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "naming",
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming",
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h11",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "api_behavior",
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior",
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h12",
+      "gold_count": 1,
+      "predicted_count": 0,
+      "gold_categories": [
+        "other"
+      ],
+      "predicted_categories": [],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h13",
+      "gold_count": 0,
+      "predicted_count": 0,
+      "gold_categories": [],
+      "predicted_categories": [],
+      "gold_ambiguous": null,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h14",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h15",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h16",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "validation",
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation",
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h17",
+      "gold_count": 1,
+      "predicted_count": 2,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.2,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h18",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h19",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "error_handling",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h20",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.2,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h21",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 0.9,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h22",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.2,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h23",
+      "gold_count": 2,
+      "predicted_count": 3,
+      "gold_categories": [
+        "validation",
+        "error_handling"
+      ],
+      "predicted_categories": [
+        "validation",
+        "validation",
+        "error_handling"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h24",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [
+        "naming"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h25",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "other"
+      ],
+      "predicted_categories": [
+        "other"
+      ],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 0.55,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h26",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h27",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "testing",
+        "testing"
+      ],
+      "predicted_categories": [
+        "testing",
+        "testing"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h28",
+      "gold_count": 0,
+      "predicted_count": 0,
+      "gold_categories": [],
+      "predicted_categories": [],
+      "gold_ambiguous": null,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h29",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "api_behavior"
+      ],
+      "predicted_categories": [
+        "api_behavior"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h30",
+      "gold_count": 1,
+      "predicted_count": 1,
+      "gold_categories": [
+        "other"
+      ],
+      "predicted_categories": [
+        "other"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h31",
+      "gold_count": 2,
+      "predicted_count": 2,
+      "gold_categories": [
+        "validation",
+        "validation"
+      ],
+      "predicted_categories": [
+        "validation",
+        "validation"
+      ],
+      "gold_ambiguous": false,
+      "predicted_ambiguity": 0.0,
+      "predicted_ambiguous": false,
+      "target_symbol_ok": null
+    },
+    {
+      "id": "h32",
+      "gold_count": 1,
+      "predicted_count": 0,
+      "gold_categories": [
+        "naming"
+      ],
+      "predicted_categories": [],
+      "gold_ambiguous": true,
+      "predicted_ambiguity": 1.0,
+      "predicted_ambiguous": true,
+      "target_symbol_ok": null
+    }
+  ]
+}]

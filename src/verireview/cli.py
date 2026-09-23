@@ -8,6 +8,8 @@ Local verification (no network):
     verireview verify-fixture DIR                     verify one dev fixture
     verireview verify-case CASE.json                  verify an ingested ReviewCase
     verireview eval-fixtures [--root DIR] [--out F]   evaluate the pipeline on all fixtures
+    verireview extract "COMMENT" [--code FILE]        show extracted requirements
+    verireview eval-requirements                      score extraction vs gold (dev + held-out)
 
     All three accept --pipeline NAME (default: the latest phase).
 """
@@ -23,15 +25,24 @@ from pydantic import ValidationError
 from verireview.config import get_settings
 from verireview.contracts import ReviewCase, VerificationResult
 from verireview.dataset import FixtureError, iter_fixtures, load_fixture
-from verireview.evaluation import evaluate
+from verireview.evaluation import dataset_hash, evaluate
+from verireview.evaluation.requirements import (
+    ExtractionReport,
+    evaluate_extraction,
+    file_hash,
+    fixture_examples,
+    heldout_examples,
+)
 from verireview.gh.api import GitHubApi, RepoRef
 from verireview.gh.client import GitHubClient
 from verireview.gh.errors import GitHubError
 from verireview.ingestion import ingest_review_case
+from verireview.requirements import CodeContext, extract_requirements
 from verireview.threads import ThreadNotFoundError, reconstruct_threads
 from verireview.verification import DEFAULT_PIPELINE, PIPELINES, get_pipeline
 
 DEFAULT_FIXTURES = Path("dataset/fixtures")
+DEFAULT_HELDOUT = Path("dataset/requirements/heldout.jsonl")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -50,6 +61,15 @@ def main(argv: Sequence[str] | None = None) -> int:
             case = ReviewCase.model_validate_json(args.file.read_text(encoding="utf-8"))
             _print_result(get_pipeline(args.pipeline).run(case), args.json)
             return 0
+        if args.command == "extract":
+            code = args.code.read_text(encoding="utf-8") if args.code else None
+            extracted = extract_requirements(
+                args.comment, context=CodeContext.from_code(code, args.line)
+            )
+            print(extracted.model_dump_json(indent=2))
+            return 0
+        if args.command == "eval-requirements":
+            return _eval_requirements(args.root, args.heldout, args.out)
         return _eval_fixtures(args.root, args.out, args.pipeline)
     except (FixtureError, ValidationError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -168,6 +188,50 @@ def _eval_fixtures(root: Path, out: Path | None, pipeline: str) -> int:
     return 0
 
 
+def _eval_requirements(root: Path, heldout: Path, out: Path | None) -> int:
+    reports = [
+        evaluate_extraction(
+            fixture_examples(list(iter_fixtures(root))), "dev fixtures", dataset_hash(root)
+        ),
+        evaluate_extraction(heldout_examples(heldout), "held-out", file_hash(heldout)),
+    ]
+    for report in reports:
+        _print_extraction(report)
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        payload = "[" + ",\n".join(r.model_dump_json(indent=2) for r in reports) + "]\n"
+        out.write_text(payload, encoding="utf-8", newline="\n")
+        print(f"wrote {out}", file=sys.stderr)
+    return 0
+
+
+def _print_extraction(report: ExtractionReport) -> None:
+    print(f"\n== {report.name}  (n={report.n}, dataset {report.dataset_hash[:12]})")
+    print(f"requirement count exact  {report.count_exact:.3f}")
+    print(
+        f"category P/R/F1          {report.category_precision:.3f} / "
+        f"{report.category_recall:.3f} / {report.category_f1:.3f}"
+    )
+    print(f"actionable accuracy      {report.actionable_accuracy:.3f}")
+    print(
+        f"ambiguity P/R            {_rate(report.ambiguity_precision)} / "
+        f"{_rate(report.ambiguity_recall)}"
+    )
+    print(f"target symbol accuracy   {_rate(report.target_symbol_accuracy)}")
+    wrong = [
+        e
+        for e in report.examples
+        if e.gold_count != e.predicted_count
+        or sorted(e.gold_categories) != sorted(e.predicted_categories)
+        or (e.gold_ambiguous is not None and e.gold_ambiguous != e.predicted_ambiguous)
+    ]
+    for e in wrong:
+        print(
+            f"  {e.id:42} gold {e.gold_categories} amb={e.gold_ambiguous}  "
+            f"got {e.predicted_categories} amb={e.predicted_ambiguity}"
+        )
+
+
 def _rate(value: float | None) -> str:
     return "n/a" if value is None else f"{value:.3f}"
 
@@ -209,6 +273,16 @@ def _parser() -> argparse.ArgumentParser:
     eval_fixtures = sub.add_parser("eval-fixtures", help="evaluate the pipeline on all fixtures")
     eval_fixtures.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
     eval_fixtures.add_argument("--out", type=Path, help="write the JSON report here")
+
+    extract = sub.add_parser("extract", help="extract structured requirements from a comment")
+    extract.add_argument("comment")
+    extract.add_argument("--code", type=Path, help="the commented file (for targets)")
+    extract.add_argument("--line", type=int, help="commented line in --code")
+
+    eval_req = sub.add_parser("eval-requirements", help="score requirement extraction")
+    eval_req.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
+    eval_req.add_argument("--heldout", type=Path, default=DEFAULT_HELDOUT)
+    eval_req.add_argument("--out", type=Path, help="write the JSON reports here")
 
     for command in (verify_fixture, verify_case, eval_fixtures):
         command.add_argument(

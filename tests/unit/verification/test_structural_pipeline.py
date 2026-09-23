@@ -49,7 +49,7 @@ def test_every_fixture_yields_a_valid_cited_result(fixture: Fixture) -> None:
     assert STRUCTURAL_NOTE in result.explanation
 
 
-def test_registry_default_is_latest_phase() -> None:
-    assert DEFAULT_PIPELINE == "phase3-structure"
-    assert set(PIPELINES) == {"phase2-locality", "phase3-structure"}
-    assert get_pipeline().version == STRUCTURAL_VERSION
+def test_phase3_stays_registered_for_comparison() -> None:
+    assert "phase3-structure" in PIPELINES
+    assert DEFAULT_PIPELINE != "phase3-structure"  # superseded, but still runnable
+    assert get_pipeline("phase3-structure").version == STRUCTURAL_VERSION

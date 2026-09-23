@@ -14,10 +14,14 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Design: [VERIREVIEW_PLAN.md](VERIREVIEW_PLAN.md)
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-> Status: **Phase 3**. GitHub ingestion, and a local verification pipeline with Tree-sitter
-> structural analysis (symbol resolution and code facts), evaluated on 29 dev fixtures. The
-> verdict logic is still a baseline (accuracy 0.31). Rule-based verification arrives in Phase 5.
-> See [docs/phase3_diff_ast.md](docs/phase3_diff_ast.md).
+> Status: **Phase 4**. GitHub ingestion, Tree-sitter structural analysis, and structured
+> requirement extraction (comment → categorised requirements + ambiguity), evaluated on 29 dev
+> fixtures and a blind held-out set. Verdict accuracy is 0.41. Rule-based verification arrives in
+> Phase 5. See [docs/phase4_requirements.md](docs/phase4_requirements.md).
+
+```bash
+uv run verireview extract "Please validate username, return HTTP 400 on invalid input, and add a test."
+```
 
 ## Verify and evaluate
 

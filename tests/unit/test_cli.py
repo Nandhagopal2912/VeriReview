@@ -125,6 +125,45 @@ def test_pipeline_can_be_selected(tmp_path: Path) -> None:
     assert json.loads(out.read_text(encoding="utf-8"))["pipeline_version"] == "phase2-locality-1"
 
 
+def test_extract_prints_structured_requirements(capsys: pytest.CaptureFixture[str]) -> None:
+    comment = "Please validate username, return HTTP 400 on invalid input, and add a test."
+
+    assert cli.main(["extract", comment]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert [r["category"] for r in payload["requirements"]] == [
+        "validation",
+        "api_behavior",
+        "testing",
+    ]
+
+
+def test_eval_requirements_reports_both_sets(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    out = tmp_path / "req.json"
+    heldout = FIXTURES.parent / "requirements" / "heldout.jsonl"
+
+    assert (
+        cli.main(
+            [
+                "eval-requirements",
+                "--root",
+                str(FIXTURES),
+                "--heldout",
+                str(heldout),
+                "--out",
+                str(out),
+            ]
+        )
+        == 0
+    )
+
+    reports = json.loads(out.read_text(encoding="utf-8"))
+    assert [r["name"] for r in reports] == ["dev fixtures", "held-out"]
+    assert "category P/R/F1" in capsys.readouterr().out
+
+
 def test_bad_fixture_path_exits_1(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["verify-fixture", str(tmp_path / "missing")]) == 1
     assert "error:" in capsys.readouterr().err

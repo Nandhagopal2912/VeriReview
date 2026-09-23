@@ -45,6 +45,8 @@ uv run verireview threads OWNER/REPO PR   # list review threads (comment ids)
 uv run verireview ingest OWNER/REPO PR --comment-id ID [--out f.json] [--no-db]
 uv run verireview verify-fixture dataset/fixtures/<case>   # explanation + expected verdict
 uv run verireview eval-fixtures --out experiments/<name>.json
+uv run verireview extract "comment text" [--code file.py --line N]
+uv run verireview eval-requirements        # extraction vs gold: dev fixtures + held-out
 ```
 
 ## Verification pipeline notes
@@ -56,6 +58,8 @@ uv run verireview eval-fixtures --out experiments/<name>.json
 - Fixture authoring: `meta.json` needs `rationale` and gold `requirements`. Partial cases need ≥ 2 requirements.
 - Pipelines are registered by name in `verification/__init__.py` (`PIPELINES`). Add a new one per phase and keep old ones runnable (`--pipeline`), for the ablation study.
 - Structural facts come from `syntax.extract_facts` (calls, conditions, raises, handlers, returns). Rules should query these, not regex the source.
+- `dataset/requirements/heldout.jsonl` is a **blind** held-out set (hash pinned in `tests/benchmark`). Never edit it to make the extractor pass. Improve the extractor on dev fixtures and report held-out honestly.
+- Extraction word lists and ambiguity weights live only in `requirements/lexicon.py`. Changing them means re-running `eval-requirements` and `eval-fixtures`.
 - Tree-sitter is pinned (`~=`). Upgrading means re-running the syntax tests, because node types and fields change between versions.
 
 ## GitHub ingestion notes
@@ -82,7 +86,7 @@ uv run verireview eval-fixtures --out experiments/<name>.json
 - [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check: 8/10 real threads done (docs/phase1_live_checks.md). Use `anchor_line`, not `original_line`.
 - [x] Phase 2: contracts, fixture loader, pipeline skeleton, 29 dev fixtures, eval harness. Locality baseline: acc 0.241, FAR 1.0 (docs/phase2_local_verifier.md). ADR-001 accepted: pre-existing implementation = SATISFIED (final code), confidence ≤ MEDIUM, `already_present` evidence.
 - [x] Phase 3: diff (unidiff/difflib), Tree-sitter symbols + facts, location resolution (100% of fixtures), structural evidence. `phase3-structure-1`: acc 0.310, FAR 0.889 (docs/phase3_diff_ast.md).
-- [ ] Phase 4: requirement representation
+- [x] Phase 4: rule-based requirement extraction (utterance types, clause split, expansion, categories, targets, suggestion blocks, ambiguity) + ambiguity gate. Held-out blind: count 0.844, category F1 0.909. `phase4-requirements-1`: acc 0.414 (docs/phase4_requirements.md).
 - [ ] Phase 5: rule engine
 - [ ] Phase 8a: evidence aggregation (MVP)
 

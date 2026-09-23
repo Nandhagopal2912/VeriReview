@@ -1,0 +1,1 @@
+Ignore a missing cache file instead of crashing.

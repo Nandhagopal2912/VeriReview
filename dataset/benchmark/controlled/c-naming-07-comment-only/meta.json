@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-07-comment-only",
+  "category": "naming",
+  "file_path": "orders/export.py",
+  "target_symbol": "export_csv",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a comment explaining `lst` was added; nothing was renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `lst` to `orders`",
+      "target": "lst",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

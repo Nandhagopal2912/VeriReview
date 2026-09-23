@@ -1,0 +1,28 @@
+{
+  "case_id": "a-api-08-400-without-logging",
+  "category": "api_behavior",
+  "file_path": "web/rating.py",
+  "target_symbol": "rate",
+  "comment_line": 8,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Invalid stars return 400; the rejected value is not logged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 when `stars` is not between 1 and 5",
+      "target": "rate",
+      "condition": "stars not in 1..5",
+      "expected_behavior": "HTTP 400"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log the rejected value",
+      "target": "rate",
+      "condition": "stars not in 1..5",
+      "expected_behavior": "value logged"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "a-testing-05-test-mocks-the-function",
+  "category": "testing",
+  "file_path": "inventory/remove.py",
+  "target_symbol": "remove_stock",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The test patches `remove_stock` itself with a mock that raises, so the real function is never exercised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that removing more than in stock raises ValueError",
+      "target": "remove_stock",
+      "condition": "amount > stock",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

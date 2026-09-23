@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-11-could-be-better",
+  "category": "error_handling",
+  "file_path": "billing/charge.py",
+  "target_symbol": "charge",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "No failure or expected handling is named; the request is ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Improve error handling",
+      "target": "gateway.charge",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

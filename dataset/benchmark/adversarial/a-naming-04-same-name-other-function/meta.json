@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-04-same-name-other-function",
+  "category": "naming",
+  "file_path": "orders/total.py",
+  "target_symbol": "order_total",
+  "comment_line": 4,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The rename was made in `refund_total`, not in the requested `order_total`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `tp` to `total_price` in `order_total`",
+      "target": "tp",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

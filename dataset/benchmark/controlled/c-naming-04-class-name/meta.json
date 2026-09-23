@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-04-class-name",
+  "category": "naming",
+  "file_path": "accounts/manager.py",
+  "target_symbol": "usrMgr",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The class and its only instantiation are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename class `usrMgr` to `UserManager`",
+      "target": "usrMgr",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

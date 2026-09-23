@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-01-timeout-returns-none",
+  "category": "error_handling",
+  "file_path": "weather/client.py",
+  "target_symbol": "current_temperature",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The request is wrapped in `try/except requests.Timeout` returning None.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch `requests.Timeout` and return None",
+      "target": "requests.get",
+      "condition": "requests.Timeout",
+      "expected_behavior": "returns None"
+    }
+  ]
+}

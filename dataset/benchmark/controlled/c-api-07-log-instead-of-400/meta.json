@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-07-log-instead-of-400",
+  "category": "api_behavior",
+  "file_path": "web/signup.py",
+  "target_symbol": "signup",
+  "comment_line": 11,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "A missing email is only logged; the endpoint still returns 201.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 if `email` is missing",
+      "target": "signup",
+      "condition": "'email' not in body",
+      "expected_behavior": "HTTP 400"
+    }
+  ]
+}

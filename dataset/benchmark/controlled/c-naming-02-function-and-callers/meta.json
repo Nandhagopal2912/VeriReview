@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-02-function-and-callers",
+  "category": "naming",
+  "file_path": "shipping/rates.py",
+  "target_symbol": "calc",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The function and both call sites use the new name.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `calc` to `calculate_shipping` and update callers",
+      "target": "calc",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

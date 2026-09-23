@@ -1,0 +1,1 @@
+Make sure `amount` is actually a number before we add it.

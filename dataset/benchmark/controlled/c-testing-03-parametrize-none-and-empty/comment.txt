@@ -1,0 +1,1 @@
+Please add tests for None and for the empty string.

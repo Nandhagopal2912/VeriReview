@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-12-token-helper-unknown",
+  "category": "validation",
+  "file_path": "api/client.py",
+  "target_symbol": "fetch_profile",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "`auth.ensure` is defined elsewhere and its name does not say whether it validates the token.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the token before using it",
+      "target": "token",
+      "condition": null,
+      "expected_behavior": "invalid token is not used"
+    }
+  ]
+}

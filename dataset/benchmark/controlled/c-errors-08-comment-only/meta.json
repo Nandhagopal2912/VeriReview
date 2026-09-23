@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-08-comment-only",
+  "category": "error_handling",
+  "file_path": "cache/read.py",
+  "target_symbol": "cached",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a comment about the KeyError was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle KeyError for expired entries",
+      "target": "cache[key]",
+      "condition": "KeyError",
+      "expected_behavior": null
+    }
+  ]
+}

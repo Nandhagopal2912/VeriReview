@@ -1,0 +1,28 @@
+{
+  "case_id": "c-testing-10-test-but-no-logging",
+  "category": "testing",
+  "file_path": "clients/fetch.py",
+  "target_symbol": "fetch",
+  "comment_line": 7,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A timeout test was added; the timeout is still not logged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the timeout case",
+      "target": "fetch",
+      "condition": "requests.Timeout",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log the timeout",
+      "target": "fetch",
+      "condition": "requests.Timeout",
+      "expected_behavior": "timeout is logged"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Make sure the lock is released even if the write fails.

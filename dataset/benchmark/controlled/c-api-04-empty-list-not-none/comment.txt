@@ -1,0 +1,1 @@
+Return an empty list instead of None when nothing matches; callers iterate over this.

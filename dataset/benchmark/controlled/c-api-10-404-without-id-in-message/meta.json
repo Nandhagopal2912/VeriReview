@@ -1,0 +1,28 @@
+{
+  "case_id": "c-api-10-404-without-id-in-message",
+  "category": "api_behavior",
+  "file_path": "web/books.py",
+  "target_symbol": "book",
+  "comment_line": 9,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A missing book returns 404, but the error message does not contain the id.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 if the book is missing",
+      "target": "book",
+      "condition": "book_id not in BOOKS",
+      "expected_behavior": "HTTP 404"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Include the book id in the error message",
+      "target": "book",
+      "condition": "book_id not in BOOKS",
+      "expected_behavior": "message contains the id"
+    }
+  ]
+}

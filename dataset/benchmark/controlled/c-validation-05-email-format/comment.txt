@@ -1,0 +1,1 @@
+Validate the email format before sending the invite.

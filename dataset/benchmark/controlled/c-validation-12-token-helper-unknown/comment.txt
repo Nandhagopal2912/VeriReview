@@ -1,0 +1,1 @@
+Make sure the token is valid before using it.

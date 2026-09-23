@@ -1,0 +1,20 @@
+{
+  "case_id": "a-errors-07-finally-release",
+  "category": "error_handling",
+  "file_path": "storage/writer.py",
+  "target_symbol": "write_record",
+  "comment_line": 3,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "`try/finally` releases the lock when the write raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Release the lock even if the write fails",
+      "target": "store.write",
+      "condition": "write raises",
+      "expected_behavior": "lock released"
+    }
+  ]
+}

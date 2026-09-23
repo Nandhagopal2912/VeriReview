@@ -1,0 +1,20 @@
+{
+  "case_id": "a-api-07-custom-error-handler",
+  "category": "api_behavior",
+  "file_path": "web/tickets.py",
+  "target_symbol": "ticket",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "A missing ticket raises TicketNotFound, which the same file's error handler turns into a 404.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the ticket does not exist",
+      "target": "ticket",
+      "condition": "ticket_id not in TICKETS",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

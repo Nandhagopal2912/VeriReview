@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-04-empty-list-not-none",
+  "category": "api_behavior",
+  "file_path": "search/service.py",
+  "target_symbol": "search",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "No hits now returns an empty list.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return an empty list instead of None when nothing matches",
+      "target": "search",
+      "condition": "not hits",
+      "expected_behavior": "returns []"
+    }
+  ]
+}

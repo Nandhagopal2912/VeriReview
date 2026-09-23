@@ -1,0 +1,1 @@
+Rename `get_user` to `fetch_user`.

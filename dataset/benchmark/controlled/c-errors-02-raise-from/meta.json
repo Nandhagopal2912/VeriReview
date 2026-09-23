@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-02-raise-from",
+  "category": "error_handling",
+  "file_path": "settings/load.py",
+  "target_symbol": "load",
+  "comment_line": 13,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The ConfigError is now chained with `from err`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Chain the ConfigError with `from err`",
+      "target": "ConfigError",
+      "condition": null,
+      "expected_behavior": "original traceback kept"
+    }
+  ]
+}

@@ -57,6 +57,14 @@ class HardCase(StrEnum):
     WRONG_ORDER = "wrong_order"
     WRONG_VALUE = "wrong_value"
     AMBIGUOUS = "ambiguous"
+    # Phase 9 adversarial types
+    PROMPT_INJECTION = "prompt_injection"  # text addressed to the verifier instead of a fix
+    STRING_MENTION = "string_mention"  # the fix is named in a string literal, not done
+    COMMENTED_OUT = "commented_out"  # the fix exists only as commented-out code
+    DEAD_CODE = "dead_code"  # the fix is unreachable or its result unused
+    FORMATTING_ONLY = "formatting_only"  # reformatting near the target, no behaviour change
+    MISLEADING_COMMENT = "misleading_comment"  # a valid fix next to a stale "TODO" comment
+    UNUSUAL_IDIOM = "unusual_idiom"  # a valid fix in a less common form
 
 
 class FixtureMeta(BaseModel):

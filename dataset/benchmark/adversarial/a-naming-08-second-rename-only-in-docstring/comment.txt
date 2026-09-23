@@ -1,0 +1,1 @@
+Rename `w` to `window` and `s` to `step`.

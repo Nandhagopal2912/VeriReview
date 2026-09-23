@@ -1,0 +1,28 @@
+{
+  "case_id": "c-naming-09-two-of-two-requested-one-done",
+  "category": "naming",
+  "file_path": "stats/scale.py",
+  "target_symbol": "scale",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "`n` became `count`; `f` was not renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `n` to `count`",
+      "target": "n",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename `f` to `factor`",
+      "target": "f",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

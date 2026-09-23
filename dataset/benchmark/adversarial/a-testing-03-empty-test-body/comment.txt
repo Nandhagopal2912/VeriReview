@@ -1,0 +1,1 @@
+Please add a test that removing more than we have raises ValueError.

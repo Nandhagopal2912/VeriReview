@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-11-response-feels-wrong",
+  "category": "api_behavior",
+  "file_path": "web/status.py",
+  "target_symbol": "status",
+  "comment_line": 8,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The reviewer does not say what is wrong or what the response should be; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Fix the response",
+      "target": "status",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-07-warning-only",
+  "category": "validation",
+  "file_path": "people/rename.py",
+  "target_symbol": "rename",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "An empty name is logged but still saved; nothing is rejected.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject an empty `name`",
+      "target": "name",
+      "condition": "not name",
+      "expected_behavior": "empty name is not saved"
+    }
+  ]
+}

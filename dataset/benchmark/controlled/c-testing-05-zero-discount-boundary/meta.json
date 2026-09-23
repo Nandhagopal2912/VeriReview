@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-05-zero-discount-boundary",
+  "category": "testing",
+  "file_path": "pricing/discount.py",
+  "target_symbol": "discounted",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test asserts `discounted(100, 0) == 100`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for a discount of 0",
+      "target": "discounted",
+      "condition": "percent == 0",
+      "expected_behavior": null
+    }
+  ]
+}

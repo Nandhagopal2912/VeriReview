@@ -16,6 +16,9 @@ Local verification (no network):
 
     verify-fixture, verify-case, eval-fixtures and eval-injection accept --pipeline NAME
     (default: mvp).
+
+Benchmark (Phase 9): see ``verireview.cli_benchmark`` (benchmark-stats, mine-candidates,
+collect-cases, annotation-sheet, agreement, adjudication-sheet, build-gold, benchmark-freeze).
 """
 
 import argparse
@@ -28,6 +31,7 @@ from typing import TYPE_CHECKING, cast
 
 from pydantic import ValidationError
 
+from verireview import cli_benchmark
 from verireview.api.verify import VerifyResponse
 from verireview.config import get_settings
 from verireview.contracts import ReviewCase, VerificationResult
@@ -63,6 +67,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command in ("threads", "ingest"):
             return _github_command(args)
+        if args.command in cli_benchmark.COMMANDS:
+            return cli_benchmark.run(args)
         if args.command == "verify-fixture":
             fixture = load_fixture(args.directory)
             result = get_pipeline(args.pipeline).run(fixture.case)
@@ -518,6 +524,8 @@ def _parser() -> argparse.ArgumentParser:
     eval_inj.add_argument("--threshold", type=float, help="baseline threshold (e.g. from Phase 6)")
     eval_inj.add_argument("--view", choices=["added", "code"], default="added")
     eval_inj.add_argument("--out", type=Path, help="write the JSON report here")
+
+    cli_benchmark.add_parsers(sub)
 
     for command in (verify_fixture, verify_case, eval_fixtures, eval_inj):
         command.add_argument(

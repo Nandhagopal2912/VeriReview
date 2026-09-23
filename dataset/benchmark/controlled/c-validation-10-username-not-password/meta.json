@@ -1,0 +1,28 @@
+{
+  "case_id": "c-validation-10-username-not-password",
+  "category": "validation",
+  "file_path": "accounts/create.py",
+  "target_symbol": "create_account",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "`username` is validated; `password` is not.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate `username` before creating the account",
+      "target": "username",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Validate `password` before creating the account",
+      "target": "password",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-05-email-format",
+  "category": "validation",
+  "file_path": "invites/send.py",
+  "target_symbol": "send_invite",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The address is matched against the email pattern before sending.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the email format before sending",
+      "target": "email",
+      "condition": null,
+      "expected_behavior": "invalid email is rejected"
+    }
+  ]
+}

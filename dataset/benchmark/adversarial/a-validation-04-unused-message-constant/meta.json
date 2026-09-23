@@ -1,0 +1,20 @@
+{
+  "case_id": "a-validation-04-unused-message-constant",
+  "category": "validation",
+  "file_path": "mail/store.py",
+  "target_symbol": "save_email",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "An unused message constant mentions the validation; no check exists.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `email` is not empty before saving",
+      "target": "email",
+      "condition": "not email",
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Raise a 409 if the email is already registered.

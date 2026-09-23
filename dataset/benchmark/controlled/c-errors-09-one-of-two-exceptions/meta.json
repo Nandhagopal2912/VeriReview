@@ -1,0 +1,28 @@
+{
+  "case_id": "c-errors-09-one-of-two-exceptions",
+  "category": "error_handling",
+  "file_path": "files/reader.py",
+  "target_symbol": "read_text",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "FileNotFoundError is handled; PermissionError is not.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch FileNotFoundError",
+      "target": "open",
+      "condition": "FileNotFoundError",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Catch PermissionError",
+      "target": "open",
+      "condition": "PermissionError",
+      "expected_behavior": null
+    }
+  ]
+}

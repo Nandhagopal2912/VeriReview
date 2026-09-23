@@ -1,0 +1,28 @@
+{
+  "case_id": "a-testing-06-unittest-subtest-loop",
+  "category": "testing",
+  "file_path": "inventory/remove.py",
+  "target_symbol": "remove_stock",
+  "comment_line": 3,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "A unittest test loops over 0 and -3 with subTest and asserts ValueError for each.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a zero amount is rejected",
+      "target": "remove_stock",
+      "condition": "amount == 0",
+      "expected_behavior": "ValueError"
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test that a negative amount is rejected",
+      "target": "remove_stock",
+      "condition": "amount < 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

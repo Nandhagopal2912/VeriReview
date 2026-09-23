@@ -54,6 +54,9 @@ uv run --group nlp verireview eval-baselines   # NLP baselines vs rules (needs t
 uv run --group nlp verireview eval-baselines --scorers lexical,tfidf,embedding,unixcoder --views added,code
 uv run --group nlp verireview eval-semantic    # code-model evidence: AUC + 0 verdict changes vs mvp
 uv run verireview eval-injection [--pipeline phase7-semantic]  # prompt-injection suite (0 changes)
+uv run verireview benchmark-stats              # Phase 9: sets, splits, targets
+uv run verireview annotation-sheet --batch B [--calibration]   # offline page -> dataset/raw/sheets/
+uv run verireview agreement A.json B.json      # Cohen's kappa + disagreements
 uv run --group nlp pytest -m model             # tests that need a downloaded model
 ```
 
@@ -78,6 +81,14 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - The service image has no model libraries. A model pipeline requested through the API returns 501 (`ModuleNotFoundError` is mapped in `api/verify.py`).
 - Extraction word lists and ambiguity weights live only in `requirements/lexicon.py`. Changing them means re-running `eval-requirements` and `eval-fixtures`.
 - Tree-sitter is pinned (`~=`). Upgrading means re-running the syntax tests, because node types and fields change between versions.
+
+## Benchmark notes (Phase 9)
+
+- **Test split is untouchable until Phase 10.** Never run any verifier on `dataset/benchmark/controlled`, `dataset/benchmark/adversarial` or real-world `test` cases. Their hashes are pinned (`tests/benchmark/test_benchmark_dataset.py`, later `benchmark/manifest.json`). Tune only on dev (`dataset/fixtures`, `dataset/heldout_fixtures`, real-world `dev`).
+- Labels follow `docs/annotation_guide.md`. The verdict is derived from per-requirement statuses (`benchmark.labels.derive_verdict`); keep the page's `deriveVerdict` identical.
+- Claude never writes real-world gold. Two human annotators label blind; disagreements are adjudicated (`build-gold`). Raw exports in `dataset/annotations/<name>/` are never edited.
+- Mining only for repositories in `dataset/benchmark/repositories.json` (the owner's approval, D9) and on the license allowlist (`benchmark/mining.py`). Store license texts in `dataset/benchmark/LICENSES/`. Pseudonymise before storing (`benchmark/privacy.py`).
+- Annotation pages embed third-party code: write them to `dataset/raw/` (git-ignored). Case text is untrusted: the page inserts it only as text (escaping pinned by `tests/unit/benchmark/test_sheet.py`).
 
 ## GitHub ingestion notes
 
@@ -108,7 +119,8 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - [x] Phase 5.1: hardening (failure-path logging, parametrize/empty inputs, same-file helpers, `.get()` idiom, API related identifiers, extraction verbs). Held-out (no longer blind) 0.875, false acceptance 0.000, false blocking 0.071. Rule of thumb kept: **when a rule can't verify, return inconclusive (human review), never accept.**
 - [x] Phase 8a: MVP. Reliability-based confidence, policy layer (BLOCK off by default, pinned by a test), plan-§16 explanations, `POST /verify` and `POST /verify/github`, end-to-end integration tests. **All 15 plan §28 MVP criteria met** (docs/phase8a_mvp.md).
 - [x] Phase 6: NLP baselines (lexical, TF-IDF, MiniLM embeddings) through the same `Verifier` harness. Dev AUC < 0.5 for all three (lexical traps); held-out AUC 0.56–0.69, but 25–88% false acceptance at any usable threshold vs 0% for rules (docs/phase6_nlp_baselines.md).
-- [x] Phase 7: UniXcoder (D7, pinned revision) as **neutral** evidence per requirement and code chunk, code-only view, prompt-injection suite. Evidence AUC dev 0.569 / held-out 0.737; code view improves every scorer's AUC; **0 outcome changes in 2,576 injected variants**; D8 (LLM) deferred (docs/phase7_code_model.md, ADR-002 proposed).
-- [ ] Next: Phase 8b (roadmap order) or Phase 9 (benchmark) first. 9 is recommended: dev has no case where the code model could help. Then Phase 10 (evaluation), Phase 11 (GitHub advisory mode).
+- [x] Phase 7: UniXcoder (D7, pinned revision) as **neutral** evidence per requirement and code chunk, code-only view, prompt-injection suite. Evidence AUC dev 0.569 / held-out 0.737; code view improves every scorer's AUC; **0 outcome changes in 2,576 injected variants**; D8 (LLM) deferred (docs/phase7_code_model.md, ADR-002 accepted).
+- [~] Phase 9a: annotation guide; 60 controlled + 40 adversarial **test** cases written blind and frozen (not run); benchmark package (splits, real-world store, pseudonymisation, miner, collector, offline annotation page, kappa, adjudication, gold, freeze manifest). All v1 targets met except real-world (docs/phase9_benchmark.md).
+- [ ] Phase 9b: owner approves repos (D9) → mine + collect ~50 real-world cases → two human annotators → agreement (κ ≥ 0.6) → adjudication → gold → `benchmark-freeze v1`. Then Phase 8b (dev only), Phase 10 (evaluation), Phase 11.
 
-Decisions: D1–D5, D7 (UniXcoder) and D8 (LLM deferred) settled; D6, D9 open (`docs/ROADMAP.md` §7). ADR-002 is proposed, awaiting the owner.
+Decisions: D1–D5, D7 (UniXcoder), D8 (LLM deferred), D9 (process: Claude proposes, owner approves repos) settled; D6 open (`docs/ROADMAP.md` §7). ADR-001 and ADR-002 accepted.

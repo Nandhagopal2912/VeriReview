@@ -1,0 +1,20 @@
+{
+  "case_id": "a-validation-06-pydantic-model",
+  "category": "validation",
+  "file_path": "billing/charge.py",
+  "target_symbol": "charge",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "A pydantic model with `Field(gt=0)` in the same file rejects non-positive amounts before charging.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate `amount` is positive before charging",
+      "target": "amount",
+      "condition": "amount <= 0",
+      "expected_behavior": null
+    }
+  ]
+}

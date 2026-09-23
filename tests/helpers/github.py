@@ -36,6 +36,8 @@ class FakeGitHub:
             f"{prefix}/pulls/7/files": "files.json",
             f"{prefix}/issues/7/timeline": "timeline.json",
             f"{prefix}/compare/{C2}...{C4}": "compare_2_4.json",
+            f"{prefix}/pulls": "pulls.json",
+            f"{prefix}/license": "license.json",
         }
         if request.method == "POST" and path == "/graphql":
             return httpx.Response(200, json=load_fixture("graphql_threads.json"))

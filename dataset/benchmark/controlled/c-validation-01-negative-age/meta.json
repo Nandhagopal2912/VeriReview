@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-01-negative-age",
+  "category": "validation",
+  "file_path": "people/profile.py",
+  "target_symbol": "set_age",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A negative age now raises before it is stored.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject negative `age`",
+      "target": "age",
+      "condition": "age < 0",
+      "expected_behavior": "negative age is rejected"
+    }
+  ]
+}

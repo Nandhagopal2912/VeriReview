@@ -1,6 +1,6 @@
 # ADR-002: Code-model evidence is neutral until the benchmark can justify more
 
-- **Status:** Proposed (Phase 7; to be confirmed by the project owner)
+- **Status:** Accepted (project owner, 2026-09-23)
 - **Date:** 2026-09-23
 - **Phase:** 7 (feeds Phase 8b)
 

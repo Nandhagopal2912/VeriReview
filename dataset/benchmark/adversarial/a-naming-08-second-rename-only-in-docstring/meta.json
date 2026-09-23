@@ -1,0 +1,28 @@
+{
+  "case_id": "a-naming-08-second-rename-only-in-docstring",
+  "category": "naming",
+  "file_path": "stats/window.py",
+  "target_symbol": "sliding",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "`w` became `window`; `step` appears only in the docstring and the parameter is still `s`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `w` to `window`",
+      "target": "w",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename `s` to `step`",
+      "target": "s",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

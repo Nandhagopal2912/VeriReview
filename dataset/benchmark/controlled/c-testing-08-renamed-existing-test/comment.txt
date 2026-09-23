@@ -1,0 +1,1 @@
+We need a test for restocking a product that is out of stock.

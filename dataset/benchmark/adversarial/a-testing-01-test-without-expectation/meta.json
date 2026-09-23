@@ -1,0 +1,20 @@
+{
+  "case_id": "a-testing-01-test-without-expectation",
+  "category": "testing",
+  "file_path": "inventory/remove.py",
+  "target_symbol": "remove_stock",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "The new test calls `remove_stock` with too much but expects no error (no pytest.raises); it does not test the requested behaviour, and would fail.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that removing more than in stock raises ValueError",
+      "target": "remove_stock",
+      "condition": "amount > stock",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-08-definition-only",
+  "category": "naming",
+  "file_path": "billing/invoices.py",
+  "target_symbol": "get_data",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Only the definition was renamed; `monthly_total` still calls `get_data`, which no longer exists.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `get_data` to `fetch_invoices`",
+      "target": "get_data",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

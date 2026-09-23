@@ -9,6 +9,7 @@ from verireview.gh.errors import GitHubNotFoundError
 from verireview.gh.models import (
     GhChangedFile,
     GhCommit,
+    GhLicense,
     GhPullRequest,
     GhReviewComment,
     GhThreadState,
@@ -126,6 +127,19 @@ class GitHubApi:
             return self._client.get_text(
                 f"/repos/{repo}/contents/{quote(path, safe='/')}", params={"ref": _sha(ref)}
             )
+        except GitHubNotFoundError:
+            return None
+
+    def list_pulls(self, repo: RepoRef, max_items: int = 100) -> list[GhPullRequest]:
+        """Closed pull requests, most recently updated first (merged or not)."""
+        params = {"state": "closed", "sort": "updated", "direction": "desc"}
+        items = self._client.get_paginated(f"/repos/{repo}/pulls", params, max_items=max_items)
+        return [GhPullRequest.model_validate(i) for i in items]
+
+    def get_license(self, repo: RepoRef) -> GhLicense | None:
+        """The repository's detected license, or None when GitHub finds none."""
+        try:
+            return GhLicense.model_validate(self._client.get_json(f"/repos/{repo}/license"))
         except GitHubNotFoundError:
             return None
 

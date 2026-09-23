@@ -1,0 +1,20 @@
+{
+  "case_id": "a-errors-05-narrow-handler-but-broad-kept",
+  "category": "error_handling",
+  "file_path": "jobs/import_rows.py",
+  "target_symbol": "import_rows",
+  "comment_line": 6,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "An `except ValueError` was added but the broad `except Exception` remains, so other errors still do not propagate.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch only ValueError; let other exceptions propagate",
+      "target": "parse",
+      "condition": "Exception",
+      "expected_behavior": "other errors propagate"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-05-local-variable",
+  "category": "naming",
+  "file_path": "accounts/signup.py",
+  "target_symbol": "signup",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The reviewer's suggested name is used for the variable and all its uses.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `tmp` to `normalized_email`",
+      "target": "tmp",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "a-errors-04-commented-out-handler",
+  "category": "error_handling",
+  "file_path": "fx/rates.py",
+  "target_symbol": "fetch_rates",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "commented_out",
+  "rationale": "The handler exists only as comments.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch `requests.Timeout` and return {}",
+      "target": "requests.get",
+      "condition": "requests.Timeout",
+      "expected_behavior": "returns {}"
+    }
+  ]
+}

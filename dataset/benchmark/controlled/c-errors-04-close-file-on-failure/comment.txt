@@ -1,0 +1,1 @@
+The file stays open if parsing fails. Please make sure it gets closed.

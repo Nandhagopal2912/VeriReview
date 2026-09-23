@@ -1,0 +1,1 @@
+Handle the KeyError by returning the default value.

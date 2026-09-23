@@ -1,0 +1,28 @@
+{
+  "case_id": "c-errors-10-log-but-no-500",
+  "category": "error_handling",
+  "file_path": "web/reports.py",
+  "target_symbol": "report",
+  "comment_line": 13,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The failure is logged, but the error response has the default status 200, not 500.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the error when report generation fails",
+      "target": "build_report",
+      "condition": "exception",
+      "expected_behavior": "error logged"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return HTTP 500 when report generation fails",
+      "target": "report",
+      "condition": "exception",
+      "expected_behavior": "status 500"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-05-commented-out-rename",
+  "category": "naming",
+  "file_path": "orders/total.py",
+  "target_symbol": "order_total",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "commented_out",
+  "rationale": "The renamed line exists only as a comment.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `tp` to `total_price`",
+      "target": "tp",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

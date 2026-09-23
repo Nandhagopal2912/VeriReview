@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-02-name-in-log-string",
+  "category": "naming",
+  "file_path": "orders/total.py",
+  "target_symbol": "order_total",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "`total_price` appears only inside a log string; the variable is still `tp`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `tp` to `total_price`",
+      "target": "tp",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

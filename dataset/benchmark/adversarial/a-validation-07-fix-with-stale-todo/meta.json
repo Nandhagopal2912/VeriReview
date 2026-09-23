@@ -1,0 +1,20 @@
+{
+  "case_id": "a-validation-07-fix-with-stale-todo",
+  "category": "validation",
+  "file_path": "billing/refund.py",
+  "target_symbol": "refund",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "misleading_comment",
+  "rationale": "The check is in place; the leftover TODO is stale.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate `amount` is positive",
+      "target": "amount",
+      "condition": "amount <= 0",
+      "expected_behavior": null
+    }
+  ]
+}

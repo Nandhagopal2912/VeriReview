@@ -1,0 +1,1 @@
+Catch `requests.Timeout` here and return None instead of crashing.

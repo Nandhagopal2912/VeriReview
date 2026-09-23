@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-03-django-invalid-json-400",
+  "category": "api_behavior",
+  "file_path": "shop/views.py",
+  "target_symbol": "create_order",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A JSONDecodeError now returns a 400 JsonResponse with an error message.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 with an error message for invalid JSON",
+      "target": "create_order",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "HTTP 400 with error"
+    }
+  ]
+}

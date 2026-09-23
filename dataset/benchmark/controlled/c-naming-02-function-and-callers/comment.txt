@@ -1,0 +1,1 @@
+`calc` is too generic. Rename it to `calculate_shipping` (and update the callers).

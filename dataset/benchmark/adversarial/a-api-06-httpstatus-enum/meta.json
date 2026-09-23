@@ -1,0 +1,20 @@
+{
+  "case_id": "a-api-06-httpstatus-enum",
+  "category": "api_behavior",
+  "file_path": "web/rating.py",
+  "target_symbol": "rate",
+  "comment_line": 8,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "Invalid stars return `HTTPStatus.BAD_REQUEST`, which is 400.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 when `stars` is not between 1 and 5",
+      "target": "rate",
+      "condition": "stars not in 1..5",
+      "expected_behavior": "HTTP 400"
+    }
+  ]
+}

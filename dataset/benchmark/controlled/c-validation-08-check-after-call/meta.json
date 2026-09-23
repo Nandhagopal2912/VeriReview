@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-08-check-after-call",
+  "category": "validation",
+  "file_path": "clients/webhook.py",
+  "target_symbol": "notify",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_order",
+  "rationale": "The https check runs after the request was already sent.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `url` uses https before the request",
+      "target": "url",
+      "condition": null,
+      "expected_behavior": "insecure url is not called"
+    }
+  ]
+}

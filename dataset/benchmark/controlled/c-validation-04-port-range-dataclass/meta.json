@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-04-port-range-dataclass",
+  "category": "validation",
+  "file_path": "net/config.py",
+  "target_symbol": "ServerConfig",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "`__post_init__` rejects ports outside 1..65535 when the config is created.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate `port` is between 1 and 65535",
+      "target": "port",
+      "condition": "port < 1 or port > 65535",
+      "expected_behavior": null
+    }
+  ]
+}

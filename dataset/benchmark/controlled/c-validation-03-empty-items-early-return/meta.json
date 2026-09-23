@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-03-empty-items-early-return",
+  "category": "validation",
+  "file_path": "orders/pack.py",
+  "target_symbol": "pack",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An empty `items` returns before a box is created.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Return early when `items` is empty",
+      "target": "items",
+      "condition": "not items",
+      "expected_behavior": "no box is created"
+    }
+  ]
+}

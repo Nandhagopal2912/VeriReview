@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-12-right-status-code",
+  "category": "api_behavior",
+  "file_path": "web/upload.py",
+  "target_symbol": "upload",
+  "comment_line": 10,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The reviewer names no code; 400 and 413 are both defensible, so whether 400 is 'right' cannot be decided. Ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Use the right status code for a too-large upload",
+      "target": "upload",
+      "condition": "content too large",
+      "expected_behavior": null
+    }
+  ]
+}

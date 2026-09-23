@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-12-opaque-guard",
+  "category": "error_handling",
+  "file_path": "orders/save.py",
+  "target_symbol": "save_order",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The insert is wrapped in `db_guard()`, defined elsewhere; what it does when the database is down cannot be seen.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle the database being down",
+      "target": "db.orders.insert",
+      "condition": "database unavailable",
+      "expected_behavior": null
+    }
+  ]
+}

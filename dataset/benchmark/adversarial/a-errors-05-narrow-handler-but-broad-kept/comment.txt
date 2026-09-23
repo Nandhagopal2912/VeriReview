@@ -1,0 +1,1 @@
+Catch only `ValueError` here, not every exception; other errors should propagate.

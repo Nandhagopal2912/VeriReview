@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-02-fastapi-409",
+  "category": "api_behavior",
+  "file_path": "api/users.py",
+  "target_symbol": "register",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A duplicate email raises HTTPException 409 before the insert.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 409 when the email is already registered",
+      "target": "register",
+      "condition": "email in USERS",
+      "expected_behavior": "HTTP 409"
+    }
+  ]
+}

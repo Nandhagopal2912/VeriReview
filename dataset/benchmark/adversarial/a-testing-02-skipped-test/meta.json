@@ -1,0 +1,20 @@
+{
+  "case_id": "a-testing-02-skipped-test",
+  "category": "testing",
+  "file_path": "inventory/remove.py",
+  "target_symbol": "remove_stock",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The new test is marked skip, so it never runs.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that removing more than in stock raises ValueError",
+      "target": "remove_stock",
+      "condition": "amount > stock",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

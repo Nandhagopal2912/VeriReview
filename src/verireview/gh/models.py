@@ -29,6 +29,7 @@ class GhPullRequest(_GhModel):
     user: GhUser | None = None
     base: GhRef
     head: GhRef
+    merged_at: datetime | None = None
 
 
 class GhReviewComment(_GhModel):
@@ -93,3 +94,17 @@ class GhThreadState(_GhModel):
     is_resolved: bool
     is_outdated: bool
     resolved_by: str | None = None
+
+
+class GhLicenseInfo(_GhModel):
+    spdx_id: str | None = None
+    name: str | None = None
+
+
+class GhLicense(_GhModel):
+    """``GET /repos/{owner}/{repo}/license``: the detected license and its text (base64)."""
+
+    license: GhLicenseInfo | None = None
+    content: str = ""
+    encoding: str = "base64"
+    html_url: str | None = None

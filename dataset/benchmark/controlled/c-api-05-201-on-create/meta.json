@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-05-201-on-create",
+  "category": "api_behavior",
+  "file_path": "web/notes.py",
+  "target_symbol": "create_note",
+  "comment_line": 11,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The create endpoint now returns status 201.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 201 when a note is created",
+      "target": "create_note",
+      "condition": null,
+      "expected_behavior": "HTTP 201"
+    }
+  ]
+}

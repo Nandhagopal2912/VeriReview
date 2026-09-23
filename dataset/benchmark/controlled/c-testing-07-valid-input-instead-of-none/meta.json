@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-07-valid-input-instead-of-none",
+  "category": "testing",
+  "file_path": "accounts/display.py",
+  "target_symbol": "display_name",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "The new test passes a real user; the None case is still untested.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for `user` None",
+      "target": "display_name",
+      "condition": "user is None",
+      "expected_behavior": "returns 'anonymous'"
+    }
+  ]
+}

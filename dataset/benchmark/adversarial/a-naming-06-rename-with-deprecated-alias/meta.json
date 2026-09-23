@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-06-rename-with-deprecated-alias",
+  "category": "naming",
+  "file_path": "accounts/api.py",
+  "target_symbol": "get_user",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "The function is renamed and used under its new name; the old name survives only as a deprecated alias for compatibility.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `get_user` to `fetch_user`",
+      "target": "get_user",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

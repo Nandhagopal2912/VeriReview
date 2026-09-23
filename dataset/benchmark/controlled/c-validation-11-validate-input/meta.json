@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-11-validate-input",
+  "category": "validation",
+  "file_path": "geo/route.py",
+  "target_symbol": "route",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The request does not say which input or what to check; `mode` is now checked but the others are not. Ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the input",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

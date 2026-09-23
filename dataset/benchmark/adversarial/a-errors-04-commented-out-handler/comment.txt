@@ -1,0 +1,1 @@
+Catch `requests.Timeout` and return an empty dict.

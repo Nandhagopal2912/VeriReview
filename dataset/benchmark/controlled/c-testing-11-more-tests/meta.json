@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-11-more-tests",
+  "category": "testing",
+  "file_path": "geo/distance.py",
+  "target_symbol": "haversine",
+  "comment_line": 8,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The request names no behaviour or input to test; ambiguous, whatever tests were added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add more tests",
+      "target": "haversine",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

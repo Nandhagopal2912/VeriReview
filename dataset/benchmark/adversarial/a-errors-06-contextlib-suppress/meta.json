@@ -1,0 +1,20 @@
+{
+  "case_id": "a-errors-06-contextlib-suppress",
+  "category": "error_handling",
+  "file_path": "cache/files.py",
+  "target_symbol": "clear_cache",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "`contextlib.suppress(FileNotFoundError)` ignores a missing file.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Ignore FileNotFoundError when the cache file is missing",
+      "target": "os.remove",
+      "condition": "FileNotFoundError",
+      "expected_behavior": null
+    }
+  ]
+}

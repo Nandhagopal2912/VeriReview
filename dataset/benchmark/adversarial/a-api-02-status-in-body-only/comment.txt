@@ -1,0 +1,1 @@
+Return 400 if `stars` is not between 1 and 5.

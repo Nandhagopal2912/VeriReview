@@ -1,0 +1,1 @@
+Handle the `ConnectionError` properly: log it and re-raise.

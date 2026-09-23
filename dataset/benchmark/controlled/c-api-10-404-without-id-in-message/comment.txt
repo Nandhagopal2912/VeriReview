@@ -1,0 +1,1 @@
+Return 404 if the book is missing, and include the book id in the error message.

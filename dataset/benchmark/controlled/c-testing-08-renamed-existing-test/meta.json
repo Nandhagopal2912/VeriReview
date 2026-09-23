@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-08-renamed-existing-test",
+  "category": "testing",
+  "file_path": "inventory/stock.py",
+  "target_symbol": "restock",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "An existing test was only renamed; it still restocks an in-stock product.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for restocking an out-of-stock product",
+      "target": "restock",
+      "condition": "stock is 0",
+      "expected_behavior": null
+    }
+  ]
+}

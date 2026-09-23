@@ -1,0 +1,1 @@
+Add tests that zero and negative amounts are rejected.

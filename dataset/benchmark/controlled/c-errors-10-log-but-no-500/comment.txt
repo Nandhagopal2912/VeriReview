@@ -1,0 +1,1 @@
+If the report generation fails, log the error and return a 500.

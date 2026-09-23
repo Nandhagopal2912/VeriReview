@@ -1,0 +1,1 @@
+Rename `n` to `count` and `f` to `factor`.

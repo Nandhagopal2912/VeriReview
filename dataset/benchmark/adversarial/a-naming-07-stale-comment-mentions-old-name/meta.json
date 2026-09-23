@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-07-stale-comment-mentions-old-name",
+  "category": "naming",
+  "file_path": "orders/total.py",
+  "target_symbol": "order_total",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "misleading_comment",
+  "rationale": "The variable is renamed everywhere; the stale TODO comment does not change that.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `tp` to `total_price`",
+      "target": "tp",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

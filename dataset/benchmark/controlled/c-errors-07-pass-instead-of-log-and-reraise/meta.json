@@ -1,0 +1,28 @@
+{
+  "case_id": "c-errors-07-pass-instead-of-log-and-reraise",
+  "category": "error_handling",
+  "file_path": "sync/push.py",
+  "target_symbol": "push",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "The ConnectionError is now silently swallowed: neither logged nor re-raised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the ConnectionError",
+      "target": "remote.send",
+      "condition": "ConnectionError",
+      "expected_behavior": "error is logged"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Re-raise the ConnectionError",
+      "target": "remote.send",
+      "condition": "ConnectionError",
+      "expected_behavior": "error propagates"
+    }
+  ]
+}

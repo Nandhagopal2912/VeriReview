@@ -1,0 +1,1 @@
+`profiles[user_id]` raises KeyError for unknown users; handle that.

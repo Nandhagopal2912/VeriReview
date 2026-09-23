@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-11-confusing-names",
+  "category": "naming",
+  "file_path": "etl/transform.py",
+  "target_symbol": "transform",
+  "comment_line": 1,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The request names no target or new name, so it cannot be verified (ambiguous), even though names changed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Use clearer names",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

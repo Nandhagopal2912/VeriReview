@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-05-raise-on-missing-key",
+  "category": "error_handling",
+  "file_path": "catalog/lookup.py",
+  "target_symbol": "price_of",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An unknown SKU now raises KeyError with the SKU in the message.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Raise KeyError for an unknown SKU",
+      "target": "sku",
+      "condition": "item is None",
+      "expected_behavior": "KeyError raised"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Constants should be descriptive: `MAXN` -> `MAX_ITEMS`.

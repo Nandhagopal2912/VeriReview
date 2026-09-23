@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-08-404-on-wrong-branch",
+  "category": "api_behavior",
+  "file_path": "web/profiles.py",
+  "target_symbol": "profile",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "The 404 is returned when the user IS found (inverted condition); a missing user still gets 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the user is not found",
+      "target": "profile",
+      "condition": "user is None",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-04-close-file-on-failure",
+  "category": "error_handling",
+  "file_path": "importer/csv_import.py",
+  "target_symbol": "read_rows",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A `with` block closes the file even when parsing raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Close the file even if parsing fails",
+      "target": "open",
+      "condition": "parsing raises",
+      "expected_behavior": "file is closed"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "a-api-05-response-built-but-not-returned",
+  "category": "api_behavior",
+  "file_path": "web/rating.py",
+  "target_symbol": "rate",
+  "comment_line": 8,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "A 400 response is built but never returned; invalid stars still get 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 when `stars` is not between 1 and 5",
+      "target": "rate",
+      "condition": "stars not in 1..5",
+      "expected_behavior": "HTTP 400"
+    }
+  ]
+}

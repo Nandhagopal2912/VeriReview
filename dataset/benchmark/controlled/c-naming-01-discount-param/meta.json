@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-01-discount-param",
+  "category": "naming",
+  "file_path": "pricing/discounts.py",
+  "target_symbol": "apply_discount",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Parameter `d` is renamed to `discount` in the signature and every use.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `d` to `discount`",
+      "target": "d",
+      "condition": null,
+      "expected_behavior": "parameter is called discount"
+    }
+  ]
+}

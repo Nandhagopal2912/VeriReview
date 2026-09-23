@@ -1,0 +1,1 @@
+Validate `username` and `password` before creating the account.

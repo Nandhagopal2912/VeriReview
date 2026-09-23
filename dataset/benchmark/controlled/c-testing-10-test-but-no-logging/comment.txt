@@ -1,0 +1,1 @@
+Add a test for the timeout case, and log the timeout.

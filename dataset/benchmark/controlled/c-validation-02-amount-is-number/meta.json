@@ -1,0 +1,20 @@
+{
+  "case_id": "c-validation-02-amount-is-number",
+  "category": "validation",
+  "file_path": "wallet/topup.py",
+  "target_symbol": "top_up",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An isinstance check rejects non-numbers before the balance changes.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check that `amount` is a number",
+      "target": "amount",
+      "condition": null,
+      "expected_behavior": "non-numbers are rejected"
+    }
+  ]
+}

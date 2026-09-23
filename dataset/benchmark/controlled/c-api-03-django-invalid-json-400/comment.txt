@@ -1,0 +1,1 @@
+Invalid JSON should give a 400 with an error message, not a 500.

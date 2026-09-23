@@ -1,0 +1,28 @@
+{
+  "case_id": "c-api-09-400-but-not-422",
+  "category": "api_behavior",
+  "file_path": "api/pets.py",
+  "target_symbol": "add_pet",
+  "comment_line": 8,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Missing name gives 400; an invalid age is still accepted (no 422).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 for a missing `name`",
+      "target": "add_pet",
+      "condition": "name missing",
+      "expected_behavior": "HTTP 400"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return 422 for an invalid `age`",
+      "target": "add_pet",
+      "condition": "age invalid",
+      "expected_behavior": "HTTP 422"
+    }
+  ]
+}

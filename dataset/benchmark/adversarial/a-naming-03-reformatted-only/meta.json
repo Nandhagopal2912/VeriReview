@@ -1,0 +1,20 @@
+{
+  "case_id": "a-naming-03-reformatted-only",
+  "category": "naming",
+  "file_path": "geo/bbox.py",
+  "target_symbol": "area",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "formatting_only",
+  "rationale": "The line was reformatted; `bb` is unchanged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `bb` to `bounding_box`",
+      "target": "bb",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

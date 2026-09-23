@@ -1,0 +1,1 @@
+Return 400 if `email` is missing from the body.

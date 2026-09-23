@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-06-test-never-calls-function",
+  "category": "testing",
+  "file_path": "shop/tax.py",
+  "target_symbol": "tax",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "The new test only checks the RATES table; it never calls `tax`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the zero-rate case",
+      "target": "tax",
+      "condition": "kind == 'food'",
+      "expected_behavior": null
+    }
+  ]
+}

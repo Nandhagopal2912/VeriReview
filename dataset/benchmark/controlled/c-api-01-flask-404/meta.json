@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-01-flask-404",
+  "category": "api_behavior",
+  "file_path": "web/items.py",
+  "target_symbol": "get_item",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A missing item now aborts with 404.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the item does not exist",
+      "target": "get_item",
+      "condition": "item is None",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

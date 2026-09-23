@@ -1,0 +1,1 @@
+Don't swallow this silently; log it with the traceback.

@@ -1,0 +1,1 @@
+Return 400 if `stars` is not between 1 and 5, and log the rejected value.

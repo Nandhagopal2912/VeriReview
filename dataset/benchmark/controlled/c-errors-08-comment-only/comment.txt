@@ -1,0 +1,1 @@
+This can raise `KeyError` when the entry expired; please handle it.

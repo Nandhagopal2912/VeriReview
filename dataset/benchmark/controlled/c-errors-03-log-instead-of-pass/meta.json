@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-03-log-instead-of-pass",
+  "category": "error_handling",
+  "file_path": "jobs/cleanup.py",
+  "target_symbol": "cleanup",
+  "comment_line": 10,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "`pass` is replaced by `logger.exception`, which logs the traceback.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the exception with its traceback instead of passing",
+      "target": "storage.delete",
+      "condition": "Exception",
+      "expected_behavior": "logged with traceback"
+    }
+  ]
+}

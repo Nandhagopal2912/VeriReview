@@ -1,0 +1,28 @@
+{
+  "case_id": "c-testing-09-empty-but-not-single",
+  "category": "testing",
+  "file_path": "stats/median.py",
+  "target_symbol": "median",
+  "comment_line": 5,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The empty-list test was added; there is no single-item test.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the empty list",
+      "target": "median",
+      "condition": "values == []",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for a single-item list",
+      "target": "median",
+      "condition": "len(values) == 1",
+      "expected_behavior": null
+    }
+  ]
+}

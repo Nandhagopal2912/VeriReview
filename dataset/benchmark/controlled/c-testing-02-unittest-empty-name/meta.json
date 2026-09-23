@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-02-unittest-empty-name",
+  "category": "testing",
+  "file_path": "people/names.py",
+  "target_symbol": "greeting",
+  "comment_line": 3,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A unittest test calls `greeting('')` and asserts ValueError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an empty name",
+      "target": "greeting",
+      "condition": "name == ''",
+      "expected_behavior": "ValueError is raised"
+    }
+  ]
+}

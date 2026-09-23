@@ -1,0 +1,28 @@
+{
+  "case_id": "a-errors-08-log-but-swallow",
+  "category": "error_handling",
+  "file_path": "sync/upload.py",
+  "target_symbol": "upload",
+  "comment_line": 7,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The error is logged, but then swallowed (returns None) instead of re-raised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the upload error",
+      "target": "bucket.put",
+      "condition": "OSError",
+      "expected_behavior": "logged"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Re-raise the upload error",
+      "target": "bucket.put",
+      "condition": "OSError",
+      "expected_behavior": "propagates"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Validate that `port` is between 1 and 65535.

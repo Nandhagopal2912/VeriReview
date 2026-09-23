@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-03-constant",
+  "category": "naming",
+  "file_path": "cart/limits.py",
+  "target_symbol": null,
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The constant and both uses are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `MAXN` to `MAX_ITEMS`",
+      "target": "MAXN",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

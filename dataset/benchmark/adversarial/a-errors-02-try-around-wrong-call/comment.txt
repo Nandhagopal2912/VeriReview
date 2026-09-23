@@ -1,0 +1,1 @@
+`requests.get` can raise `RequestException`; catch it and return an empty dict.

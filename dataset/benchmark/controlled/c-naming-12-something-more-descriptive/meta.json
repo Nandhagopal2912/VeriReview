@@ -1,0 +1,20 @@
+{
+  "case_id": "c-naming-12-something-more-descriptive",
+  "category": "naming",
+  "file_path": "reports/weekly.py",
+  "target_symbol": "weekly",
+  "comment_line": 3,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "It is unclear which name the reviewer means (`t`, `m` or `data`); the request is ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Use a more descriptive name",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

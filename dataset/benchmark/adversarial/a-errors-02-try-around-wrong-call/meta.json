@@ -1,0 +1,20 @@
+{
+  "case_id": "a-errors-02-try-around-wrong-call",
+  "category": "error_handling",
+  "file_path": "fx/rates.py",
+  "target_symbol": "fetch_rates",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The try block wraps the JSON parsing, not the `requests.get` call that raises RequestException.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch `RequestException` from `requests.get` and return {}",
+      "target": "requests.get",
+      "condition": "RequestException",
+      "expected_behavior": "returns {}"
+    }
+  ]
+}

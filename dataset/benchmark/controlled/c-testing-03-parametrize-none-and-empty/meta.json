@@ -1,0 +1,28 @@
+{
+  "case_id": "c-testing-03-parametrize-none-and-empty",
+  "category": "testing",
+  "file_path": "text/slug.py",
+  "target_symbol": "slugify",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "One parametrized test covers both None and the empty string.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for None",
+      "target": "slugify",
+      "condition": "title is None",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for the empty string",
+      "target": "slugify",
+      "condition": "title == ''",
+      "expected_behavior": null
+    }
+  ]
+}

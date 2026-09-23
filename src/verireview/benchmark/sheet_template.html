@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:">
+<title>__TITLE__</title>
+<style>
+:root { --bg:#fff; --fg:#1d1d1f; --muted:#6b6b70; --line:#dcdce0; --panel:#f6f6f8; --add:#e6f4ea; --del:#fde8e8; --hi:#fff4c2; --accent:#2f5bd3; --bad:#b3261e; }
+@media (prefers-color-scheme: dark) { :root { --bg:#17171a; --fg:#ececf0; --muted:#9a9aa3; --line:#34343a; --panel:#202025; --add:#173a24; --del:#46201f; --hi:#4a3f10; --accent:#8fa8ff; --bad:#ff8a80; } }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui, sans-serif; }
+header { position:sticky; top:0; z-index:2; display:flex; gap:12px; align-items:center; flex-wrap:wrap; padding:8px 16px; background:var(--panel); border-bottom:1px solid var(--line); }
+header h1 { font-size:15px; margin:0 8px 0 0; }
+main { display:grid; grid-template-columns: 240px 1fr; min-height:calc(100vh - 50px); }
+nav { border-right:1px solid var(--line); overflow:auto; max-height:calc(100vh - 50px); position:sticky; top:50px; }
+nav button { display:block; width:100%; text-align:left; border:0; border-bottom:1px solid var(--line); background:none; color:var(--fg); padding:6px 10px; font-size:12px; cursor:pointer; }
+nav button.active { background:var(--hi); }
+nav .done::before { content:"✓ "; color:green; }
+section { padding:12px 16px 80px; min-width:0; }
+h2 { font-size:15px; margin:4px 0 8px; word-break:break-all; }
+h3 { font-size:13px; margin:16px 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+pre { margin:0; padding:8px; background:var(--panel); border:1px solid var(--line); overflow:auto; font:12px/1.4 ui-monospace, Consolas, monospace; white-space:pre; }
+.comment { border:1px solid var(--line); border-radius:6px; padding:6px 8px; margin:6px 0; }
+.comment b { color:var(--muted); font-weight:600; }
+.comment pre { background:none; border:0; padding:4px 0 0; white-space:pre-wrap; font-family:inherit; font-size:13px; }
+.code .ln { color:var(--muted); display:inline-block; width:4.5em; user-select:none; }
+.code .hi { background:var(--hi); display:block; }
+.diff .a { background:var(--add); display:block; } .diff .d { background:var(--del); display:block; } .diff .h { color:var(--accent); display:block; }
+form { display:grid; gap:8px; max-width:900px; }
+fieldset { border:1px solid var(--line); border-radius:6px; }
+.row { display:grid; grid-template-columns: 150px 1fr 150px 32px; gap:6px; margin:4px 0; }
+input[type=text], select, textarea { width:100%; padding:4px 6px; background:var(--bg); color:var(--fg); border:1px solid var(--line); border-radius:4px; font:inherit; }
+textarea { min-height:48px; }
+.verdict { font-weight:700; }
+.err { color:var(--bad); }
+.muted { color:var(--muted); }
+.side { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width: 760px) { main { grid-template-columns:1fr; } nav { position:static; max-height:180px; } .row { grid-template-columns:1fr; } .side { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title"></h1>
+  <label>Your name <input type="text" id="who" size="14"></label>
+  <span id="progress" class="muted"></span>
+  <button id="export" type="button">Export JSON</button>
+  <label class="muted">Import <input type="file" id="import" accept="application/json"></label>
+  <span id="msg" class="err"></span>
+</header>
+<main><nav id="nav"></nav><section id="view"></section></main>
+<script type="application/json" id="data">__DATA__</script>
+<script>
+"use strict";
+const DATA = JSON.parse(document.getElementById("data").textContent);
+const CATEGORIES = ["naming","validation","testing","error_handling","api_behavior","other"];
+const STATUSES = ["satisfied","not_satisfied","uncertain"];
+const REASONS = ["no_requirement","not_python_code","window_unusable","requires_external_context","bot_or_automated"];
+const ADJ = DATA.mode === "adjudicate";
+let state = { who: "", labels: {}, decisions: {} };
+let current = 0;
+
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") e.className = v; else if (k.startsWith("on")) e.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) e.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) if (kid !== null && kid !== undefined) e.append(kid instanceof Node ? kid : document.createTextNode(String(kid)));
+  return e;
+}
+function storageKey() { return "verireview-sheet:" + DATA.mode + ":" + DATA.batch; }
+function save() { try { localStorage.setItem(storageKey(), JSON.stringify(state)); } catch (e) { /* storage unavailable: export still works */ } }
+function load() { try { const s = JSON.parse(localStorage.getItem(storageKey()) || "null"); if (s) state = Object.assign(state, s); } catch (e) {} }
+
+function deriveVerdict(label) {
+  if (label.ambiguous) return "UNCERTAIN";
+  const s = new Set(label.requirements.map(r => r.status));
+  if (s.has("satisfied") && s.has("not_satisfied")) return "PARTIALLY_SATISFIED";
+  if (s.has("not_satisfied")) return "NOT_SATISFIED";
+  if (s.has("uncertain")) return "UNCERTAIN";
+  return "SATISFIED";
+}
+function blankLabel(id) {
+  return { case_id: id, include: true, exclusion_reason: null, requirements: [{ category: "validation", description: "", status: "satisfied" }],
+           ambiguous: false, evidence: "", confidence: "medium", notes: "" };
+}
+function problems(label) {
+  if (!label) return ["not labelled"];
+  if (!label.include) return label.exclusion_reason ? [] : ["choose an exclusion reason"];
+  const out = [];
+  if (!label.requirements.length) out.push("add at least one requirement");
+  label.requirements.forEach((r, i) => { if ((r.description || "").trim().length < 3) out.push("R" + (i + 1) + ": describe the requirement"); });
+  return out;
+}
+function finished(label) { return label && label.done && problems(label).length === 0; }
+
+function renderNav() {
+  const nav = document.getElementById("nav");
+  nav.replaceChildren(...DATA.cases.map((c, i) => {
+    const done = ADJ ? !!(state.decisions[c.case_id] && state.decisions[c.case_id].reason) : finished(state.labels[c.case_id]);
+    return el("button", { class: (i === current ? "active " : "") + (done ? "done" : ""), onclick: () => { current = i; render(); } }, c.case_id);
+  }));
+  const n = DATA.cases.filter(c => ADJ ? state.decisions[c.case_id] && state.decisions[c.case_id].reason : finished(state.labels[c.case_id])).length;
+  document.getElementById("progress").textContent = n + " / " + DATA.cases.length + " done";
+}
+
+function codeBlock(lines, anchor) {
+  return el("pre", { class: "code" }, lines.map(([n, t]) => el("span", { class: n === anchor ? "hi" : "" }, el("span", { class: "ln" }, n), t, "\n")));
+}
+function diffBlock(text) {
+  if (!text) return el("p", { class: "muted" }, "No change.");
+  return el("pre", { class: "diff" }, text.split("\n").map(line => el("span", { class: line.startsWith("@@") ? "h" : line.startsWith("+") && !line.startsWith("+++") ? "a" : line.startsWith("-") && !line.startsWith("---") ? "d" : "" }, line + "\n")));
+}
+function caseView(c) {
+  const parts = [
+    el("h2", {}, c.case_id),
+    el("p", { class: "muted" }, c.repository + " · " + c.file_path + (c.anchor_line ? ":" + c.anchor_line : "") + " · " + c.commits + " commit(s) after the comment" + (c.flags.length ? " · flags: " + c.flags.join(", ") : "")),
+    el("h3", {}, "Review thread"),
+    ...c.thread.map((m, i) => el("div", { class: "comment" }, el("b", {}, (i === 0 ? "Review comment by " : "Reply by ") + m.author), el("pre", {}, m.body))),
+    el("h3", {}, "Code before the comment (commented line highlighted)"),
+    codeBlock(c.before_excerpt, c.anchor_line),
+    el("h3", {}, "Changes to " + c.file_path + " after the comment"),
+    diffBlock(c.diff),
+  ];
+  for (const [path, d] of c.test_diffs) parts.push(el("h3", {}, "Test changes: " + path), diffBlock(d));
+  parts.push(el("details", {}, el("summary", {}, "Full file before"), el("pre", {}, c.before_full)));
+  parts.push(el("details", {}, el("summary", {}, "Full file after"), el("pre", {}, c.after_full)));
+  return parts;
+}
+
+function select(options, value, onchange) {
+  return el("select", { onchange: e => onchange(e.target.value) }, options.map(o => el("option", { value: o, selected: o === value }, o)));
+}
+function labelForm(label, onchange) {
+  const upd = () => { onchange(label); };
+  const reqRows = label.requirements.map((r, i) => el("div", { class: "row" },
+    select(CATEGORIES, r.category, v => { r.category = v; upd(); }),
+    el("input", { type: "text", value: r.description, placeholder: "R" + (i + 1) + ": what was asked", oninput: e => { r.description = e.target.value; onchange(label, true); } }),
+    select(STATUSES, r.status, v => { r.status = v; upd(); }),
+    el("button", { type: "button", title: "remove", onclick: () => { label.requirements.splice(i, 1); upd(); } }, "×")));
+  const verdict = label.include ? deriveVerdict(label) : "excluded";
+  const issues = problems(label);
+  return el("form", { onsubmit: e => e.preventDefault() },
+    el("fieldset", {}, el("legend", {}, "Include this case?"),
+      el("label", {}, el("input", { type: "radio", name: "inc", checked: label.include, onchange: () => { label.include = true; label.exclusion_reason = null; upd(); } }), " yes "),
+      el("label", {}, el("input", { type: "radio", name: "inc", checked: !label.include, onchange: () => { label.include = false; upd(); } }), " no, because "),
+      select(["", ...REASONS], label.exclusion_reason || "", v => { label.exclusion_reason = v || null; upd(); })),
+    label.include ? el("fieldset", {}, el("legend", {}, "Requirements (category · description · status)"), ...reqRows,
+      el("button", { type: "button", onclick: () => { label.requirements.push({ category: "validation", description: "", status: "satisfied" }); upd(); } }, "+ requirement"),
+      el("p", {}, el("label", {}, el("input", { type: "checkbox", checked: label.ambiguous, onchange: e => { label.ambiguous = e.target.checked; upd(); } }), " The request is ambiguous (guide §5.4)"))) : null,
+    el("p", {}, "Verdict (derived, guide §5): ", el("span", { class: "verdict" }, verdict)),
+    el("label", {}, "Evidence (file:line in the after code, or 'nothing added')", el("textarea", { oninput: e => { label.evidence = e.target.value; onchange(label, true); } }, label.evidence)),
+    el("label", {}, "Your confidence ", select(["high","medium","low"], label.confidence, v => { label.confidence = v; upd(); })),
+    el("label", {}, "Notes", el("textarea", { oninput: e => { label.notes = e.target.value; onchange(label, true); } }, label.notes)),
+    el("p", {}, el("label", {}, el("input", { type: "checkbox", checked: !!label.done, onchange: e => { label.done = e.target.checked; upd(); } }), " Done with this case"), " ",
+      issues.length && label.done ? el("span", { class: "err" }, issues.join("; ")) : null));
+}
+function summary(label) {
+  if (!label) return el("p", { class: "muted" }, "not labelled");
+  if (!label.include) return el("p", {}, "Excluded: " + label.exclusion_reason);
+  return el("div", {}, el("p", { class: "verdict" }, label.verdict + (label.ambiguous ? " (ambiguous)" : "")),
+    el("ul", {}, label.requirements.map(r => el("li", {}, r.category + " · " + r.description + " → " + r.status))),
+    el("p", {}, "Evidence: " + (label.evidence || "—")), el("p", { class: "muted" }, "Notes: " + (label.notes || "—") + " · confidence " + label.confidence));
+}
+
+function render() {
+  const c = DATA.cases[current];
+  const view = document.getElementById("view");
+  const parts = caseView(c);
+  if (ADJ) {
+    const a = DATA.pair.a.annotations.find(x => x.case_id === c.case_id);
+    const b = DATA.pair.b.annotations.find(x => x.case_id === c.case_id);
+    const d = state.decisions[c.case_id] || (state.decisions[c.case_id] = { case_id: c.case_id, chosen: "a", label: null, reason: "" });
+    const redraw = keep => { save(); renderNav(); if (!keep) render(); };
+    parts.push(el("h3", {}, "Labels"), el("div", { class: "side" },
+      el("div", {}, el("b", {}, "A: " + DATA.pair.a.annotator), summary(a)),
+      el("div", {}, el("b", {}, "B: " + DATA.pair.b.annotator), summary(b))));
+    parts.push(el("h3", {}, "Decision"), el("p", {}, "Use ", select(["a","b","custom"], d.chosen, v => { d.chosen = v; d.label = v === "custom" ? JSON.parse(JSON.stringify(a || blankLabel(c.case_id))) : null; redraw(); })));
+    if (d.chosen === "custom") parts.push(labelForm(d.label, (l, keep) => redraw(keep)));
+    parts.push(el("label", {}, "Reason (required)", el("textarea", { oninput: e => { d.reason = e.target.value; redraw(true); } }, d.reason)));
+  } else {
+    const label = state.labels[c.case_id] || (state.labels[c.case_id] = blankLabel(c.case_id));
+    parts.push(el("h3", {}, "Your label"), labelForm(label, (l, keep) => { save(); renderNav(); if (!keep) render(); }));
+    if (c.reference) parts.push(el("details", {}, el("summary", {}, "Reveal the reference label (after you are done)"),
+      el("p", { class: "verdict" }, c.reference.verdict), el("p", {}, c.reference.rationale),
+      el("ul", {}, c.reference.requirements.map(r => el("li", {}, r.category + " · " + r.description)))));
+  }
+  view.replaceChildren(...parts);
+  renderNav();
+  window.scrollTo(0, 0);
+}
+
+function exportPayload() {
+  const who = document.getElementById("who").value.trim();
+  if (!who) throw new Error("Enter your name first.");
+  if (ADJ) {
+    const decisions = Object.values(state.decisions).filter(d => d.reason && d.reason.trim().length >= 3).map(d => {
+      const out = { case_id: d.case_id, chosen: d.chosen, reason: d.reason.trim() };
+      if (d.chosen === "custom") out.label = cleanLabel(d.label);
+      return out;
+    });
+    return { name: "adjudication-" + who, body: { adjudicator: who, decisions } };
+  }
+  const annotations = DATA.cases.map(c => state.labels[c.case_id]).filter(finished).map(cleanLabel);
+  return { name: "annotations-" + who, body: { annotator: who, batch: DATA.batch, sheet_version: DATA.version, annotations } };
+}
+function cleanLabel(l) {
+  const out = { case_id: l.case_id, include: l.include, exclusion_reason: l.include ? null : l.exclusion_reason,
+                requirements: l.include ? l.requirements.map(r => ({ category: r.category, description: r.description.trim(), status: r.status })) : [],
+                ambiguous: l.include ? l.ambiguous : false, verdict: l.include ? deriveVerdict(l) : null,
+                evidence: l.evidence, confidence: l.confidence, notes: l.notes };
+  return out;
+}
+function download() {
+  const msg = document.getElementById("msg");
+  try {
+    const { name, body } = exportPayload();
+    const blob = new Blob([JSON.stringify(body, null, 2) + "\n"], { type: "application/json" });
+    const a = el("a", { href: URL.createObjectURL(blob), download: name + "-" + DATA.batch + ".json" });
+    document.body.append(a); a.click(); a.remove();
+    msg.textContent = "";
+  } catch (e) { msg.textContent = e.message; }
+}
+function importFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const body = JSON.parse(reader.result);
+      if (ADJ) { for (const d of body.decisions || []) state.decisions[d.case_id] = d; }
+      else { for (const l of body.annotations || []) state.labels[l.case_id] = Object.assign(l, { done: true }); }
+      if (body.annotator || body.adjudicator) { state.who = body.annotator || body.adjudicator; document.getElementById("who").value = state.who; }
+      save(); render();
+    } catch (e) { document.getElementById("msg").textContent = "Import failed: " + e.message; }
+  };
+  reader.readAsText(file);
+}
+
+document.getElementById("title").textContent = document.title;
+document.getElementById("export").addEventListener("click", download);
+document.getElementById("import").addEventListener("change", e => e.target.files[0] && importFile(e.target.files[0]));
+document.getElementById("who").addEventListener("input", e => { state.who = e.target.value; save(); });
+load();
+document.getElementById("who").value = state.who || "";
+if (DATA.cases.length) render(); else document.getElementById("view").textContent = "No cases in this batch.";
+</script>
+</body>
+</html>

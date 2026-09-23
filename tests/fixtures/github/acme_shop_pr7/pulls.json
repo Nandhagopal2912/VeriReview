@@ -1,0 +1,40 @@
+[
+  {
+    "number": 7,
+    "title": "Add user service",
+    "state": "closed",
+    "html_url": "https://github.com/acme/shop/pull/7",
+    "user": {
+      "login": "dev-alice"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "0000000000000000000000000000000000000000"
+    },
+    "head": {
+      "ref": "user-service",
+      "sha": "4444444444444444444444444444444444444444"
+    },
+    "body": "Adds save_user.",
+    "merged_at": "2026-01-03T10:00:00Z"
+  },
+  {
+    "number": 8,
+    "title": "Abandoned",
+    "state": "closed",
+    "html_url": "https://github.com/acme/shop/pull/8",
+    "user": {
+      "login": "dev-alice"
+    },
+    "base": {
+      "ref": "main",
+      "sha": "0000000000000000000000000000000000000000"
+    },
+    "head": {
+      "ref": "user-service",
+      "sha": "4444444444444444444444444444444444444444"
+    },
+    "body": "Adds save_user.",
+    "merged_at": null
+  }
+]

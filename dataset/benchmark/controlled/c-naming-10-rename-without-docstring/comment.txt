@@ -1,0 +1,1 @@
+Rename `proc` to `process_payment` and add a docstring explaining the return value.

@@ -1,0 +1,28 @@
+{
+  "case_id": "c-naming-10-rename-without-docstring",
+  "category": "naming",
+  "file_path": "payments/process.py",
+  "target_symbol": "proc",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The function is renamed, but no docstring was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename `proc` to `process_payment`",
+      "target": "proc",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "other",
+      "description": "Add a docstring explaining the return value",
+      "target": "proc",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

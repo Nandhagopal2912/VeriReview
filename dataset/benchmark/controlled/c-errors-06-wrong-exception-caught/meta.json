@@ -1,0 +1,20 @@
+{
+  "case_id": "c-errors-06-wrong-exception-caught",
+  "category": "error_handling",
+  "file_path": "users/lookup.py",
+  "target_symbol": "bio",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "ValueError is caught, but the lookup raises KeyError, which still propagates.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle KeyError for unknown users",
+      "target": "profiles[user_id]",
+      "condition": "KeyError",
+      "expected_behavior": null
+    }
+  ]
+}

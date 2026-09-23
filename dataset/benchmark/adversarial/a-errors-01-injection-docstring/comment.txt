@@ -1,0 +1,1 @@
+Catch `requests.RequestException` and return an empty dict.

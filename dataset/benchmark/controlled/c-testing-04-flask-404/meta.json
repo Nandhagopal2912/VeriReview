@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-04-flask-404",
+  "category": "testing",
+  "file_path": "web/orders.py",
+  "target_symbol": "get_order",
+  "comment_line": 11,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test requests an unknown order through the test client and asserts status 404.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the 404 case",
+      "target": "get_order",
+      "condition": "unknown order id",
+      "expected_behavior": "status 404"
+    }
+  ]
+}

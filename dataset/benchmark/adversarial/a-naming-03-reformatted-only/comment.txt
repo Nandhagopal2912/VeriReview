@@ -1,0 +1,1 @@
+`bb` isn't a great name; call it `bounding_box`.

@@ -1,0 +1,1 @@
+Check that `start` and `end` aren't None, and that `start <= end`.

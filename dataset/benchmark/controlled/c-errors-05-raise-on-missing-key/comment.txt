@@ -1,0 +1,1 @@
+Raise a `KeyError` with a helpful message if the SKU is unknown, instead of returning None.

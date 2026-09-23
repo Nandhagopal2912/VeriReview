@@ -1,0 +1,28 @@
+{
+  "case_id": "c-validation-09-none-but-not-order",
+  "category": "validation",
+  "file_path": "calendar/ranges.py",
+  "target_symbol": "book",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The None checks were added; the `start <= end` order check was not.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `start` and `end` are not None",
+      "target": "start",
+      "condition": "start is None or end is None",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Check `start <= end`",
+      "target": "start",
+      "condition": "start > end",
+      "expected_behavior": null
+    }
+  ]
+}

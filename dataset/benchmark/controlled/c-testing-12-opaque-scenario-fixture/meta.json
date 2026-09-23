@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-12-opaque-scenario-fixture",
+  "category": "testing",
+  "file_path": "shop/basket.py",
+  "target_symbol": "set_quantity",
+  "comment_line": 3,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The new test delegates to a `run_scenario` fixture defined elsewhere; whether it calls `set_quantity` with a negative value cannot be seen.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for negative quantities",
+      "target": "set_quantity",
+      "condition": "quantity < 0",
+      "expected_behavior": null
+    }
+  ]
+}

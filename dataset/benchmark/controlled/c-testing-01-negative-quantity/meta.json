@@ -1,0 +1,20 @@
+{
+  "case_id": "c-testing-01-negative-quantity",
+  "category": "testing",
+  "file_path": "shop/cart.py",
+  "target_symbol": "add_item",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test calls `add_item` with -1 and expects ValueError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for a negative quantity",
+      "target": "add_item",
+      "condition": "quantity < 0",
+      "expected_behavior": "ValueError is raised"
+    }
+  ]
+}

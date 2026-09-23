@@ -1,0 +1,20 @@
+{
+  "case_id": "c-api-06-401-instead-of-403",
+  "category": "api_behavior",
+  "file_path": "admin/views.py",
+  "target_symbol": "delete_user",
+  "comment_line": 8,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "Non-admins get 401, not the requested 403.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 403 for non-admins",
+      "target": "delete_user",
+      "condition": "not g.user.is_admin",
+      "expected_behavior": "HTTP 403"
+    }
+  ]
+}

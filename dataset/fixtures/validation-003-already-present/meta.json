@@ -1,0 +1,20 @@
+{
+  "case_id": "validation-003-already-present",
+  "category": "validation",
+  "file_path": "inventory/stock.py",
+  "target_symbol": "reserve",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "pre_existing",
+  "rationale": "The requested check (`quantity <= 0` raises) already existed before the comment and is still present; labelled per ADR-001 (evaluate the final code).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate `quantity` is positive",
+      "target": "quantity",
+      "condition": "quantity <= 0",
+      "expected_behavior": "reject the reservation"
+    }
+  ]
+}

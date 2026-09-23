@@ -1,0 +1,28 @@
+{
+  "case_id": "validation-005-range-without-type",
+  "category": "validation",
+  "file_path": "people/age.py",
+  "target_symbol": "set_age",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The range check was added but there is no type check (`isinstance(age, int)`).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `age` is an int",
+      "target": "age",
+      "condition": "age is not an int",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Check `age` is between 0 and 150",
+      "target": "age",
+      "condition": "age < 0 or age > 150",
+      "expected_behavior": "reject"
+    }
+  ]
+}

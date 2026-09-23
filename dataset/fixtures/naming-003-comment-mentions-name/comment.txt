@@ -1,0 +1,1 @@
+Rename `d` to `discount_rate` so callers know it's a fraction.

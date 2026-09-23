@@ -1,0 +1,20 @@
+{
+  "case_id": "naming-006-rename-function-and-callers",
+  "category": "naming",
+  "file_path": "orders/processing.py",
+  "target_symbol": "proc",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Function renamed to `start_processing` and both call sites updated.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename function `proc` to `start_processing` and update callers",
+      "target": "proc",
+      "condition": null,
+      "expected_behavior": "definition and all call sites renamed"
+    }
+  ]
+}

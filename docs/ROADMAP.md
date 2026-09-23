@@ -449,7 +449,7 @@ ML dependencies are **deliberately excluded** until Phase 6 (plan: "Phase 0 — 
 | D2 | Package layout: `src/verireview/` vs plan's `app/` | Phase 0 | ✅ Approved: `src/verireview/` |
 | D3 | Rename `ast/`→`syntax/`, `github/`→`gh/` | Phase 0 | ✅ Approved |
 | D4 | Add GitHub Actions CI in Phase 0 | Phase 0 | ✅ Approved |
-| D5 | Pre-existing implementation policy (plan §18) | Phase 2 | ADR-001 |
+| D5 | Pre-existing implementation policy (plan §18) | Phase 2 | ADR-001 *Proposed*: SATISFIED on final code, confidence ≤ MEDIUM |
 | D6 | GitHub auth for dev (fine-grained PAT, read-only) | Phase 1 | Fine-grained PAT, public repos only |
 | D7 | Which code-aware model | Phase 7 | Decide from Phase 6 results |
 | D8 | LLM provider (if any) for Phase 7 evidence interpreter | Phase 7 | Defer |

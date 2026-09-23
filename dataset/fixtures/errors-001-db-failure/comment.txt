@@ -1,0 +1,1 @@
+Handle the case where the insert fails with `DatabaseError`: log it and raise a `ServiceError` instead of leaking the DB exception.

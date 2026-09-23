@@ -1,0 +1,20 @@
+{
+  "case_id": "testing-001-empty-username-test",
+  "category": "testing",
+  "file_path": "accounts/validation.py",
+  "target_symbol": "validate_username",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A test calling `validate_username(\"\")` and expecting ValueError was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a unit test for an empty username",
+      "target": "validate_username",
+      "condition": "username == ''",
+      "expected_behavior": "test expects ValueError"
+    }
+  ]
+}

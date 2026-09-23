@@ -1,0 +1,20 @@
+{
+  "case_id": "errors-004-unrelated-type-hints",
+  "category": "error_handling",
+  "file_path": "stats/average.py",
+  "target_symbol": "average",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only type hints were added on the adjacent line; `count == 0` still raises ZeroDivisionError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Return 0.0 when count is 0",
+      "target": "average",
+      "condition": "count == 0",
+      "expected_behavior": "return 0.0"
+    }
+  ]
+}

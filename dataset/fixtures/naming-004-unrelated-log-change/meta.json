@@ -1,0 +1,20 @@
+{
+  "case_id": "naming-004-unrelated-log-change",
+  "category": "naming",
+  "file_path": "worker/retry.py",
+  "target_symbol": "run_with_retries",
+  "comment_line": 6,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only the log message changed (nearby); the parameter `x` was not renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename parameter `x` to a descriptive name such as `max_attempts`",
+      "target": "x",
+      "condition": null,
+      "expected_behavior": "parameter renamed"
+    }
+  ]
+}

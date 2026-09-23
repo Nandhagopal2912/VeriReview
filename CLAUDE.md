@@ -43,7 +43,17 @@ uv run alembic revision --autogenerate -m "msg"
 docker compose up -d --build              # api on :8000 + postgres on host :5433 (5432 is taken by a local install)
 uv run verireview threads OWNER/REPO PR   # list review threads (comment ids)
 uv run verireview ingest OWNER/REPO PR --comment-id ID [--out f.json] [--no-db]
+uv run verireview verify-fixture dataset/fixtures/<case>   # explanation + expected verdict
+uv run verireview eval-fixtures --out experiments/<name>.json
 ```
+
+## Verification pipeline notes
+
+- New checks go in as **evidence stages** (`(case, requirement) -> list[Evidence]`). Don't edit the aggregator to special-case them.
+- Evidence ids are assigned by `Pipeline.run`. Stages use a placeholder id.
+- Every change to the pipeline must be re-evaluated with `eval-fixtures` and compared to the previous report (same dataset hash).
+- `dataset/` is excluded from ruff: fixture code is data and often deliberately flawed. Never reformat it, because that shifts the commented lines.
+- Fixture authoring: `meta.json` needs `rationale` and gold `requirements`. Partial cases need ≥ 2 requirements.
 
 ## GitHub ingestion notes
 
@@ -67,7 +77,7 @@ uv run verireview ingest OWNER/REPO PR --comment-id ID [--out f.json] [--no-db]
 
 - [x] Phase 0: project skeleton, FastAPI `/health` and `/health/db`, PostgreSQL + Alembic baseline, Docker, CI
 - [x] Phase 1: GitHub ingestion (client, thread reconstruction, resolution window, ReviewCase, DB, CLI). Live check: 8/10 real threads done (docs/phase1_live_checks.md). Use `anchor_line`, not `original_line`.
-- [ ] Phase 2: local verifier and fixtures (ADR-001: pre-existing implementation policy)
+- [x] Phase 2: contracts, fixture loader, pipeline skeleton, 29 dev fixtures, eval harness. Locality baseline: acc 0.241, FAR 1.0 (docs/phase2_local_verifier.md). ADR-001 still *Proposed*.
 - [ ] Phase 3: diff + AST
 - [ ] Phase 4: requirement representation
 - [ ] Phase 5: rule engine

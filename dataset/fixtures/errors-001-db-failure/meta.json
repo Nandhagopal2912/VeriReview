@@ -1,0 +1,28 @@
+{
+  "case_id": "errors-001-db-failure",
+  "category": "error_handling",
+  "file_path": "accounts/repository.py",
+  "target_symbol": "create_account",
+  "comment_line": 13,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The insert is wrapped in `except DatabaseError`, which logs and raises ServiceError from the original.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch DatabaseError from the insert",
+      "target": "database.insert",
+      "condition": "insert raises DatabaseError",
+      "expected_behavior": "exception is caught"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log the failure and raise ServiceError instead",
+      "target": "create_account",
+      "condition": "insert raises DatabaseError",
+      "expected_behavior": "log + raise ServiceError"
+    }
+  ]
+}

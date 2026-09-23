@@ -1,0 +1,20 @@
+{
+  "case_id": "validation-002-check-after-save",
+  "category": "validation",
+  "file_path": "accounts/profile.py",
+  "target_symbol": "update_profile",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_order",
+  "rationale": "The emptiness check runs after `database.update`, so empty names are still written; the request explicitly asked for validation before the write.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject empty `display_name` before the database write",
+      "target": "display_name",
+      "condition": "display_name is empty",
+      "expected_behavior": "no database write happens"
+    }
+  ]
+}

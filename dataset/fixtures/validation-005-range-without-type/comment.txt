@@ -1,0 +1,1 @@
+Validate that `age` is an int and between 0 and 150.

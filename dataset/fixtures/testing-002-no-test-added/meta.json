@@ -1,0 +1,20 @@
+{
+  "case_id": "testing-002-no-test-added",
+  "category": "testing",
+  "file_path": "inventory/pricing.py",
+  "target_symbol": "line_total",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "No test was added; only the error message wording changed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for negative quantity",
+      "target": "line_total",
+      "condition": "quantity < 0",
+      "expected_behavior": "test expects ValueError"
+    }
+  ]
+}

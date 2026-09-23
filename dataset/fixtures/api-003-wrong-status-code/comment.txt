@@ -1,0 +1,1 @@
+Return 404 when the order doesn't exist (`find_order` returns None).

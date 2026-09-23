@@ -1,0 +1,28 @@
+{
+  "case_id": "api-002-validation-without-400",
+  "category": "api_behavior",
+  "file_path": "web/signup.py",
+  "target_symbol": "signup",
+  "comment_line": 10,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Validation was added, but invalid input raises ValueError (HTTP 500), not HTTP 400 (plan §16 example).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate username is non-empty and at most 32 chars",
+      "target": "username",
+      "condition": "username empty or > 32 chars",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return HTTP 400 on invalid username",
+      "target": "signup",
+      "condition": "username invalid",
+      "expected_behavior": "HTTP 400"
+    }
+  ]
+}

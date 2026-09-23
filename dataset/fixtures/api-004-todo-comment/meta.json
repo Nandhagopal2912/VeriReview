@@ -1,0 +1,20 @@
+{
+  "case_id": "api-004-todo-comment",
+  "category": "api_behavior",
+  "file_path": "web/projects.py",
+  "target_symbol": "create_project",
+  "comment_line": 10,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a TODO mentioning `201 Created` was added; the endpoint still returns 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return HTTP 201 when a project is created",
+      "target": "create_project",
+      "condition": null,
+      "expected_behavior": "HTTP 201"
+    }
+  ]
+}

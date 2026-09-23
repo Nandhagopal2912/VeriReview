@@ -1,0 +1,20 @@
+{
+  "case_id": "api-005-idempotency",
+  "category": "api_behavior",
+  "file_path": "web/payments.py",
+  "target_symbol": "create_payment",
+  "comment_line": 10,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "A check-then-create guard was added, but idempotency (incl. concurrent requests) cannot be established statically, and the request is hedged ('probably'). Needs human review.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Make the endpoint idempotent",
+      "target": "create_payment",
+      "condition": "same request repeated",
+      "expected_behavior": "no duplicate payment"
+    }
+  ]
+}

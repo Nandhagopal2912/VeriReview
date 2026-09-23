@@ -1,0 +1,1 @@
+Catch `requests.Timeout`, retry once, and raise `FetchError` if it still fails.

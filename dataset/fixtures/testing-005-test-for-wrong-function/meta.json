@@ -1,0 +1,20 @@
+{
+  "case_id": "testing-005-test-for-wrong-function",
+  "category": "testing",
+  "file_path": "pricing/calc.py",
+  "target_symbol": "apply_discount",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The added test exercises `calculate_tax` with rate=1.0, not `apply_discount`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for apply_discount with rate=1.0",
+      "target": "apply_discount",
+      "condition": "rate == 1.0",
+      "expected_behavior": "test asserts result is 0"
+    }
+  ]
+}

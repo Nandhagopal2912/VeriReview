@@ -1,0 +1,1 @@
+Add a check that `username` is not None before saving; we've had null usernames in the table.

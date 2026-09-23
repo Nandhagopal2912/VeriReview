@@ -1,0 +1,1 @@
+Rename `tmp` to `total_price`, and please give `calc` a real name like `calculate_total`.

@@ -1,0 +1,1 @@
+If the file is missing (`FileNotFoundError`) or unreadable (`PermissionError`), fall back to `DEFAULTS` instead of crashing.

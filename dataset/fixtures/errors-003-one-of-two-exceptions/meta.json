@@ -1,0 +1,28 @@
+{
+  "case_id": "errors-003-one-of-two-exceptions",
+  "category": "error_handling",
+  "file_path": "config/loader.py",
+  "target_symbol": "load_config",
+  "comment_line": 7,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "FileNotFoundError falls back to DEFAULTS; PermissionError still propagates.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Fall back to DEFAULTS on FileNotFoundError",
+      "target": "load_config",
+      "condition": "file missing",
+      "expected_behavior": "return DEFAULTS"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Fall back to DEFAULTS on PermissionError",
+      "target": "load_config",
+      "condition": "file unreadable",
+      "expected_behavior": "return DEFAULTS"
+    }
+  ]
+}

@@ -63,3 +63,47 @@ def test_invalid_repo_exits_2(capsys: pytest.CaptureFixture[str]) -> None:
 def test_unknown_comment_exits_1(capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["ingest", "acme/shop", "7", "--comment-id", "1", "--no-db"]) == 1
     assert "No review thread contains comment 1" in capsys.readouterr().err
+
+
+FIXTURES = Path(__file__).resolve().parents[2] / "dataset" / "fixtures"
+
+
+def test_verify_fixture_prints_explanation(capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["verify-fixture", str(FIXTURES / "validation-001-none-check")]) == 0
+
+    captured = capsys.readouterr()
+    assert "Review request:" in captured.out
+    assert "Result:\nSATISFIED" in captured.out
+    assert "expected: SATISFIED" in captured.err
+
+
+def test_verify_case_accepts_an_ingested_case(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    case_file = tmp_path / "case.json"
+    cli.main(
+        ["ingest", "acme/shop", "7", "--comment-id", "5001", "--no-db", "--out", str(case_file)]
+    )
+    capsys.readouterr()
+
+    assert cli.main(["verify-case", str(case_file), "--json"]) == 0
+
+    result = json.loads(capsys.readouterr().out)
+    assert result["case_id"] == "acme/shop#7/5001"
+    assert result["verdict"] in {"SATISFIED", "PARTIALLY_SATISFIED", "NOT_SATISFIED", "UNCERTAIN"}
+
+
+def test_eval_fixtures_writes_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    out = tmp_path / "report.json"
+
+    assert cli.main(["eval-fixtures", "--root", str(FIXTURES), "--out", str(out)]) == 0
+
+    report = json.loads(out.read_text(encoding="utf-8"))
+    assert report["metrics"]["n"] == len(list(FIXTURES.glob("*/meta.json")))
+    assert len(report["dataset_hash"]) == 64
+    assert "accuracy" in capsys.readouterr().out
+
+
+def test_bad_fixture_path_exits_1(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    assert cli.main(["verify-fixture", str(tmp_path / "missing")]) == 1
+    assert "error:" in capsys.readouterr().err

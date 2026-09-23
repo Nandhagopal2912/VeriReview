@@ -1,0 +1,1 @@
+Creating a resource should return `201 Created`, not 200.

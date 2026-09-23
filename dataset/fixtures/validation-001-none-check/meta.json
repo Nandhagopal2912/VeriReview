@@ -1,0 +1,20 @@
+{
+  "case_id": "validation-001-none-check",
+  "category": "validation",
+  "file_path": "accounts/service.py",
+  "target_symbol": "save_user",
+  "comment_line": 6,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A `username is None` check that raises is added at the top of `save_user`, before the insert.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `username` is not None before saving",
+      "target": "username",
+      "condition": "username is None",
+      "expected_behavior": "prevent the database insert"
+    }
+  ]
+}

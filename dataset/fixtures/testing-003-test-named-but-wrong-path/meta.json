@@ -1,0 +1,20 @@
+{
+  "case_id": "testing-003-test-named-but-wrong-path",
+  "category": "testing",
+  "file_path": "net/fetch.py",
+  "target_symbol": "fetch_status",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "The new test is *named* for the timeout case but mocks a 200 response; the Timeout branch is never exercised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that exercises the Timeout branch",
+      "target": "fetch_status",
+      "condition": "requests.get raises Timeout",
+      "expected_behavior": "test asserts None is returned"
+    }
+  ]
+}

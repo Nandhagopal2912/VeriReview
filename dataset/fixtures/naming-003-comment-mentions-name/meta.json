@@ -1,0 +1,20 @@
+{
+  "case_id": "naming-003-comment-mentions-name",
+  "category": "naming",
+  "file_path": "pricing/discounts.py",
+  "target_symbol": "apply_discount",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a comment containing the word `discount_rate` was added; the parameter is still `d`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename parameter `d` to `discount_rate`",
+      "target": "d",
+      "condition": null,
+      "expected_behavior": "parameter renamed to `discount_rate`"
+    }
+  ]
+}

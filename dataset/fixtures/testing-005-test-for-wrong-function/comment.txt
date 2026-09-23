@@ -1,0 +1,1 @@
+Add a test for `apply_discount` with a 100% discount (rate=1.0).

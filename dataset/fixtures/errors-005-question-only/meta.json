@@ -1,0 +1,20 @@
+{
+  "case_id": "errors-005-question-only",
+  "category": "error_handling",
+  "file_path": "integrations/client.py",
+  "target_symbol": "parse_response",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment is a question with no expected behaviour. Returning None is one possible answer; the reviewer may have wanted a domain error instead. Needs the reviewer.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle malformed JSON (expected behaviour unspecified)",
+      "target": "parse_response",
+      "condition": "body is not valid JSON",
+      "expected_behavior": null
+    }
+  ]
+}

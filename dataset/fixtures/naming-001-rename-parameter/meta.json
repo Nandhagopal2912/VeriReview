@@ -1,0 +1,20 @@
+{
+  "case_id": "naming-001-rename-parameter",
+  "category": "naming",
+  "file_path": "shop/users.py",
+  "target_symbol": "save_user",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Parameter renamed to exactly `username` and every reference updated; `usr` no longer appears.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename parameter `usr` to `username`",
+      "target": "usr",
+      "condition": null,
+      "expected_behavior": "parameter and all references renamed to `username`"
+    }
+  ]
+}

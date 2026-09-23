@@ -38,7 +38,8 @@ packages = ["src/verireview"]
 line-length = 100
 target-version = "py313"
 src = ["src", "tests"]
-extend-exclude = ["tests/fixtures"]
+# Fixture code is data (often deliberately flawed); formatting it would shift commented lines.
+extend-exclude = ["tests/fixtures", "dataset"]
 
 [tool.ruff.lint]
 select = [

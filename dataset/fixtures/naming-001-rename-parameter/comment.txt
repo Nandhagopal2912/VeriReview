@@ -1,0 +1,1 @@
+Please rename `usr` to `username`, `usr` is too cryptic.

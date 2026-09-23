@@ -1,0 +1,1 @@
+Validate that `display_name` is not empty *before* writing to the database.

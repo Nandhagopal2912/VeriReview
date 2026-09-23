@@ -1,0 +1,20 @@
+{
+  "case_id": "validation-007-logging-change",
+  "category": "validation",
+  "file_path": "api/webhooks.py",
+  "target_symbol": "handle_webhook",
+  "comment_line": 8,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "The adjacent log line changed; `payload` is still parsed without a None check (plan §18 'unrelated modification').",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check `payload` is not None before parsing",
+      "target": "payload",
+      "condition": "payload is None",
+      "expected_behavior": "do not parse"
+    }
+  ]
+}

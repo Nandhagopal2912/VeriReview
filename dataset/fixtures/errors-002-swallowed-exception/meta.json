@@ -1,0 +1,36 @@
+{
+  "case_id": "errors-002-swallowed-exception",
+  "category": "error_handling",
+  "file_path": "worker/fetcher.py",
+  "target_symbol": "fetch",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": null,
+  "rationale": "All exceptions are swallowed with `pass`: no retry, no FetchError, and the function then fails with an unbound `response`. A try/except exists, but it does not do what was asked.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch requests.Timeout",
+      "target": "requests.get",
+      "condition": "request times out",
+      "expected_behavior": "exception caught"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Retry once on timeout",
+      "target": "fetch",
+      "condition": "first attempt times out",
+      "expected_behavior": "second attempt is made"
+    },
+    {
+      "id": "R3",
+      "category": "error_handling",
+      "description": "Raise FetchError if the retry fails",
+      "target": "fetch",
+      "condition": "retry times out",
+      "expected_behavior": "FetchError raised"
+    }
+  ]
+}

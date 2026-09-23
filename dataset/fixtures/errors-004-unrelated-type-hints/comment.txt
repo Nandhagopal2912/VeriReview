@@ -1,0 +1,1 @@
+This crashes with `ZeroDivisionError` when `count` is 0; handle that case (return 0.0).

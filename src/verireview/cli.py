@@ -1,7 +1,13 @@
 """Command-line interface.
 
-verireview threads OWNER/REPO PR                  list review threads (to pick a comment id)
-verireview ingest  OWNER/REPO PR --comment-id ID  build a ReviewCase (JSON) and store it
+GitHub (network):
+    verireview threads OWNER/REPO PR                  list review threads (to pick a comment id)
+    verireview ingest  OWNER/REPO PR --comment-id ID  build a ReviewCase (JSON) and store it
+
+Local verification (no network):
+    verireview verify-fixture DIR                     verify one dev fixture
+    verireview verify-case CASE.json                  verify an ingested ReviewCase
+    verireview eval-fixtures [--root DIR] [--out F]   evaluate the pipeline on all fixtures
 """
 
 import argparse
@@ -10,17 +16,45 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from pydantic import ValidationError
+
 from verireview.config import get_settings
+from verireview.contracts import ReviewCase, VerificationResult
+from verireview.dataset import FixtureError, iter_fixtures, load_fixture
+from verireview.evaluation import evaluate
 from verireview.gh.api import GitHubApi, RepoRef
 from verireview.gh.client import GitHubClient
 from verireview.gh.errors import GitHubError
 from verireview.ingestion import ingest_review_case
 from verireview.threads import ThreadNotFoundError, reconstruct_threads
+from verireview.verification import preliminary_pipeline
+
+DEFAULT_FIXTURES = Path("dataset/fixtures")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     _utf8_output()
     args = _parser().parse_args(argv)
+    try:
+        if args.command in ("threads", "ingest"):
+            return _github_command(args)
+        if args.command == "verify-fixture":
+            fixture = load_fixture(args.directory)
+            result = preliminary_pipeline().run(fixture.case)
+            _print_result(result, args.json)
+            print(f"expected: {fixture.meta.expected_verdict.value}", file=sys.stderr)
+            return 0
+        if args.command == "verify-case":
+            case = ReviewCase.model_validate_json(args.file.read_text(encoding="utf-8"))
+            _print_result(preliminary_pipeline().run(case), args.json)
+            return 0
+        return _eval_fixtures(args.root, args.out)
+    except (FixtureError, ValidationError, OSError) as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+
+def _github_command(args: argparse.Namespace) -> int:
     try:
         repo = RepoRef(args.repo)
     except ValueError as exc:
@@ -95,6 +129,51 @@ def _ingest(
     return 0
 
 
+def _print_result(result: VerificationResult, as_json: bool) -> None:
+    print(result.model_dump_json(indent=2) if as_json else result.explanation)
+
+
+def _eval_fixtures(root: Path, out: Path | None) -> int:
+    fixtures = list(iter_fixtures(root))
+    if not fixtures:
+        print(f"error: no fixtures under {root}", file=sys.stderr)
+        return 1
+    report = evaluate(preliminary_pipeline(), fixtures, root)
+    m = report.metrics
+    print(f"pipeline {report.pipeline_version}  dataset {report.dataset_hash[:12]}  n={m.n}")
+    print(f"accuracy {m.accuracy:.3f}   macro-F1 {m.macro_f1:.3f}")
+    print(
+        f"false acceptance {_rate(m.false_acceptance_rate)}   "
+        f"false blocking {_rate(m.false_blocking_rate)}"
+    )
+    print("\nper class           precision  recall   f1    support")
+    for verdict, cm in m.per_class.items():
+        print(f"  {verdict.value:20}{cm.precision:8.2f}{cm.recall:8.2f}{cm.f1:7.2f}{cm.support:8}")
+    print("\nconfusion (rows = expected, cols = predicted: S / P / N / U)")
+    for gold, row in m.confusion.items():
+        print(f"  {gold.value:20}" + "".join(f"{count:5}" for count in row.values()))
+    print("\naccuracy by category:  " + _fmt(report.accuracy_by_category))
+    print("accuracy by hard case: " + _fmt(report.accuracy_by_hard_case))
+    wrong = [c for c in report.cases if not c.correct]
+    if wrong:
+        print(f"\nmisclassified ({len(wrong)}):")
+        for c in wrong:
+            print(f"  {c.case_id:45} expected {c.expected.value:20} got {c.predicted.value}")
+    if out is not None:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(report.model_dump_json(indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"\nwrote {out}", file=sys.stderr)
+    return 0
+
+
+def _rate(value: float | None) -> str:
+    return "n/a" if value is None else f"{value:.3f}"
+
+
+def _fmt(values: dict[str, float]) -> str:
+    return ", ".join(f"{k} {v:.2f}" for k, v in values.items())
+
+
 def _utf8_output() -> None:
     """Review comments contain arbitrary Unicode; a Windows console defaults to cp1252."""
     for stream in (sys.stdout, sys.stderr):
@@ -116,6 +195,18 @@ def _parser() -> argparse.ArgumentParser:
     ingest.add_argument("--comment-id", type=int, required=True, help="any comment in the thread")
     ingest.add_argument("--out", type=Path, help="write JSON here instead of stdout")
     ingest.add_argument("--no-db", action="store_true", help="do not store in PostgreSQL")
+
+    verify_fixture = sub.add_parser("verify-fixture", help="verify one dev fixture directory")
+    verify_fixture.add_argument("directory", type=Path)
+    verify_fixture.add_argument("--json", action="store_true", help="print the full result")
+
+    verify_case = sub.add_parser("verify-case", help="verify an ingested ReviewCase JSON file")
+    verify_case.add_argument("file", type=Path)
+    verify_case.add_argument("--json", action="store_true", help="print the full result")
+
+    eval_fixtures = sub.add_parser("eval-fixtures", help="evaluate the pipeline on all fixtures")
+    eval_fixtures.add_argument("--root", type=Path, default=DEFAULT_FIXTURES)
+    eval_fixtures.add_argument("--out", type=Path, help="write the JSON report here")
     return parser
 
 

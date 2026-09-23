@@ -1,0 +1,20 @@
+{
+  "case_id": "validation-004-docstring-only",
+  "category": "validation",
+  "file_path": "mail/send.py",
+  "target_symbol": "send_welcome",
+  "comment_line": 8,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a docstring and a log line mentioning validation were added; no check of the address.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the email format before sending",
+      "target": "email",
+      "condition": "email is malformed",
+      "expected_behavior": "do not send"
+    }
+  ]
+}

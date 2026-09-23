@@ -1,0 +1,28 @@
+{
+  "case_id": "testing-004-one-of-two-cases",
+  "category": "testing",
+  "file_path": "accounts/names.py",
+  "target_symbol": "normalise_name",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A test for the blank name was added, but none for `None`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for name=None",
+      "target": "normalise_name",
+      "condition": "name is None",
+      "expected_behavior": "test expects TypeError"
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for a blank name",
+      "target": "normalise_name",
+      "condition": "name is blank",
+      "expected_behavior": "test expects ValueError"
+    }
+  ]
+}

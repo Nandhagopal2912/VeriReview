@@ -1,0 +1,20 @@
+{
+  "case_id": "api-001-missing-username-400",
+  "category": "api_behavior",
+  "file_path": "web/users.py",
+  "target_symbol": "post_user",
+  "comment_line": 10,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Missing/empty username now returns a JSON error with status 400 before `create_user` is called.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return HTTP 400 with an error message when username is missing",
+      "target": "post_user",
+      "condition": "username missing from body",
+      "expected_behavior": "HTTP 400 + error message"
+    }
+  ]
+}

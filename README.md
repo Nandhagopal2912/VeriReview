@@ -14,8 +14,16 @@ Every verdict comes with the evidence behind it. VeriReview does not block merge
 - Design: [VERIREVIEW_PLAN.md](VERIREVIEW_PLAN.md)
 - Roadmap: [docs/ROADMAP.md](docs/ROADMAP.md)
 
-> Status: **Phase 1**. GitHub ingestion works: review threads are reconstructed into
-> `ReviewCase` JSON. No verification logic yet.
+> Status: **Phase 2**. GitHub ingestion and a local verification pipeline with 29 dev
+> fixtures. The current verifier is a deliberately naive baseline (accuracy 0.24) that later
+> phases must beat. See [docs/phase2_local_verifier.md](docs/phase2_local_verifier.md).
+
+## Verify and evaluate
+
+```bash
+uv run verireview verify-fixture dataset/fixtures/validation-001-none-check
+uv run verireview eval-fixtures
+```
 
 ## Ingest a review thread
 

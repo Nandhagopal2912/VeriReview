@@ -1,0 +1,1 @@
+Please validate `username` (non-empty, max 32 chars) and return HTTP 400 on invalid input.

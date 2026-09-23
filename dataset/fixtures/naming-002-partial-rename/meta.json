@@ -1,0 +1,28 @@
+{
+  "case_id": "naming-002-partial-rename",
+  "category": "naming",
+  "file_path": "billing/cart.py",
+  "target_symbol": "calc",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Two renames requested: `tmp` was renamed to `total_price`, but `calc` was not renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename local `tmp` to `total_price`",
+      "target": "tmp",
+      "condition": null,
+      "expected_behavior": "renamed to `total_price`"
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename function `calc` to `calculate_total`",
+      "target": "calc",
+      "condition": null,
+      "expected_behavior": "function and callers renamed"
+    }
+  ]
+}

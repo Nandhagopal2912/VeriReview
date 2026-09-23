@@ -1,0 +1,20 @@
+{
+  "case_id": "errors-006-log-before-reraise",
+  "category": "error_handling",
+  "file_path": "payments/charge.py",
+  "target_symbol": "charge",
+  "comment_line": 12,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "`logger.exception` with the customer id is called in the handler before the bare `raise`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the failure with the customer id before re-raising",
+      "target": "charge",
+      "condition": "gateway raises GatewayError",
+      "expected_behavior": "log includes customer_id, then re-raise"
+    }
+  ]
+}

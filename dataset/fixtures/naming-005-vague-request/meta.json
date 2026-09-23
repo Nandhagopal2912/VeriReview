@@ -1,0 +1,20 @@
+{
+  "case_id": "naming-005-vague-request",
+  "category": "naming",
+  "file_path": "reports/export.py",
+  "target_symbol": "export",
+  "comment_line": 1,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment names no target and no expected name (it could mean `export` or `data`), so whether renaming `data` to `rows` satisfies it cannot be decided without the reviewer.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Choose a better name (target unspecified)",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

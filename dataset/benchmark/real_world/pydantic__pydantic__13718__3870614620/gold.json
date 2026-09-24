@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13718__3870614620",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Delete the _ATTRIBUTE_MISSING docstring (empty suggestion over lines 125-129)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/main.py: the docstring after _ATTRIBUTE_MISSING is removed",
+    "confidence": "high",
+    "notes": "Empty suggestion block = delete the selected lines (original_start_line 125 to 129)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

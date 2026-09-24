@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1627950143",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "The reviewer reports having removed something themselves ('I removed this in the next commit'); nothing is asked of the author."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

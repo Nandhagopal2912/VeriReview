@@ -1,8 +1,9 @@
 """Mine real-world review threads from approved public repositories (Phase 9).
 
 1. ``find_candidates``: merged PRs → resolved review threads on Python files, opened by someone
-   other than the PR author, not by a bot, with a non-trivial comment. Needs a token: resolution
-   state is GraphQL-only.
+   other than the PR author, not by a bot (GitHub account type ``Bot``, e.g. the Copilot reviewer,
+   whose login has no ``[bot]`` suffix; or a known bot login), with a non-trivial comment.
+   Needs a token: resolution state is GraphQL-only.
 2. ``collect``: a seeded random sample of candidates → ingested ReviewCases, pseudonymised,
    written with provenance and a dev/test split fixed *before* anyone labels them.
 
@@ -45,6 +46,9 @@ _BOT = re.compile(
     r"\[bot\]$|^(dependabot|renovate|github-actions|pre-commit-ci|codecov)\b", re.IGNORECASE
 )
 MIN_COMMENT_CHARS = 10
+# Cases are stored in git; very large files (e.g. 10k-line modules) would bloat the repository.
+# Skipping them biases the sample towards smaller files, which is disclosed in the Phase 9 doc.
+MAX_FILE_CHARS = 150_000
 
 
 class MiningReader(GitHubReader, Protocol):
@@ -96,6 +100,7 @@ def find_candidates(reader: MiningReader, repo: RepoRef, max_prs: int = 30) -> I
             continue
         states = reader.list_thread_states(repo, pull.number)
         pr_author = pull.user.login if pull.user else None
+        bots = {c.id for c in comments if c.user is not None and c.user.type == "Bot"}
         for thread in reconstruct_threads(comments, states):
             root = thread.root
             reviewer = root.author or ""
@@ -103,6 +108,7 @@ def find_candidates(reader: MiningReader, repo: RepoRef, max_prs: int = 30) -> I
                 not thread.path.endswith(".py")
                 or thread.is_resolved is not True
                 or not reviewer
+                or thread.root_comment_id in bots
                 or _BOT.search(reviewer)
                 or (pr_author is not None and reviewer.lower() == pr_author.lower())
                 or len(root.body.strip()) < MIN_COMMENT_CHARS
@@ -154,6 +160,9 @@ def collect(
             continue
         if case.before_code is None or case.after_code is None:
             skipped[key] = "window_unusable: commented file missing before or after"
+            continue
+        if max(len(case.before_code), len(case.after_code)) > MAX_FILE_CHARS:
+            skipped[key] = f"file_too_large: over {MAX_FILE_CHARS} characters"
             continue
         provenance = Provenance(
             repository=c.repository,

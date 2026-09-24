@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3763967358",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Inline get_file_part_from_node_id",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/config/findpaths.py: helper removed, NodeId.parse(arg).path used inline",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

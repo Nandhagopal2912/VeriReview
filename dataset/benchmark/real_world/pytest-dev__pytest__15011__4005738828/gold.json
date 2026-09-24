@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__15011__4005738828",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Annotate keywords as Literal[1] to guarantee the documented value",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/reports.py:348,376: Mapping[str, Literal[1]] on the parameter and the attribute",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

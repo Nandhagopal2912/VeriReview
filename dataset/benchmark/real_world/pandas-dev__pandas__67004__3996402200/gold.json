@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__3996402200",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Drop the never-hit else branch (pa_array is always a ChunkedArray)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/arrays/arrow/accessors.py: chunks = pa_array.chunks",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

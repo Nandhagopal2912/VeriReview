@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__321404735",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Rename get_ssl_cert_file to get_ca_bundle_from_env (or similar)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/utils.py:114 def get_ca_bundle_from_env(); tests updated",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

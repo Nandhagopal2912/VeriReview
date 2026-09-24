@@ -7,7 +7,8 @@
     dataset/benchmark/real_world/<id>/    real_world   dev or test, per case:
         case.json         ReviewCase from ingestion, pseudonymised
         provenance.json   where it came from, license, split
-        gold.json         adjudicated label (after annotation)
+        gold.json         the label used for evaluation: human (two annotators, adjudicated)
+                          or, provisionally, one model annotator (label_source "model")
     dataset/benchmark/LICENSES/           license texts of the mined repositories
     dataset/annotations/<annotator>/      raw exports of the annotation page (never edited)
 
@@ -19,6 +20,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -73,16 +75,25 @@ class Provenance(BaseModel):
     collector_version: str
 
 
+LabelSource = Literal["human", "model"]
+
+
 class GoldLabel(BaseModel):
-    """The adjudicated label of one real-world case."""
+    """The label of one real-world case that evaluation uses.
+
+    ``human``: two annotators, disagreements adjudicated. ``model``: provisional, one model
+    annotator (Claude), used until humans label the case; results on it are reported separately,
+    and a human label always replaces it.
+    """
 
     model_config = ConfigDict(extra="forbid")
 
     label: CaseAnnotation
     annotators: list[str] = Field(min_length=1)
-    agreed: bool = Field(description="True: both annotators agreed; False: adjudicated.")
+    agreed: bool = Field(description="True: both annotators agreed (or a single annotator).")
     adjudicator: str | None = None
     adjudication_reason: str | None = None
+    label_source: LabelSource = "human"
 
 
 @dataclass(frozen=True)
@@ -103,6 +114,7 @@ class BenchmarkCase:
     source: Source
     split: Split
     case_set: str
+    label_source: LabelSource = "human"  # "model": provisional real-world label (report apart)
 
 
 def case_dir_name(repository: str, pull_number: int, comment_id: int) -> str:
@@ -152,7 +164,13 @@ def iter_benchmark(dataset_root: Path, split: Split | None = None) -> Iterator[B
                 continue
             if split in (None, rw.provenance.split):
                 fixture = real_world_fixture(rw)
-                yield BenchmarkCase(fixture, Source.REAL_WORLD, rw.provenance.split, case_set.name)
+                yield BenchmarkCase(
+                    fixture,
+                    Source.REAL_WORLD,
+                    rw.provenance.split,
+                    case_set.name,
+                    rw.gold.label_source,
+                )
 
 
 def real_world_fixture(rw: RealWorldCase) -> Fixture:

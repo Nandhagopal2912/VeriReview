@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__321714538",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the env CA-bundle loading into load_ssl_context_verify()",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/config.py: block removed from load_ssl_context and added at the top of load_ssl_context_verify",
+    "confidence": "high",
+    "notes": "The second paragraph (default verify=True) is a question, not a requirement (guide §3)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

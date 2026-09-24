@@ -36,6 +36,7 @@ class SheetCase(BaseModel):
     repository: str
     file_path: str
     anchor_line: int | None
+    selection_start: int | None = None  # first commented line of a multi-line comment
     thread: list[SheetComment]
     before_excerpt: list[tuple[int, str]]
     diff: str
@@ -53,7 +54,9 @@ def sheet_case(
     before = case.before_code or ""
     lines = before.split("\n")
     anchor = case.anchor_line or case.thread.original_line or 1
-    start, end = max(1, anchor - EXCERPT_RADIUS), min(len(lines), anchor + EXCERPT_RADIUS)
+    selection = _selection_start(case, anchor)
+    first = selection if selection is not None else anchor
+    start, end = max(1, first - EXCERPT_RADIUS), min(len(lines), anchor + EXCERPT_RADIUS)
     tests = [
         (path, make_unified_diff(case.test_files_before.get(path, ""), after, path, path))
         for path, after in sorted(case.test_files.items())
@@ -63,6 +66,7 @@ def sheet_case(
         repository=case.repository,
         file_path=case.file_path,
         anchor_line=case.anchor_line,
+        selection_start=selection,
         thread=[SheetComment(author=c.author or "?", body=c.body) for c in case.thread.comments],
         before_excerpt=[(n, lines[n - 1]) for n in range(start, end + 1)],
         diff=case.unified_diff,
@@ -73,6 +77,16 @@ def sheet_case(
         flags=[f.value for f in case.window.flags],
         reference=reference,
     )
+
+
+def _selection_start(case: ReviewCase, anchor: int) -> int | None:
+    """Start of a multi-line comment's selection, shifted like the anchor line. A multi-line
+    comment matters: an empty ``suggestion`` block deletes the whole selection."""
+    thread = case.thread
+    if thread.original_start_line is None or thread.original_line is None:
+        return None
+    span = thread.original_line - thread.original_start_line
+    return max(1, anchor - span) if span > 0 else None
 
 
 def render_sheet(

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__4057000269",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Put the list dtypes directly in the test instead of a module-level variable",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "test_list_accessor.py:166-172 dtypes inlined in @pytest.mark.parametrize",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

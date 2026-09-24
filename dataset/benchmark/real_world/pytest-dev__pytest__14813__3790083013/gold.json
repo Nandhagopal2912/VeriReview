@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14813__3790083013",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use sphinx format in the docstrings (this one and those below)",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "testing/test_assertrewrite_coverage.py unchanged: numpy-style Parameters sections remain",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

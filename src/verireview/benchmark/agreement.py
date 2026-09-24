@@ -9,6 +9,9 @@ Agreement, over the cases both annotators labelled:
 
 Gold: a case both annotators agree on (same inclusion and, if included, same verdict and number of
 requirements) takes annotator A's label. Every other case needs an adjudication decision.
+
+Provisional gold (``single_annotator_gold``): one annotator's labels as they are, marked with their
+source. The project uses it for Claude's labels until two humans label the real-world cases.
 """
 
 from collections import Counter, defaultdict
@@ -18,7 +21,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from verireview.benchmark.labels import AnnotationFile, CaseAnnotation
-from verireview.benchmark.store import GoldLabel
+from verireview.benchmark.store import GoldLabel, LabelSource
 from verireview.contracts import Verdict
 
 _VALID = {Verdict.SATISFIED}
@@ -165,6 +168,15 @@ def build_gold(
             adjudication_reason=decision.reason,
         )
     return gold
+
+
+def single_annotator_gold(annotations: AnnotationFile, source: LabelSource) -> dict[str, GoldLabel]:
+    return {
+        a.case_id: GoldLabel(
+            label=a, annotators=[annotations.annotator], agreed=True, label_source=source
+        )
+        for a in annotations.annotations
+    }
 
 
 def _verdict_kappa(

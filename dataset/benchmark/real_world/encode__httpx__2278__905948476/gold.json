@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2278__905948476",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Drop the content-type header case (invalid content-type check) from encode_multipart_data",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_content.py:152-157: the header / content-type branch is removed",
+    "confidence": "medium",
+    "notes": "The comment refers to another thread for its reason, but the request itself is clear."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

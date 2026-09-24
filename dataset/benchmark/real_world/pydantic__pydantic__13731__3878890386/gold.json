@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13731__3878890386",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Delete test_smart_union_before_validator_field_count (empty suggestion over lines 861-896)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic-core/tests/validators/test_union.py: the test and its now-unused PyAndJson import are removed",
+    "confidence": "high",
+    "notes": "Empty suggestion block = delete the selected lines."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

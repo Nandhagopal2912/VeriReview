@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1626184742",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Rename _Parse (to _ValidateAs)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/experimental/pipeline.py:37 class _ValidateAs",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

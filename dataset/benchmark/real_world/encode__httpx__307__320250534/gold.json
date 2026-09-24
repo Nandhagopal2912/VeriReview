@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__320250534",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Keep the current behaviour when verify is True and no CA bundle env var is set",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Inspect the environment in load_ssl_context rather than in __init__",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/config.py: env lookup removed from __init__, done in load_ssl_context_verify and only overrides when a bundle is found",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__323458263",
+    "include": true,
+    "requirements": [
+      {
+        "category": "validation",
+        "description": "Check SSL_CERT_DIR is set in the environment before using it (bool(Path) is always true)",
+        "status": "satisfied"
+      },
+      {
+        "category": "validation",
+        "description": "Do the same for SSL_CERT_FILE",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/utils.py:115-122: 'in os.environ' checks for both variables, as suggested",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

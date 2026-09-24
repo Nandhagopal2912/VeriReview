@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2278__945822783",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Match 'boundary=' case-insensitively and strip the prefix instead of splitting (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_multipart.py:32-33: the suggestion is applied exactly",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

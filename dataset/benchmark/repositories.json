@@ -1,0 +1,14 @@
+{
+  "decision": "D9",
+  "approved_by": "project owner (selection delegated to Claude on 2026-09-24)",
+  "approved_at": "2026-09-24",
+  "note": "Chosen from the proposed shortlist for review culture and variety; apache/airflow (monorepo, many non-code reviews) and python-attrs/attrs (low recent PR volume) left out. Licenses are re-checked by the miner.",
+  "repositories": [
+    "home-assistant/core",
+    "pandas-dev/pandas",
+    "pytest-dev/pytest",
+    "pydantic/pydantic",
+    "encode/httpx",
+    "pallets/click"
+  ]
+}

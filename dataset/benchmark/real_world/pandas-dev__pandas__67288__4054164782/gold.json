@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67288__4054164782",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Pass copy=False to pd_array (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/methods/filter.py:92 pd_array(values, dtype='boolean', copy=False)",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

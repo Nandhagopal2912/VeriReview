@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__4057000586",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the `# GH#63221` comment inside the test, as its first line",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/series/accessors/test_list_accessor.py:153",
+    "confidence": "high",
+    "notes": "Satisfied by moving a comment."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

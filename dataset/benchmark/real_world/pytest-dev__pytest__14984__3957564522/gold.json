@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14984__3957564522",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use itertools.chain instead of building a list",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "src/_pytest/fixtures.py:2390-2397 unchanged",
+    "confidence": "medium",
+    "notes": "Hedged suggestion ('might be ... or maybe not'); the author declined with a benchmark. Not satisfied as written."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

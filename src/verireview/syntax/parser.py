@@ -24,14 +24,21 @@ def node_text(node: Node) -> str:
     return (node.text or b"").decode("utf-8", errors="replace")
 
 
+# Positions are read by tuple index, never via ``Point.row`` / ``Point.column``: with
+# tree-sitter 0.26 on Windows, the attribute getters corrupt the heap after enough calls and
+# crash the process (found on a 42 KB real-world file in Phase 9b; pinned by
+# tests/unit/syntax/test_parser_positions.py). Indexing the same Point is safe.
+
+
 def start_line(node: Node) -> int:
     """1-based first line of ``node``."""
-    return node.start_point.row + 1
+    return int(node.start_point[0]) + 1
 
 
 def end_line(node: Node) -> int:
     """1-based last line of ``node`` (a node ending at column 0 ends on the previous line)."""
-    row = node.end_point.row
-    if node.end_point.column == 0 and row > node.start_point.row:
-        row -= 1
-    return row + 1
+    start_row = int(node.start_point[0])
+    end_row, end_column = int(node.end_point[0]), int(node.end_point[1])
+    if end_column == 0 and end_row > start_row:
+        end_row -= 1
+    return end_row + 1

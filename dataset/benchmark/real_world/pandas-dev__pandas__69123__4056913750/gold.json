@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__69123__4056913750",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Check the full result with tm.assert_series_equal",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/window/test_rolling_skew_kurt.py: expected full series parametrized; assert_series_equal(result, ...)",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

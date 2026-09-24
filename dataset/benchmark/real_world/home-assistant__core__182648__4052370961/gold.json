@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__182648__4052370961",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Advance time with the freezer instead of triggering the coordinator directly",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/portainer/test_update.py:248-249 freezer.tick + async_fire_time_changed; no coordinator.async_refresh",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

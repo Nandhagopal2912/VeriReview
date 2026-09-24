@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__3996403416",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Keep the removed valid out-of-range test cases",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Add a test that ser.list[-4] raises",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/series/accessors/test_list_accessor.py:129-134 list[5], list[-4] and list['abc'] raise",
+    "confidence": "medium",
+    "notes": "The comment's anchor line could not be located (anchor_line is None)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1628205456",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move predicate() to the start or the end of the constraint methods",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/experimental/pipeline.py:246 predicate now comes before gt (250)",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

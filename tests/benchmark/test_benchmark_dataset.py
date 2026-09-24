@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from verireview.benchmark.manifest import Manifest, verify
 from verireview.contracts import RequirementCategory, Verdict
 from verireview.dataset import Fixture, iter_fixtures
 from verireview.evaluation import dataset_hash
@@ -57,3 +58,19 @@ def test_case_is_well_formed(fixture: Fixture) -> None:
     ids = [r.id for r in fixture.meta.requirements]
     assert len(ids) == len(set(ids))
     assert fixture.meta.requirements[0].category == fixture.meta.category
+
+
+# Frozen v1 manifest (Phase 9b): the test split of every source, pinned before any verifier ran
+# on the real-world cases. Only Phase 10's final evaluation may run on the test split.
+REAL_WORLD_TEST_SHA256 = "6d44b82f0b4a29b54facfb49e6789fe0e1250cd7fb18732e75564e463a204bc5"
+
+
+def test_frozen_v1_manifest_still_matches_the_dataset() -> None:
+    manifest = Manifest.model_validate_json(
+        (BENCHMARK / "manifest.json").read_text(encoding="utf-8")
+    )
+
+    assert manifest.version == "v1"
+    assert manifest.test_sets == FROZEN
+    assert manifest.real_world_test_hash == REAL_WORLD_TEST_SHA256
+    assert verify(BENCHMARK.parent, manifest) == []

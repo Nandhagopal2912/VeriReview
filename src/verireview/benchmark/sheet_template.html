@@ -105,8 +105,8 @@ function renderNav() {
   document.getElementById("progress").textContent = n + " / " + DATA.cases.length + " done";
 }
 
-function codeBlock(lines, anchor) {
-  return el("pre", { class: "code" }, lines.map(([n, t]) => el("span", { class: n === anchor ? "hi" : "" }, el("span", { class: "ln" }, n), t, "\n")));
+function codeBlock(lines, from, to) {
+  return el("pre", { class: "code" }, lines.map(([n, t]) => el("span", { class: n >= from && n <= to ? "hi" : "" }, el("span", { class: "ln" }, n), t, "\n")));
 }
 function diffBlock(text) {
   if (!text) return el("p", { class: "muted" }, "No change.");
@@ -118,8 +118,8 @@ function caseView(c) {
     el("p", { class: "muted" }, c.repository + " · " + c.file_path + (c.anchor_line ? ":" + c.anchor_line : "") + " · " + c.commits + " commit(s) after the comment" + (c.flags.length ? " · flags: " + c.flags.join(", ") : "")),
     el("h3", {}, "Review thread"),
     ...c.thread.map((m, i) => el("div", { class: "comment" }, el("b", {}, (i === 0 ? "Review comment by " : "Reply by ") + m.author), el("pre", {}, m.body))),
-    el("h3", {}, "Code before the comment (commented line highlighted)"),
-    codeBlock(c.before_excerpt, c.anchor_line),
+    el("h3", {}, c.selection_start ? "Code before the comment (commented lines " + c.selection_start + "-" + c.anchor_line + " highlighted)" : "Code before the comment (commented line highlighted)"),
+    codeBlock(c.before_excerpt, c.selection_start || c.anchor_line, c.anchor_line),
     el("h3", {}, "Changes to " + c.file_path + " after the comment"),
     diffBlock(c.diff),
   ];

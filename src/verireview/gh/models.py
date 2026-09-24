@@ -14,6 +14,7 @@ class _GhModel(BaseModel):
 
 class GhUser(_GhModel):
     login: str
+    type: str | None = None  # "User", "Bot" or "Organization"
 
 
 class GhRef(_GhModel):

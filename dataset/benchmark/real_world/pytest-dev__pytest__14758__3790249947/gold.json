@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3790249947",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "A question confirming intent ('the intention is that nodeid can remain None?'), answered 'Yes'."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2278__945186645",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Support a double-quoted boundary in the content-type header",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_multipart.py:33 .strip(b'\"') on the boundary value",
+    "confidence": "medium",
+    "notes": "Raised as a question; the thread settles on double quotes only, no quoted pairs."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

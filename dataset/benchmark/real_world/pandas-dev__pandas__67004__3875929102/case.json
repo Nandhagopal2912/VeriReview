@@ -1,0 +1,2288 @@
+{
+  "schema_version": "3",
+  "case_id": "pandas-dev/pandas#67004/3875929102",
+  "repository": "pandas-dev/pandas",
+  "pull_number": 67004,
+  "pull_title": "BUG: Pyarrow string list indexing for negative indices ",
+  "base_sha": "aad6b6a4ffe99b1f2275b2d046be20a84df2657d",
+  "head_sha": "c5106d6f7533f579f1bf94d6289cf9fb21038278",
+  "thread": {
+    "root_comment_id": 3875929102,
+    "path": "pandas/core/arrays/arrow/accessors.py",
+    "line": null,
+    "original_line": 171,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -166,13 +168,61 @@ def __getitem__(self, key: int | slice) -> Series:\n             # element index to be an array.\n             # if key < 0:\n             #     key = pc.add(key, pc.list_value_length(self._pa_array))\n-            element = pc.list_element(self._pa_array, key)\n-            return Series(\n-                element,\n-                dtype=ArrowDtype(element.type),\n-                index=self._data.index,\n-                name=self._data.name,\n-            )\n+            arr = self._pa_array",
+    "original_commit_sha": "8e8b9315827baa4dd18f66b88d5c054bf74b0acd",
+    "commit_sha": "f8fa96a8eb6d8b95a18f32d1c0a12344a360617c",
+    "comments": [
+      {
+        "id": 3875929102,
+        "author": "reviewer",
+        "body": "I think this implementation can be simplified and made more performant.\n\n```python\ndef _list_element_neg(chunk: pa.Array, key: int) -> pa.Array:\n    if pa.types.is_fixed_size_list(chunk.type):\n        chunk = chunk.cast(pa.list_(chunk.type.value_type))\n    indices = pc.add(chunk.offsets[1:], key)\n    if chunk.null_count:\n        indices = pc.if_else(chunk.is_valid(), indices, None)\n    return chunk.values.take(indices)\n\nif key < 0:\n    element = pa.chunked_array(\n        [_list_element_neg(chunk, key) for chunk in self._pa_array.chunks],\n        type=self._pa_array.type.value_type,\n    )\nelse:\n    element = pc.list_element(self._pa_array, key)\nreturn Series(element, dtype=ArrowDtype(element.type), index=..., name=...)\n```",
+        "created_at": "2026-08-27T21:15:44Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 3979064595,
+        "author": "author",
+        "body": "thanks for the refactored implementation! ",
+        "created_at": "2026-09-10T12:32:10Z",
+        "in_reply_to_id": 3875929102
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "8e8b9315827baa4dd18f66b88d5c054bf74b0acd",
+    "end_commit_sha": "c5106d6f7533f579f1bf94d6289cf9fb21038278",
+    "subsequent_commits": [
+      {
+        "sha": "f8fa96a8eb6d8b95a18f32d1c0a12344a360617c",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-10T11:42:12Z",
+        "committed_at": "2026-09-10T11:42:12Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "4c70f6d7ff2919c0f53cdf0b86856d6ea0e77554",
+        "message": "fix: according to @reviewer and his implemation",
+        "authored_at": "2026-09-10T12:30:57Z",
+        "committed_at": "2026-09-10T12:30:57Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "86eb479eae30a64c6522ae501217ec7a67f0de49",
+        "message": "precommit fixes",
+        "authored_at": "2026-09-10T12:37:18Z",
+        "committed_at": "2026-09-10T12:37:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "291438223c3790629ad596ae8f12162ed48f045f",
+        "message": "Update test_list_accessor.py",
+        "authored_at": "2026-09-10T13:27:58Z",
+        "committed_at": "2026-09-10T13:27:58Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "99ab6371d0077b634cfac09348936b4cbb7df920",
+        "message": "Update v3.1.0.rst",
+        "authored_at": "2026-09-10T14:15:19Z",
+        "committed_at": "2026-09-10T14:15:19Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c2ee5c02e0abe1261abc9fe3810855b7c058bf14",
+        "message": "Update v3.1.0.rst",
+        "authored_at": "2026-09-13T12:37:06Z",
+        "committed_at": "2026-09-13T12:37:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "51cfc7df05b3ea84684b21075a3271865559dafa",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-13T12:37:19Z",
+        "committed_at": "2026-09-13T12:37:19Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "6f925762615d8359af1aa49c844c0aaf54a9e299",
+        "message": "fixes according to comments and precommit",
+        "authored_at": "2026-09-13T13:28:51Z",
+        "committed_at": "2026-09-13T13:28:51Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "148f915c7d73456526bea369f21a4bb4dfc064aa",
+        "message": "Update test_list_accessor.py",
+        "authored_at": "2026-09-13T13:34:25Z",
+        "committed_at": "2026-09-13T13:34:25Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d6f6841c4778035c6d8608db2264e0fcfd8e43d8",
+        "message": "feat: updated according to @reviewer comments",
+        "authored_at": "2026-09-16T14:35:01Z",
+        "committed_at": "2026-09-16T14:35:01Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "a1f4497df788db067927579d94d47b1e0eb301e2",
+        "message": "Update v3.1.0.rst",
+        "authored_at": "2026-09-16T14:37:06Z",
+        "committed_at": "2026-09-16T14:37:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "29beaf21fa39a499768cfe6cffcefd6bdc13abda",
+        "message": "updated tests",
+        "authored_at": "2026-09-18T13:18:45Z",
+        "committed_at": "2026-09-18T13:18:45Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5046240c76c683e69c3d3bf12a9e586dfd112ced",
+        "message": "Update test_list_accessor.py",
+        "authored_at": "2026-09-18T13:22:05Z",
+        "committed_at": "2026-09-18T13:22:05Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "9686a48b33378e3b3f625378ab445a583efcf16f",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-19T14:38:26Z",
+        "committed_at": "2026-09-19T14:38:26Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "f742f30f7b472156344e34eb8fb18e2c4b1fce71",
+        "message": "according to comments",
+        "authored_at": "2026-09-21T15:21:17Z",
+        "committed_at": "2026-09-21T15:21:17Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "290cb7d028383b9ef8b1afd61c6fcd8b7ea4e4d2",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-21T15:22:30Z",
+        "committed_at": "2026-09-21T15:22:30Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7453833603f8e2e93f6bdaddb196aad3c34e8e1c",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-22T13:27:02Z",
+        "committed_at": "2026-09-22T13:27:02Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c5106d6f7533f579f1bf94d6289cf9fb21038278",
+        "message": "Merge branch 'main' into 63221_bug_fix",
+        "authored_at": "2026-09-22T19:02:49Z",
+        "committed_at": "2026-09-22T19:02:49Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "pandas/core/arrays/arrow/accessors.py",
+  "before_code": "\"\"\"Accessors for arrow-backed data.\"\"\"\n\nfrom __future__ import annotations\n\nfrom abc import (\n    ABCMeta,\n    abstractmethod,\n)\nfrom typing import (\n    TYPE_CHECKING,\n    cast,\n)\n\nimport numpy as np\n\nfrom pandas.compat import HAS_PYARROW\n\nfrom pandas.core.dtypes.common import is_list_like\n\nif HAS_PYARROW:\n    import pyarrow as pa\n    import pyarrow.compute as pc\n\n    from pandas.core.dtypes.dtypes import ArrowDtype\n\nif TYPE_CHECKING:\n    from collections.abc import Iterator\n\n    from pandas import (\n        DataFrame,\n        Series,\n    )\n\n\nclass ArrowAccessor(metaclass=ABCMeta):\n    @abstractmethod\n    def __init__(self, data, validation_msg: str) -> None:\n        self._data = data\n        self._validation_msg = validation_msg\n        self._validate(data)\n\n    @abstractmethod\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        pass\n\n    def _validate(self, data) -> None:\n        dtype = data.dtype\n        if not HAS_PYARROW or not isinstance(dtype, ArrowDtype):\n            # Raise AttributeError so that inspect can handle non-struct Series.\n            raise AttributeError(self._validation_msg.format(dtype=dtype))\n\n        if not self._is_valid_pyarrow_dtype(dtype.pyarrow_dtype):\n            # Raise AttributeError so that inspect can handle invalid Series.\n            raise AttributeError(self._validation_msg.format(dtype=dtype))\n\n    @property\n    def _pa_array(self):\n        return self._data.array._pa_array\n\n\nclass ListAccessor(ArrowAccessor):\n    \"\"\"\n    Accessor object for list data properties of the Series values.\n\n    Parameters\n    ----------\n    data : Series\n        Series containing Arrow list data.\n    \"\"\"\n\n    def __init__(self, data=None) -> None:\n        super().__init__(\n            data,\n            validation_msg=\"Can only use the '.list' accessor with \"\n            \"'list[pyarrow]' dtype, not {dtype}.\",\n        )\n\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        return (\n            pa.types.is_list(pyarrow_dtype)\n            or pa.types.is_fixed_size_list(pyarrow_dtype)\n            or pa.types.is_large_list(pyarrow_dtype)\n        )\n\n    def len(self) -> Series:\n        \"\"\"\n        Return the length of each list in the Series.\n\n        Computes the number of elements in each list entry. The result is a\n        Series of integers with the same index as the original Series.\n\n        Returns\n        -------\n        pandas.Series\n            The length of each list.\n\n        See Also\n        --------\n        str.len : Python built-in function returning the length of an object.\n        Series.size : Returns the length of the Series.\n        StringMethods.len : Compute the length of each element in the Series/Index.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list.len()\n        0    3\n        1    1\n        dtype: int32[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        value_lengths = pc.list_value_length(self._pa_array)\n        return Series(\n            value_lengths,\n            dtype=ArrowDtype(value_lengths.type),\n            index=self._data.index,\n            name=self._data.name,\n        )\n\n    def __getitem__(self, key: int | slice) -> Series:\n        \"\"\"\n        Index or slice lists in the Series.\n\n        Retrieves elements at the given integer index or slice from each list\n        in the Series, returning a new Series with the selected values.\n\n        Parameters\n        ----------\n        key : int | slice\n            Index or slice of indices to access from each list.\n\n        Returns\n        -------\n        pandas.Series\n            The list at requested index.\n\n        See Also\n        --------\n        ListAccessor.flatten : Flatten list values.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list[0]\n        0    1\n        1    3\n        dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        if isinstance(key, int):\n            # TODO: Support negative key but pyarrow does not allow\n            # element index to be an array.\n            # if key < 0:\n            #     key = pc.add(key, pc.list_value_length(self._pa_array))\n            arr = self._pa_array\n            if key < 0:\n                lengths = pc.list_value_length(arr)\n                abs_key = abs(key)\n                too_short = pc.and_(\n                    pc.is_valid(lengths),\n                    pc.less(lengths, pa.scalar(abs_key, type=lengths.type)),\n                )\n                if pc.any(too_short).as_py():\n                    bad_pos = pc.index(too_short, True).as_py()\n                    bad_length = lengths[bad_pos].as_py()\n                    raise IndexError(\n                        f\"list index {key} out of range for list of length \"\n                        f\"{bad_length} at position {bad_pos}\"\n                    )\n\n                chunks = arr.chunks if isinstance(arr, pa.ChunkedArray) else [arr]\n                all_results = []\n                for chunk in chunks:\n                    if len(chunk) == 0:\n                        continue\n                    chunk_lengths = pc.list_value_length(chunk)\n                    if pa.types.is_fixed_size_list(chunk.type):\n                        list_size = chunk.type.list_size\n                        starts = pa.array(\n                            (np.arange(len(chunk), dtype=np.int64) + chunk.offset)\n                            * list_size,\n                            type=pa.int64(),\n                        )\n                        flat_values = chunk.values\n                    else:\n                        starts = chunk.offsets[:-1]\n                        flat_values = chunk.values\n                    indices = pc.add(starts, pc.add(chunk_lengths, key))\n                    all_results.append(flat_values.take(indices))\n\n                result_values = (\n                    pa.concat_arrays(all_results)\n                    if all_results\n                    else pa.array([], type=arr.type.value_type)\n                )\n                return Series(\n                    result_values,\n                    dtype=ArrowDtype(result_values.type),\n                    index=self._data.index,\n                    name=self._data.name,\n                )\n            else:\n                element = pc.list_element(self._pa_array, key)\n                return Series(\n                    element,\n                    dtype=ArrowDtype(element.type),\n                    index=self._data.index,\n                    name=self._data.name,\n                )\n        elif isinstance(key, slice):\n            # TODO: Support negative start/stop/step, ideally this would be added\n            # upstream in pyarrow.\n            start, stop, step = key.start, key.stop, key.step\n            if start is None:\n                # TODO: When adding negative step support\n                #  this should be set to last element of array\n                # when step is negative.\n                start = 0\n            if step is None:\n                step = 1\n            sliced = pc.list_slice(self._pa_array, start, stop, step)\n            return Series(\n                sliced,\n                dtype=ArrowDtype(sliced.type),\n                index=self._data.index,\n                name=self._data.name,\n            )\n        else:\n            raise ValueError(f\"key must be an int or slice, got {type(key).__name__}\")\n\n    def __iter__(self) -> Iterator:\n        raise TypeError(f\"'{type(self).__name__}' object is not iterable\")\n\n    def flatten(self) -> Series:\n        \"\"\"\n        Flatten list values.\n\n        Each list element is expanded into separate rows, preserving the\n        original index. The resulting Series may have a longer length than\n        the original if lists contain more than one element.\n\n        Returns\n        -------\n        pandas.Series\n            The data from all lists in the series flattened.\n\n        See Also\n        --------\n        ListAccessor.__getitem__ : Index or slice values in the Series.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list.flatten()\n        0    1\n        0    2\n        0    3\n        1    3\n        dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        counts = pa.compute.list_value_length(self._pa_array)\n        flattened = pa.compute.list_flatten(self._pa_array)\n        index = self._data.index.repeat(counts.fill_null(pa.scalar(0, counts.type)))\n        return Series(\n            flattened,\n            dtype=ArrowDtype(flattened.type),\n            index=index,\n            name=self._data.name,\n        )\n\n\nclass StructAccessor(ArrowAccessor):\n    \"\"\"\n    Accessor object for structured data properties of the Series values.\n\n    Parameters\n    ----------\n    data : Series\n        Series containing Arrow struct data.\n    \"\"\"\n\n    def __init__(self, data=None) -> None:\n        super().__init__(\n            data,\n            validation_msg=(\n                \"Can only use the '.struct' accessor with 'struct[pyarrow]' \"\n                \"dtype, not {dtype}.\"\n            ),\n        )\n\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        return pa.types.is_struct(pyarrow_dtype)\n\n    @property\n    def dtypes(self) -> Series:\n        \"\"\"\n        Return the dtype object of each child field of the struct.\n\n        The returned Series is indexed by the field names of the struct and\n        contains the corresponding :class:`ArrowDtype` for each field.\n\n        Returns\n        -------\n        pandas.Series\n            The data type of each child field.\n\n        See Also\n        --------\n        Series.dtype: Return the dtype object of the underlying data.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n        >>> s.struct.dtypes\n        version     int64[pyarrow]\n        project    string[pyarrow]\n        dtype: object\n        \"\"\"\n        from pandas import (\n            Index,\n            Series,\n        )\n\n        pa_type = self._data.dtype.pyarrow_dtype\n        types = [ArrowDtype(struct.type) for struct in pa_type]\n        names = [struct.name for struct in pa_type]\n        return Series(types, index=Index(names))\n\n    def field(\n        self,\n        name_or_index: list[str]\n        | list[bytes]\n        | list[int]\n        | pc.Expression\n        | bytes\n        | str\n        | int,\n    ) -> Series:\n        \"\"\"\n        Extract a child field of a struct as a Series.\n\n        This method accesses individual child fields of an Arrow struct\n        column by name, index, expression, or a list of those for nested\n        structs.\n\n        Parameters\n        ----------\n        name_or_index : str | bytes | int | expression | list\n            Name or index of the child field to extract.\n\n            For list-like inputs, this will index into a nested\n            struct.\n\n        Returns\n        -------\n        pandas.Series\n            The data corresponding to the selected child field.\n\n        See Also\n        --------\n        Series.struct.explode : Return all child fields as a DataFrame.\n\n        Notes\n        -----\n        The name of the resulting Series will be set using the following\n        rules:\n\n        - For string, bytes, or integer `name_or_index` (or a list of these, for\n          a nested selection), the Series name is set to the selected\n          field's name.\n        - For a :class:`pyarrow.compute.Expression`, this is set to\n          the string form of the expression.\n        - For list-like `name_or_index`, the name will be set to the\n          name of the final field selected.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n\n        Extract by field name.\n\n        >>> s.struct.field(\"project\")\n        0    pandas\n        1    pandas\n        2     numpy\n        Name: project, dtype: string[pyarrow]\n\n        Extract by field index.\n\n        >>> s.struct.field(0)\n        0    1\n        1    2\n        2    1\n        Name: version, dtype: int64[pyarrow]\n\n        Or an expression\n\n        >>> import pyarrow.compute as pc\n        >>> s.struct.field(pc.field(\"project\"))\n        0    pandas\n        1    pandas\n        2     numpy\n        Name: project, dtype: string[pyarrow]\n\n        For nested struct types, you can pass a list of values to index\n        multiple levels:\n\n        >>> version_type = pa.struct(\n        ...     [\n        ...         (\"major\", pa.int64()),\n        ...         (\"minor\", pa.int64()),\n        ...     ]\n        ... )\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": {\"major\": 1, \"minor\": 5}, \"project\": \"pandas\"},\n        ...         {\"version\": {\"major\": 2, \"minor\": 1}, \"project\": \"pandas\"},\n        ...         {\"version\": {\"major\": 1, \"minor\": 26}, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", version_type), (\"project\", pa.string())])\n        ...     ),\n        ... )\n        >>> s.struct.field([\"version\", \"minor\"])\n        0     5\n        1     1\n        2    26\n        Name: minor, dtype: int64[pyarrow]\n        >>> s.struct.field([0, 0])\n        0    1\n        1    2\n        2    1\n        Name: major, dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        def get_name(\n            level_name_or_index: list[str]\n            | list[bytes]\n            | list[int]\n            | pc.Expression\n            | bytes\n            | str\n            | int,\n            data: pa.ChunkedArray,\n        ):\n            if isinstance(level_name_or_index, int):\n                name = data.type.field(level_name_or_index).name\n            elif isinstance(level_name_or_index, (str, bytes)):\n                name = level_name_or_index\n            elif isinstance(level_name_or_index, pc.Expression):\n                name = str(level_name_or_index)\n            elif is_list_like(level_name_or_index):\n                # For nested input like [2, 1, 2]\n                # iteratively get the struct and field name. The last\n                # one is used for the name of the index.\n                level_name_or_index = list(reversed(level_name_or_index))\n                selected = data\n                while level_name_or_index:\n                    # we need the cast, otherwise mypy complains about\n                    # getting ints, bytes, or str here, which isn't possible.\n                    level_name_or_index = cast(\"list\", level_name_or_index)\n                    name_or_index = level_name_or_index.pop()\n                    name = get_name(name_or_index, selected)\n                    selected = selected.type.field(selected.type.get_field_index(name))\n                    name = selected.name\n            else:\n                raise ValueError(\n                    \"name_or_index must be an int, str, bytes, \"\n                    \"pyarrow.compute.Expression, or list of those\"\n                )\n            return name\n\n        pa_arr = self._data.array._pa_array\n        name = get_name(name_or_index, pa_arr)\n        field_arr = pc.struct_field(pa_arr, name_or_index)\n\n        return Series(\n            field_arr,\n            dtype=ArrowDtype(field_arr.type),\n            index=self._data.index,\n            name=name,\n        )\n\n    def explode(self) -> DataFrame:\n        \"\"\"\n        Extract all child fields of a struct as a DataFrame.\n\n        Each child field of the struct becomes a column in the resulting\n        DataFrame, with column names matching the struct field names.\n\n        Returns\n        -------\n        pandas.DataFrame\n            The data corresponding to all child fields.\n\n        See Also\n        --------\n        Series.struct.field : Return a single child field as a Series.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n\n        >>> s.struct.explode()\n           version project\n        0        1  pandas\n        1        2  pandas\n        2        1   numpy\n        \"\"\"\n        from pandas import concat\n\n        pa_type = self._pa_array.type\n        return concat(\n            [self.field(i) for i in range(pa_type.num_fields)], axis=\"columns\"\n        )\n",
+  "anchor_line": 171,
+  "after_code": "\"\"\"Accessors for arrow-backed data.\"\"\"\n\nfrom __future__ import annotations\n\nfrom abc import (\n    ABCMeta,\n    abstractmethod,\n)\nfrom typing import (\n    TYPE_CHECKING,\n    cast,\n)\n\nfrom pandas.compat import HAS_PYARROW\n\nfrom pandas.core.dtypes.common import is_list_like\n\nif HAS_PYARROW:\n    import pyarrow as pa\n    import pyarrow.compute as pc\n\n    from pandas.core.dtypes.dtypes import ArrowDtype\n\nif TYPE_CHECKING:\n    from collections.abc import Iterator\n\n    from pandas import (\n        DataFrame,\n        Series,\n    )\n\n\nclass ArrowAccessor(metaclass=ABCMeta):\n    @abstractmethod\n    def __init__(self, data, validation_msg: str) -> None:\n        self._data = data\n        self._validation_msg = validation_msg\n        self._validate(data)\n\n    @abstractmethod\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        pass\n\n    def _validate(self, data) -> None:\n        dtype = data.dtype\n        if not HAS_PYARROW or not isinstance(dtype, ArrowDtype):\n            # Raise AttributeError so that inspect can handle non-struct Series.\n            raise AttributeError(self._validation_msg.format(dtype=dtype))\n\n        if not self._is_valid_pyarrow_dtype(dtype.pyarrow_dtype):\n            # Raise AttributeError so that inspect can handle invalid Series.\n            raise AttributeError(self._validation_msg.format(dtype=dtype))\n\n    @property\n    def _pa_array(self):\n        return self._data.array._pa_array\n\n\ndef _list_element_neg(chunk: pa.Array, key: int) -> pa.Array:\n    if pa.types.is_fixed_size_list(chunk.type):\n        chunk = chunk.cast(pa.list_(chunk.type.value_type))\n    if pc.any(pc.less(pc.list_value_length(chunk), -key)).as_py():\n        raise IndexError(f\"list index {key} out of range\")\n    indices = pc.add(chunk.offsets[1:], key)\n    if chunk.null_count:\n        indices = pc.if_else(chunk.is_valid(), indices, None)\n    return chunk.values.take(indices)\n\n\nclass ListAccessor(ArrowAccessor):\n    \"\"\"\n    Accessor object for list data properties of the Series values.\n\n    Parameters\n    ----------\n    data : Series\n        Series containing Arrow list data.\n    \"\"\"\n\n    def __init__(self, data=None) -> None:\n        super().__init__(\n            data,\n            validation_msg=\"Can only use the '.list' accessor with \"\n            \"'list[pyarrow]' dtype, not {dtype}.\",\n        )\n\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        return (\n            pa.types.is_list(pyarrow_dtype)\n            or pa.types.is_fixed_size_list(pyarrow_dtype)\n            or pa.types.is_large_list(pyarrow_dtype)\n        )\n\n    def len(self) -> Series:\n        \"\"\"\n        Return the length of each list in the Series.\n\n        Computes the number of elements in each list entry. The result is a\n        Series of integers with the same index as the original Series.\n\n        Returns\n        -------\n        pandas.Series\n            The length of each list.\n\n        See Also\n        --------\n        str.len : Python built-in function returning the length of an object.\n        Series.size : Returns the length of the Series.\n        StringMethods.len : Compute the length of each element in the Series/Index.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list.len()\n        0    3\n        1    1\n        dtype: int32[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        value_lengths = pc.list_value_length(self._pa_array)\n        return Series(\n            value_lengths,\n            dtype=ArrowDtype(value_lengths.type),\n            index=self._data.index,\n            name=self._data.name,\n        )\n\n    def __getitem__(self, key: int | slice) -> Series:\n        \"\"\"\n        Index or slice lists in the Series.\n\n        Retrieves elements at the given integer index or slice from each list\n        in the Series, returning a new Series with the selected values.\n\n        Parameters\n        ----------\n        key : int | slice\n            Index or slice of indices to access from each list.\n\n        Returns\n        -------\n        pandas.Series\n            The list at requested index.\n\n        See Also\n        --------\n        ListAccessor.flatten : Flatten list values.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list[0]\n        0    1\n        1    3\n        dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        if isinstance(key, int):\n            pa_array = self._pa_array\n            chunks = pa_array.chunks\n            if key < 0:\n                element = pa.chunked_array(\n                    [_list_element_neg(chunk, key) for chunk in chunks],\n                    type=pa_array.type.value_type,\n                )\n            else:\n                element = pc.list_element(pa_array, key)\n            return Series(\n                element,\n                dtype=ArrowDtype(element.type),\n                index=self._data.index,\n                name=self._data.name,\n            )\n        elif isinstance(key, slice):\n            # TODO: Support negative start/stop/step, ideally this would be added\n            # upstream in pyarrow.\n            start, stop, step = key.start, key.stop, key.step\n            if start is None:\n                # TODO: When adding negative step support\n                #  this should be set to last element of array\n                # when step is negative.\n                start = 0\n            if step is None:\n                step = 1\n            sliced = pc.list_slice(self._pa_array, start, stop, step)\n            return Series(\n                sliced,\n                dtype=ArrowDtype(sliced.type),\n                index=self._data.index,\n                name=self._data.name,\n            )\n        else:\n            raise ValueError(f\"key must be an int or slice, got {type(key).__name__}\")\n\n    def __iter__(self) -> Iterator:\n        raise TypeError(f\"'{type(self).__name__}' object is not iterable\")\n\n    def flatten(self) -> Series:\n        \"\"\"\n        Flatten list values.\n\n        Each list element is expanded into separate rows, preserving the\n        original index. The resulting Series may have a longer length than\n        the original if lists contain more than one element.\n\n        Returns\n        -------\n        pandas.Series\n            The data from all lists in the series flattened.\n\n        See Also\n        --------\n        ListAccessor.__getitem__ : Index or slice values in the Series.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         [1, 2, 3],\n        ...         [3],\n        ...     ],\n        ...     dtype=pd.ArrowDtype(pa.list_(pa.int64())),\n        ... )\n        >>> s.list.flatten()\n        0    1\n        0    2\n        0    3\n        1    3\n        dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        counts = pa.compute.list_value_length(self._pa_array)\n        flattened = pa.compute.list_flatten(self._pa_array)\n        index = self._data.index.repeat(counts.fill_null(pa.scalar(0, counts.type)))\n        return Series(\n            flattened,\n            dtype=ArrowDtype(flattened.type),\n            index=index,\n            name=self._data.name,\n        )\n\n\nclass StructAccessor(ArrowAccessor):\n    \"\"\"\n    Accessor object for structured data properties of the Series values.\n\n    Parameters\n    ----------\n    data : Series\n        Series containing Arrow struct data.\n    \"\"\"\n\n    def __init__(self, data=None) -> None:\n        super().__init__(\n            data,\n            validation_msg=(\n                \"Can only use the '.struct' accessor with 'struct[pyarrow]' \"\n                \"dtype, not {dtype}.\"\n            ),\n        )\n\n    def _is_valid_pyarrow_dtype(self, pyarrow_dtype) -> bool:\n        return pa.types.is_struct(pyarrow_dtype)\n\n    @property\n    def dtypes(self) -> Series:\n        \"\"\"\n        Return the dtype object of each child field of the struct.\n\n        The returned Series is indexed by the field names of the struct and\n        contains the corresponding :class:`ArrowDtype` for each field.\n\n        Returns\n        -------\n        pandas.Series\n            The data type of each child field.\n\n        See Also\n        --------\n        Series.dtype: Return the dtype object of the underlying data.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n        >>> s.struct.dtypes\n        version     int64[pyarrow]\n        project    string[pyarrow]\n        dtype: object\n        \"\"\"\n        from pandas import (\n            Index,\n            Series,\n        )\n\n        pa_type = self._data.dtype.pyarrow_dtype\n        types = [ArrowDtype(struct.type) for struct in pa_type]\n        names = [struct.name for struct in pa_type]\n        return Series(types, index=Index(names))\n\n    def field(\n        self,\n        name_or_index: list[str]\n        | list[bytes]\n        | list[int]\n        | pc.Expression\n        | bytes\n        | str\n        | int,\n    ) -> Series:\n        \"\"\"\n        Extract a child field of a struct as a Series.\n\n        This method accesses individual child fields of an Arrow struct\n        column by name, index, expression, or a list of those for nested\n        structs.\n\n        Parameters\n        ----------\n        name_or_index : str | bytes | int | expression | list\n            Name or index of the child field to extract.\n\n            For list-like inputs, this will index into a nested\n            struct.\n\n        Returns\n        -------\n        pandas.Series\n            The data corresponding to the selected child field.\n\n        See Also\n        --------\n        Series.struct.explode : Return all child fields as a DataFrame.\n\n        Notes\n        -----\n        The name of the resulting Series will be set using the following\n        rules:\n\n        - For string, bytes, or integer `name_or_index` (or a list of these, for\n          a nested selection), the Series name is set to the selected\n          field's name.\n        - For a :class:`pyarrow.compute.Expression`, this is set to\n          the string form of the expression.\n        - For list-like `name_or_index`, the name will be set to the\n          name of the final field selected.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n\n        Extract by field name.\n\n        >>> s.struct.field(\"project\")\n        0    pandas\n        1    pandas\n        2     numpy\n        Name: project, dtype: string[pyarrow]\n\n        Extract by field index.\n\n        >>> s.struct.field(0)\n        0    1\n        1    2\n        2    1\n        Name: version, dtype: int64[pyarrow]\n\n        Or an expression\n\n        >>> import pyarrow.compute as pc\n        >>> s.struct.field(pc.field(\"project\"))\n        0    pandas\n        1    pandas\n        2     numpy\n        Name: project, dtype: string[pyarrow]\n\n        For nested struct types, you can pass a list of values to index\n        multiple levels:\n\n        >>> version_type = pa.struct(\n        ...     [\n        ...         (\"major\", pa.int64()),\n        ...         (\"minor\", pa.int64()),\n        ...     ]\n        ... )\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": {\"major\": 1, \"minor\": 5}, \"project\": \"pandas\"},\n        ...         {\"version\": {\"major\": 2, \"minor\": 1}, \"project\": \"pandas\"},\n        ...         {\"version\": {\"major\": 1, \"minor\": 26}, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", version_type), (\"project\", pa.string())])\n        ...     ),\n        ... )\n        >>> s.struct.field([\"version\", \"minor\"])\n        0     5\n        1     1\n        2    26\n        Name: minor, dtype: int64[pyarrow]\n        >>> s.struct.field([0, 0])\n        0    1\n        1    2\n        2    1\n        Name: major, dtype: int64[pyarrow]\n        \"\"\"\n        from pandas import Series\n\n        def get_name(\n            level_name_or_index: list[str]\n            | list[bytes]\n            | list[int]\n            | pc.Expression\n            | bytes\n            | str\n            | int,\n            data: pa.ChunkedArray,\n        ):\n            if isinstance(level_name_or_index, int):\n                name = data.type.field(level_name_or_index).name\n            elif isinstance(level_name_or_index, (str, bytes)):\n                name = level_name_or_index\n            elif isinstance(level_name_or_index, pc.Expression):\n                name = str(level_name_or_index)\n            elif is_list_like(level_name_or_index):\n                # For nested input like [2, 1, 2]\n                # iteratively get the struct and field name. The last\n                # one is used for the name of the index.\n                level_name_or_index = list(reversed(level_name_or_index))\n                selected = data\n                while level_name_or_index:\n                    # we need the cast, otherwise mypy complains about\n                    # getting ints, bytes, or str here, which isn't possible.\n                    level_name_or_index = cast(\"list\", level_name_or_index)\n                    name_or_index = level_name_or_index.pop()\n                    name = get_name(name_or_index, selected)\n                    selected = selected.type.field(selected.type.get_field_index(name))\n                    name = selected.name\n            else:\n                raise ValueError(\n                    \"name_or_index must be an int, str, bytes, \"\n                    \"pyarrow.compute.Expression, or list of those\"\n                )\n            return name\n\n        pa_arr = self._data.array._pa_array\n        name = get_name(name_or_index, pa_arr)\n        field_arr = pc.struct_field(pa_arr, name_or_index)\n\n        return Series(\n            field_arr,\n            dtype=ArrowDtype(field_arr.type),\n            index=self._data.index,\n            name=name,\n        )\n\n    def explode(self) -> DataFrame:\n        \"\"\"\n        Extract all child fields of a struct as a DataFrame.\n\n        Each child field of the struct becomes a column in the resulting\n        DataFrame, with column names matching the struct field names.\n\n        Returns\n        -------\n        pandas.DataFrame\n            The data corresponding to all child fields.\n\n        See Also\n        --------\n        Series.struct.field : Return a single child field as a Series.\n\n        Examples\n        --------\n        >>> import pyarrow as pa\n        >>> s = pd.Series(\n        ...     [\n        ...         {\"version\": 1, \"project\": \"pandas\"},\n        ...         {\"version\": 2, \"project\": \"pandas\"},\n        ...         {\"version\": 1, \"project\": \"numpy\"},\n        ...     ],\n        ...     dtype=pd.ArrowDtype(\n        ...         pa.struct([(\"version\", pa.int64()), (\"project\", pa.string())])\n        ...     ),\n        ... )\n\n        >>> s.struct.explode()\n           version project\n        0        1  pandas\n        1        2  pandas\n        2        1   numpy\n        \"\"\"\n        from pandas import concat\n\n        pa_type = self._pa_array.type\n        return concat(\n            [self.field(i) for i in range(pa_type.num_fields)], axis=\"columns\"\n        )\n",
+  "unified_diff": "--- a/pandas/core/arrays/arrow/accessors.py\n+++ b/pandas/core/arrays/arrow/accessors.py\n@@ -11,8 +11,6 @@\n     cast,\n )\n \n-import numpy as np\n-\n from pandas.compat import HAS_PYARROW\n \n from pandas.core.dtypes.common import is_list_like\n@@ -58,6 +56,17 @@\n         return self._data.array._pa_array\n \n \n+def _list_element_neg(chunk: pa.Array, key: int) -> pa.Array:\n+    if pa.types.is_fixed_size_list(chunk.type):\n+        chunk = chunk.cast(pa.list_(chunk.type.value_type))\n+    if pc.any(pc.less(pc.list_value_length(chunk), -key)).as_py():\n+        raise IndexError(f\"list index {key} out of range\")\n+    indices = pc.add(chunk.offsets[1:], key)\n+    if chunk.null_count:\n+        indices = pc.if_else(chunk.is_valid(), indices, None)\n+    return chunk.values.take(indices)\n+\n+\n class ListAccessor(ArrowAccessor):\n     \"\"\"\n     Accessor object for list data properties of the Series values.\n@@ -164,65 +173,21 @@\n         from pandas import Series\n \n         if isinstance(key, int):\n-            # TODO: Support negative key but pyarrow does not allow\n-            # element index to be an array.\n-            # if key < 0:\n-            #     key = pc.add(key, pc.list_value_length(self._pa_array))\n-            arr = self._pa_array\n+            pa_array = self._pa_array\n+            chunks = pa_array.chunks\n             if key < 0:\n-                lengths = pc.list_value_length(arr)\n-                abs_key = abs(key)\n-                too_short = pc.and_(\n-                    pc.is_valid(lengths),\n-                    pc.less(lengths, pa.scalar(abs_key, type=lengths.type)),\n-                )\n-                if pc.any(too_short).as_py():\n-                    bad_pos = pc.index(too_short, True).as_py()\n-                    bad_length = lengths[bad_pos].as_py()\n-                    raise IndexError(\n-                        f\"list index {key} out of range for list of length \"\n-                        f\"{bad_length} at position {bad_pos}\"\n-                    )\n-\n-                chunks = arr.chunks if isinstance(arr, pa.ChunkedArray) else [arr]\n-                all_results = []\n-                for chunk in chunks:\n-                    if len(chunk) == 0:\n-                        continue\n-                    chunk_lengths = pc.list_value_length(chunk)\n-                    if pa.types.is_fixed_size_list(chunk.type):\n-                        list_size = chunk.type.list_size\n-                        starts = pa.array(\n-                            (np.arange(len(chunk), dtype=np.int64) + chunk.offset)\n-                            * list_size,\n-                            type=pa.int64(),\n-                        )\n-                        flat_values = chunk.values\n-                    else:\n-                        starts = chunk.offsets[:-1]\n-                        flat_values = chunk.values\n-                    indices = pc.add(starts, pc.add(chunk_lengths, key))\n-                    all_results.append(flat_values.take(indices))\n-\n-                result_values = (\n-                    pa.concat_arrays(all_results)\n-                    if all_results\n-                    else pa.array([], type=arr.type.value_type)\n-                )\n-                return Series(\n-                    result_values,\n-                    dtype=ArrowDtype(result_values.type),\n-                    index=self._data.index,\n-                    name=self._data.name,\n+                element = pa.chunked_array(\n+                    [_list_element_neg(chunk, key) for chunk in chunks],\n+                    type=pa_array.type.value_type,\n                 )\n             else:\n-                element = pc.list_element(self._pa_array, key)\n-                return Series(\n-                    element,\n-                    dtype=ArrowDtype(element.type),\n-                    index=self._data.index,\n-                    name=self._data.name,\n-                )\n+                element = pc.list_element(pa_array, key)\n+            return Series(\n+                element,\n+                dtype=ArrowDtype(element.type),\n+                index=self._data.index,\n+                name=self._data.name,\n+            )\n         elif isinstance(key, slice):\n             # TODO: Support negative start/stop/step, ideally this would be added\n             # upstream in pyarrow.\n",
+  "changed_files": [
+    {
+      "path": ".gitattributes",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/setup-pixi/action.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/code-checks.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/comment-commands.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/docbuild-and-upload.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/package-checks.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/security.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/unit-tests.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/update-pixi-lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/strftime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "ci/import_pandas_check.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "ci/suppressions/ubsan.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/_templates/api_redirect.html",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/_templates/sidebar-nav-bs.html",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/make.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/redirects.csv",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/conf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/community.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/contributing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/contributing_codebase.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/contributing_documentation.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/frame.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/general_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/indexing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/offset_frequency.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/signature_overrides.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/dsintro.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/groupby.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/indexing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/io.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/missing_data.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/text.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/timeseries.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.10.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.10.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.11.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.12.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.13.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.13.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.14.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.14.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.15.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.15.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.15.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.16.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.16.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.17.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.17.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.18.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.18.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.19.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.19.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.19.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.20.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.20.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.20.3.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.21.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.21.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.22.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.23.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.23.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.24.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.25.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.8.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.9.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v0.9.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.0.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.3.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.4.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.5.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v1.5.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v2.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v2.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v2.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.5.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.6.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "environment.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "meson.options",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_config/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_config/config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_config/localization.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/algos.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/hashtable.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/hashtable.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/include/pandas/parser/tokenizer.h",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/include/pandas/vendored/klib/khash_python.h",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/internals.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/interval.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/intervaltree.pxi.in",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/khash.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/portable.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/sas.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/simd/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/sparse.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/parser/pd_parser.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/parser/tokenizer.cpp",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/numpy/datetime/np_datetime_strings.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/ujson/lib/ultrajsondec.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/ujson/lib/ultrajsonenc.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/ujson/python/objToJSON.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/testing.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslib.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/ccalendar.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/ccalendar.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/fields.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/fields.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/np_datetime.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/np_datetime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/offsets.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/offsets.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/parsing.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/period.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timezones.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/tzconversion.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/tzconversion.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/window/aggregations.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/window/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/_hypothesis.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/_warnings.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/asserters.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/api/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/api/typing/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/compat/_optional.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/algorithms.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arraylike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/_ranges.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/accessors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pandas/core/arrays/arrow/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/extension_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/boolean.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/masked.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/numpy_.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/string_.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/col.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/check.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/expr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/expressions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/config_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/construction.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/cast.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/frame.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/generic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/generic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/groupby.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexers/objects.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexers/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/accessors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/category.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/blocks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/managers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/describe.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/missing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/nanops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/array_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/invalid.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/missing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/resample.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/concat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/encoding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/melt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/merge.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/pivot.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/tile.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/series.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/sorting.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/strings/accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/ewm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/expanding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/rolling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/_util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/clipboard/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/clipboards.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/excel/_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/format.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/printing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/style.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/style_render.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/templates/typst.tpl",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/html.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/json/_json.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parquet.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/arrow_parser_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/c_parser_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/python_parser.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/readers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/sas/sas7bdat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/sql.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/stata.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/converter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/core.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/timeseries.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/api/test_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/api/test_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_frame_apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_frame_apply_relabeling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_frame_transform.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_invalid_arg.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_numba.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_series_apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_series_transform.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_str.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_bool.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_datetime64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_numeric.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_object.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_timedelta64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/boolean/test_logical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_analytics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_map.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_missing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_operators.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_replace.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_repr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_sorting.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_subclass.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_take.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/datetimes/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/integer/test_function.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/integer/test_reduction.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/interval/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/interval/test_interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/interval/test_interval_pyarrow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/interval/test_overlaps.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/numpy_/test_numpy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T06:07:05.817882Z"
+}

@@ -21,14 +21,15 @@ A separate policy layer turns the verdict into `ALLOW` / `WARN` / `HUMAN_REVIEW`
 
 | | |
 |---|---|
-| **Current phase** | **Phase 9 in progress: benchmark.** 9a done: annotation guide, 100 new blind test cases (frozen, not yet run), mining / annotation / agreement tooling |
-| **Next step** | 9b: the owner approves the repositories to mine, then ~50 real-world cases are labelled by two human annotators |
-| **Benchmark v1** | 113 controlled + 40 adversarial cases (real-world pending); test split has 20 cases per category and all 4 verdicts |
+| **Current phase** | **Phase 9 done: benchmark v1 frozen.** 113 controlled + 40 adversarial + 50 real-world cases from 6 open-source projects; the test split is untouched until Phase 10 |
+| **Next phase** | Awaiting approval: Phase 10 (evaluation on the frozen test split) or Phase 8b (semantic evidence in aggregation, dev only) |
+| **Real-world labels** | **provisional**: written blind by Claude (no human annotator yet), marked `model`, replaced by human labels when added |
+| **Key real-world finding** | 2/3 of real review requests are refactoring, docs or style (`other`), outside the five rule categories |
 | **Verdict accuracy (rules)** | dev set 1.000 (training data) · held-out **0.875** with **zero false acceptances** (not blind after Phase 5.1) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title) |
 | **Requirement extraction** | blind held-out: count exact 0.844, category F1 0.909 |
-| **Tests** | 814 unit + 8 integration + 2 model tests, strict mypy, 96% coverage, CI on every push |
+| **Tests** | 821 unit + 8 integration + 2 model tests, strict mypy, 96% coverage, CI on every push |
 
 ---
 
@@ -236,10 +237,24 @@ is frozen by hash and first run in the final evaluation (Phase 10)
 | `dataset/fixtures` + `dataset/heldout_fixtures` | controlled | dev | 53 |
 | `dataset/benchmark/controlled` | controlled, written blind | **test** | 60 (12 per category) |
 | `dataset/benchmark/adversarial` | traps (injection, string mention, commented-out and dead code, wrong target / value / order) and unusual-but-valid fixes | **test** | 40 (8 per category) |
-| `dataset/benchmark/real_world` | pseudonymised review threads from approved, permissively licensed repositories; two human annotators, kappa, adjudication | dev / test | 9b: ~50 |
+| `dataset/benchmark/real_world` | pseudonymised review threads from home-assistant, pandas, pytest, pydantic, httpx and click (permissive licenses, attribution in the dataset) | 30 dev / **20 test** | 50 (57 collected, 7 excluded) |
 
-The new test cases were written by the same author as the rules, so the real-world cases are the
-independent check.
+The frozen v1 manifest (`dataset/benchmark/manifest.json`) is pinned by a test. What the real data
+showed:
+
+- **Most requests are outside the rule categories.** The main requirement is `other` (refactor,
+  simplify, docs wording, suggestion blocks) in 33 of 50 cases.
+- **Most resolved threads were addressed** (40 of 50 SATISFIED). Unsatisfied ones include declined
+  suggestions and a PR merged without acting on four review comments.
+- **Some requests are satisfied by a comment or docstring** ("add `# GH#63221`", "docstring
+  please"). Rules that distrust comment-only changes will disagree; Phase 10 measures it.
+
+**Label caveats:**
+- The real-world labels are **provisional**. Claude wrote them blind, before any verifier ran, but
+  Claude also wrote the rules, so the labels may share their blind spots. Results on them will be
+  reported separately.
+- Inter-annotator agreement (κ) is not measurable until humans label. The tooling for that is ready:
+  an offline annotation page, `agreement`, adjudication and `build-gold`.
 
 ### Prompt injection
 
@@ -269,7 +284,7 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 6 | ✅ | NLP baselines: keyword, TF-IDF, embeddings, common harness | [phase6](docs/phase6_nlp_baselines.md) |
 | 7 | ✅ | Code model (UniXcoder) as neutral evidence, code-only view, prompt-injection suite | [phase7](docs/phase7_code_model.md) |
 | 8b | | Aggregation with semantic evidence (needs benchmark data first, ADR-002) | — |
-| 9 | ⏳ | Benchmark: guide, 100 blind test cases, tooling (9a ✅); real-world cases + two annotators (9b) | [phase9](docs/phase9_benchmark.md) |
+| 9 | ✅ | Benchmark v1: annotation guide, 100 blind test cases, 50 real-world cases (provisional labels), frozen manifest, annotation tooling | [phase9](docs/phase9_benchmark.md) |
 | 10 | | Evaluation: ablation study, calibration | — |
 | 11–13 | | GitHub advisory mode, staged enforcement, dashboard | — |
 
@@ -279,8 +294,9 @@ Decisions:
 - [ADR-002](docs/adr/002-semantic-evidence-is-neutral.md) (accepted): code-model evidence is
   neutral until benchmark data can justify a role.
 - Roadmap D7: UniXcoder, pinned revision. D8: LLM evidence interpreter deferred (it would send
-  repository content to an external API). D9: Claude proposes repositories to mine, the owner
-  approves them.
+  repository content to an external API). D9: six repositories, selection delegated by the owner
+  (`dataset/benchmark/repositories.json`). Real-world labels: provisional, by Claude, until humans
+  label (annotation guide §7a).
 
 ## Project layout
 
@@ -344,9 +360,11 @@ content is treated as untrusted data.
 - **Never blocks merges** by default. Blocking requires enforcement mode *and* an explicit opt-in,
   and a test pins that default.
 - **Confidence is rule-based, not calibrated.** HIGH is never emitted before Phase 10.
-- **Evaluation data is still author-written.** The held-out verdict set is no longer blind. The
-  new test cases are blind, but they were written by the rules' author. The independently annotated
-  real-world cases arrive in Phase 9b, and no test-split number exists before Phase 10.
+- **No independent human labels yet.** The held-out verdict set is no longer blind. The new test
+  cases are blind but written by the rules' author, and the real-world labels are provisional model
+  labels. No test-split number exists before Phase 10.
+- **Scope:** two thirds of real review requests are refactoring, docs or style (`other`), which the
+  rules do not verify. These end as UNCERTAIN (human review), by design.
 - **Rules are structural, not semantic:** no control-flow analysis. Helpers are followed one level
   deep, and only within the same file.
 - **Python only**, one commented file per case.

@@ -1,0 +1,33 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1628183067",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use a tuple instead of a list for _steps",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Make the _Pipeline dataclass frozen",
+        "status": "not_satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Make the step dataclasses frozen",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "PARTIALLY_SATISFIED",
+    "evidence": "pipeline.py:132 tuple[_Step, ...]; step classes use _slots_frozen (lines 33-108); _Pipeline still _slots_true (128) with a TODO",
+    "confidence": "low",
+    "notes": "The reviewer hedged ('okay leaving as-is'); freezing _Pipeline was declined for a technical reason. Human check advised."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178506__3766240145",
+    "include": true,
+    "requirements": [
+      {
+        "category": "validation",
+        "description": "Try to connect to the gateway when importing from YAML",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "When the gateway cannot be reached, alert the user and do not import",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "config_flow.py:119-120 _async_validate_gateway then async_abort(reason=error); climate.py raises a deprecated_yaml_import_issue_{reason} repair issue",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

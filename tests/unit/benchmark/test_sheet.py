@@ -66,3 +66,17 @@ def test_modes_and_reference() -> None:
     assert data["mode"] == "calibration" and data["version"] == SHEET_VERSION
     assert data["cases"][0]["reference"]["verdict"] == "SATISFIED"
     assert "<title>Calibration · cal</title>" in html
+
+
+def test_multi_line_comment_selection_is_shown() -> None:
+    """Phase 9b: an empty suggestion deletes the whole selection, so the page must show it."""
+    before = "".join(f"line{i} = {i}\n" for i in range(1, 40))
+    case = make_case(before, before, 20)
+    thread = case.thread.model_copy(update={"original_start_line": 16, "original_line": 20})
+    case = case.model_copy(update={"thread": thread})
+
+    sc = sheet_case("c", case)
+
+    assert sc.selection_start == 16
+    assert sheet_case("c", make_case(before, before, 20)).selection_start is None
+    assert "c.selection_start || c.anchor_line" in render_sheet([sc], "b")

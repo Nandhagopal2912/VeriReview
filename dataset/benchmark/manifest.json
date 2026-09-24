@@ -1,0 +1,33 @@
+{
+  "version": "v1",
+  "frozen_at": "2026-09-24T06:31:24.565168Z",
+  "test_sets": {
+    "controlled": "f1ebeb9fa1dba38f25f245fa0855c1dec80532b94f352bcb2de58b5010671de7",
+    "adversarial": "494acdc0edcb4b12df96456e9d3f4cc50de3ae98b660213fd2e855d8d3d6e8a5"
+  },
+  "real_world_test": [
+    "encode__httpx__2278__905948476",
+    "encode__httpx__2278__945184961",
+    "encode__httpx__2278__945186645",
+    "encode__httpx__2278__945822783",
+    "encode__httpx__307__320043132",
+    "encode__httpx__307__321404735",
+    "encode__httpx__307__321405215",
+    "encode__httpx__307__321714538",
+    "home-assistant__core__178506__3766183655",
+    "pandas-dev__pandas__67004__3875929102",
+    "pandas-dev__pandas__67004__3996402200",
+    "pandas-dev__pandas__67004__4021067646",
+    "pandas-dev__pandas__67857__4085471095",
+    "pandas-dev__pandas__69123__4056913750",
+    "pydantic__pydantic__9459__1625060916",
+    "pydantic__pydantic__9459__1628183067",
+    "pydantic__pydantic__9459__1628197626",
+    "pytest-dev__pytest__14758__3636749625",
+    "pytest-dev__pytest__14758__3790168005",
+    "pytest-dev__pytest__14813__3790080249",
+    "pytest-dev__pytest__14813__3790083013",
+    "pytest-dev__pytest__14813__3790089375"
+  ],
+  "real_world_test_hash": "6d44b82f0b4a29b54facfb49e6789fe0e1250cd7fb18732e75564e463a204bc5"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__320416523",
+    "include": true,
+    "requirements": [
+      {
+        "category": "validation",
+        "description": "Handle SSL_CERT_DIR as a directory (the is_file check cannot work for it)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/utils.py get_ca_bundle_from_env: SSL_CERT_DIR is checked with is_dir()",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

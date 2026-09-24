@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67288__4053330974",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Match only 'Unalignable boolean Series provided as indexer' in the expected message (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/frame/methods/test_filter.py:321 msg shortened as suggested",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,33 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__320043132",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Test the case where all variables are set",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Test the case where none of them is a valid file",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Verify the order in which the variables are checked",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_utils.py:146-157: both set, both wrong, and file-over-dir precedence are asserted",
+    "confidence": "medium",
+    "notes": "The function changed from three env vars to two (SSL_CERT_FILE / SSL_CERT_DIR); the tests cover the requested cases for the new set."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

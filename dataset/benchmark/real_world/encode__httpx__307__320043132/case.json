@@ -1,0 +1,610 @@
+{
+  "schema_version": "3",
+  "case_id": "encode/httpx#307/320043132",
+  "repository": "encode/httpx",
+  "pull_number": 307,
+  "pull_title": "Added support ssl cert file environment",
+  "base_sha": "08355c62f56b899af15967906aa45392cd45dbdd",
+  "head_sha": "a9e8c5a67bc2d75464cf4efb98532285e38391c5",
+  "thread": {
+    "root_comment_id": 320043132,
+    "path": "tests/test_utils.py",
+    "line": 124,
+    "original_line": 121,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -111,3 +116,19 @@ def test_parse_header_links(value, expected):\n \n     # Reset the logger so we don't have verbose output in all unit tests\n     logging.getLogger(\"httpx\").handlers = []\n+\n+\n+def test_get_ssl_cert_file():",
+    "original_commit_sha": "7a72b0e045cb6beca037db46c36cf963277dd30f",
+    "commit_sha": "a9e8c5a67bc2d75464cf4efb98532285e38391c5",
+    "comments": [
+      {
+        "id": 320043132,
+        "author": "reviewer",
+        "body": "This should also test if all three are set and if none are valid files, and verify the order tested.",
+        "created_at": "2019-09-02T20:33:59Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 322308585,
+        "author": "participant-1",
+        "body": "I'd probably tend to be okay either way on this sort of thing.\r\nWe can't ever test every possible permutation, and test code does have it's own maintenance cost, too.",
+        "created_at": "2019-09-09T15:30:03Z",
+        "in_reply_to_id": 320043132
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "participant-2",
+    "is_outdated": false
+  },
+  "window": {
+    "start_commit_sha": "7a72b0e045cb6beca037db46c36cf963277dd30f",
+    "end_commit_sha": "a9e8c5a67bc2d75464cf4efb98532285e38391c5",
+    "subsequent_commits": [
+      {
+        "sha": "54ee42d6c341375126102ff6e93f26e22ce513b6",
+        "message": "Added SSL_CERT_FILE and SSL_CERT_DIR environment support",
+        "authored_at": "2019-09-05T21:14:15Z",
+        "committed_at": "2019-09-05T21:14:15Z",
+        "author_login": null
+      },
+      {
+        "sha": "73cbc9db0fb401f83b03d3e39a0ea0cd8b8e0e50",
+        "message": "use cert_pem_file fixture to validate ssl_cert env",
+        "authored_at": "2019-09-06T06:34:21Z",
+        "committed_at": "2019-09-06T06:34:21Z",
+        "author_login": null
+      },
+      {
+        "sha": "03e45c5ad704ccaa0f9fca3c4aef2930c84ae67a",
+        "message": "Merge branch 'master' into issue-33-ca",
+        "authored_at": "2019-09-06T07:51:29Z",
+        "committed_at": "2019-09-06T07:51:29Z",
+        "author_login": null
+      },
+      {
+        "sha": "3907406b201a58974d19af433e2424bc7e74f5b5",
+        "message": "merge and fix test assert",
+        "authored_at": "2019-09-06T07:52:16Z",
+        "committed_at": "2019-09-06T07:52:16Z",
+        "author_login": null
+      },
+      {
+        "sha": "bb461141373bde268d30ec1e8056dbd03e7796c8",
+        "message": "Update the copy in documentation",
+        "authored_at": "2019-09-06T12:35:06Z",
+        "committed_at": "2019-09-06T12:35:06Z",
+        "author_login": "participant-2"
+      },
+      {
+        "sha": "e9b5f34e686392432b6253c3a9b5336170115e25",
+        "message": "moved ssl_cert_file\n* from load_ssl_context\n* to load_ssl_context_verify",
+        "authored_at": "2019-09-06T14:36:11Z",
+        "committed_at": "2019-09-06T14:36:11Z",
+        "author_login": null
+      },
+      {
+        "sha": "bb2dad4c0cc4a908bf3da0934cd07f3ab6bd30de",
+        "message": "fix for SSL_CERT docs",
+        "authored_at": "2019-09-09T19:48:53Z",
+        "committed_at": "2019-09-09T19:48:53Z",
+        "author_login": null
+      },
+      {
+        "sha": "4cac5d49ab1188ea3c22c461a64f9767f898ee0b",
+        "message": "Update config.py",
+        "authored_at": "2019-09-11T12:35:12Z",
+        "committed_at": "2019-09-11T12:35:12Z",
+        "author_login": "participant-2"
+      },
+      {
+        "sha": "00fd839d67bdce36dec69d6dd3c1fb38122d7322",
+        "message": "changed docs\n* seprated SSL_CERT_FILE and SSL_CERT_DIR\n* removed SSLConfig into trust_env part.",
+        "authored_at": "2019-09-12T07:57:43Z",
+        "committed_at": "2019-09-12T07:57:43Z",
+        "author_login": null
+      },
+      {
+        "sha": "0ca57981babe195ab36a1ccdcaf4cb3309489e7a",
+        "message": "fixed reading SSL_CERT method",
+        "authored_at": "2019-09-12T08:07:44Z",
+        "committed_at": "2019-09-12T08:07:44Z",
+        "author_login": null
+      },
+      {
+        "sha": "b8fce828c3e66ae56e10a56de8270c5af6a863c1",
+        "message": "added new tests for get_ssl_cert",
+        "authored_at": "2019-09-12T08:20:43Z",
+        "committed_at": "2019-09-12T08:20:43Z",
+        "author_login": null
+      },
+      {
+        "sha": "25b16a986bc96c054b4d7c20851e9e0ba544fefb",
+        "message": "Merge branch 'issue-33-ca' of https://github.com/cansarigol/httpx into issue-33-ca",
+        "authored_at": "2019-09-12T08:21:04Z",
+        "committed_at": "2019-09-12T08:21:04Z",
+        "author_login": null
+      },
+      {
+        "sha": "e36f79e1dfbacd261dbe3cbf1738a5444706d6f4",
+        "message": "merge commit",
+        "authored_at": "2019-09-19T07:20:48Z",
+        "committed_at": "2019-09-19T07:20:48Z",
+        "author_login": null
+      },
+      {
+        "sha": "59817c7e4df7587bd7540922c8dae688fcb8157e",
+        "message": "merge commit 2",
+        "authored_at": "2019-09-19T07:25:35Z",
+        "committed_at": "2019-09-19T07:25:35Z",
+        "author_login": null
+      },
+      {
+        "sha": "ce62cd0acd59b4f8596c73874beebdea0699a389",
+        "message": "added get_ca_certs",
+        "authored_at": "2019-09-19T07:25:37Z",
+        "committed_at": "2019-09-19T07:25:37Z",
+        "author_login": null
+      },
+      {
+        "sha": "7aa162584bb5a0515dec1aaf0b790dd0afa71426",
+        "message": "Update test_config.py",
+        "authored_at": "2019-09-19T13:38:50Z",
+        "committed_at": "2019-09-19T13:38:50Z",
+        "author_login": "participant-2"
+      },
+      {
+        "sha": "f3505f444f4ddb2ab248b022888dae3767fbcb10",
+        "message": "Merge branch 'master' into issue-33-ca",
+        "authored_at": "2019-09-21T16:17:03Z",
+        "committed_at": "2019-09-21T16:17:03Z",
+        "author_login": "participant-2"
+      },
+      {
+        "sha": "a9e8c5a67bc2d75464cf4efb98532285e38391c5",
+        "message": "Update test_config.py",
+        "authored_at": "2019-09-23T15:22:56Z",
+        "committed_at": "2019-09-23T15:22:56Z",
+        "author_login": "participant-2"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "original_commit_not_in_pr",
+      "history_rewritten",
+      "ordered_by_timestamp",
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "tests/test_utils.py",
+  "before_code": "import logging\nimport os\n\nimport pytest\n\nimport httpx\nfrom httpx import utils\nfrom httpx.utils import (\n    get_netrc_login,\n    get_ssl_cert_file,\n    guess_json_utf,\n    parse_header_links,\n)\n\n\n@pytest.mark.parametrize(\n    \"encoding\",\n    (\n        \"utf-32\",\n        \"utf-8-sig\",\n        \"utf-16\",\n        \"utf-8\",\n        \"utf-16-be\",\n        \"utf-16-le\",\n        \"utf-32-be\",\n        \"utf-32-le\",\n    ),\n)\ndef test_encoded(encoding):\n    data = \"{}\".encode(encoding)\n    assert guess_json_utf(data) == encoding\n\n\ndef test_bad_utf_like_encoding():\n    assert guess_json_utf(b\"\\x00\\x00\\x00\\x00\") is None\n\n\n@pytest.mark.parametrize(\n    (\"encoding\", \"expected\"),\n    (\n        (\"utf-16-be\", \"utf-16\"),\n        (\"utf-16-le\", \"utf-16\"),\n        (\"utf-32-be\", \"utf-32\"),\n        (\"utf-32-le\", \"utf-32\"),\n    ),\n)\ndef test_guess_by_bom(encoding, expected):\n    data = \"\\ufeff{}\".encode(encoding)\n    assert guess_json_utf(data) == expected\n\n\ndef test_bad_get_netrc_login():\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"wrongpath\"\n    assert get_netrc_login(\"url\") is None\n\n    from httpx import utils\n\n    utils.NETRC_STATIC_FILES = ()\n    os.environ[\"NETRC\"] = \"\"\n    assert utils.get_netrc_login(\"url\") is None\n\n\ndef test_get_netrc_login():\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"netrcexample.org\") == (\n        \"example-username\",\n        None,\n        \"example-password\",\n    )\n\n\n@pytest.mark.parametrize(\n    \"value, expected\",\n    (\n        (\n            '<http:/.../front.jpeg>; rel=front; type=\"image/jpeg\"',\n            [{\"url\": \"http:/.../front.jpeg\", \"rel\": \"front\", \"type\": \"image/jpeg\"}],\n        ),\n        (\"<http:/.../front.jpeg>\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\"<http:/.../front.jpeg>;\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\n            '<http:/.../front.jpeg>; type=\"image/jpeg\",<http://.../back.jpeg>;',\n            [\n                {\"url\": \"http:/.../front.jpeg\", \"type\": \"image/jpeg\"},\n                {\"url\": \"http://.../back.jpeg\"},\n            ],\n        ),\n        (\"\", []),\n    ),\n)\ndef test_parse_header_links(value, expected):\n    assert parse_header_links(value) == expected\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"httpx_debug\", [\"0\", \"1\", \"True\", \"False\"])\nasync def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):\n    os.environ[\"HTTPX_DEBUG\"] = httpx_debug\n\n    # Force a reload on the logging handlers\n    utils._LOGGER_INITIALIZED = False\n    utils.get_logger(\"httpx\")\n\n    async with httpx.AsyncClient() as client:\n        await client.get(server.url)\n\n    if httpx_debug in (\"1\", \"True\"):\n        assert \"httpx.dispatch.connection_pool\" in capsys.readouterr().err\n    else:\n        assert \"httpx.dispatch.connection_pool\" not in capsys.readouterr().err\n\n    # Reset the logger so we don't have verbose output in all unit tests\n    logging.getLogger(\"httpx\").handlers = []\n\n\ndef test_get_ssl_cert_file():\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"CURL_CA_BUNDLE\"] = \"tests/test_utils.py\"\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"tests/test_utils.py\"\n    os.environ[\"CURL_CA_BUNDLE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() is None\n",
+  "anchor_line": 121,
+  "after_code": "import asyncio\nimport logging\nimport os\n\nimport pytest\n\nimport httpx\nfrom httpx import utils\nfrom httpx.utils import (\n    ElapsedTimer,\n    get_ca_bundle_from_env,\n    get_environment_proxies,\n    get_netrc_login,\n    guess_json_utf,\n    parse_header_links,\n)\n\n\n@pytest.mark.parametrize(\n    \"encoding\",\n    (\n        \"utf-32\",\n        \"utf-8-sig\",\n        \"utf-16\",\n        \"utf-8\",\n        \"utf-16-be\",\n        \"utf-16-le\",\n        \"utf-32-be\",\n        \"utf-32-le\",\n    ),\n)\ndef test_encoded(encoding):\n    data = \"{}\".encode(encoding)\n    assert guess_json_utf(data) == encoding\n\n\ndef test_bad_utf_like_encoding():\n    assert guess_json_utf(b\"\\x00\\x00\\x00\\x00\") is None\n\n\n@pytest.mark.parametrize(\n    (\"encoding\", \"expected\"),\n    (\n        (\"utf-16-be\", \"utf-16\"),\n        (\"utf-16-le\", \"utf-16\"),\n        (\"utf-32-be\", \"utf-32\"),\n        (\"utf-32-le\", \"utf-32\"),\n    ),\n)\ndef test_guess_by_bom(encoding, expected):\n    data = \"\\ufeff{}\".encode(encoding)\n    assert guess_json_utf(data) == expected\n\n\ndef test_bad_get_netrc_login():\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"wrongpath\"\n    assert get_netrc_login(\"url\") is None\n\n    from httpx import utils\n\n    utils.NETRC_STATIC_FILES = ()\n    os.environ[\"NETRC\"] = \"\"\n    assert utils.get_netrc_login(\"url\") is None\n\n\ndef test_get_netrc_login():\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"netrcexample.org\") == (\n        \"example-username\",\n        None,\n        \"example-password\",\n    )\n\n\n@pytest.mark.parametrize(\n    \"value, expected\",\n    (\n        (\n            '<http:/.../front.jpeg>; rel=front; type=\"image/jpeg\"',\n            [{\"url\": \"http:/.../front.jpeg\", \"rel\": \"front\", \"type\": \"image/jpeg\"}],\n        ),\n        (\"<http:/.../front.jpeg>\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\"<http:/.../front.jpeg>;\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\n            '<http:/.../front.jpeg>; type=\"image/jpeg\",<http://.../back.jpeg>;',\n            [\n                {\"url\": \"http:/.../front.jpeg\", \"type\": \"image/jpeg\"},\n                {\"url\": \"http://.../back.jpeg\"},\n            ],\n        ),\n        (\"\", []),\n    ),\n)\ndef test_parse_header_links(value, expected):\n    assert parse_header_links(value) == expected\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"httpx_debug\", [\"0\", \"1\", \"True\", \"False\"])\nasync def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):\n    os.environ[\"HTTPX_DEBUG\"] = httpx_debug\n\n    # Force a reload on the logging handlers\n    utils._LOGGER_INITIALIZED = False\n    utils.get_logger(\"httpx\")\n\n    async with httpx.AsyncClient() as client:\n        await client.get(server.url)\n\n    if httpx_debug in (\"1\", \"True\"):\n        assert \"httpx.dispatch.connection_pool\" in capsys.readouterr().err\n    else:\n        assert \"httpx.dispatch.connection_pool\" not in capsys.readouterr().err\n\n    # Reset the logger so we don't have verbose output in all unit tests\n    logging.getLogger(\"httpx\").handlers = []\n\n\ndef test_get_ssl_cert_file():\n    # Two environments is not set.\n    assert get_ca_bundle_from_env() is None\n\n    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.\n    assert get_ca_bundle_from_env() == \"tests\"\n\n    del os.environ[\"SSL_CERT_DIR\"]\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.\n    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.\n    assert get_ca_bundle_from_env() is None\n\n    del os.environ[\"SSL_CERT_FILE\"]\n    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.\n    assert get_ca_bundle_from_env() is None\n\n    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    # Two environments is correctly set.\n    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n    # Two environments is set but SSL_CERT_FILE is not a file.\n    assert get_ca_bundle_from_env() == \"tests\"\n\n    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n    # Two environments is set but both are not correct.\n    assert get_ca_bundle_from_env() is None\n\n\n@pytest.mark.asyncio\nasync def test_elapsed_timer():\n    with ElapsedTimer() as timer:\n        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)\n        await asyncio.sleep(0.1)\n    await asyncio.sleep(\n        0.1\n    )  # test to ensure time spent after timer exits isn't accounted for.\n    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)\n\n\n@pytest.mark.parametrize(\n    [\"environment\", \"proxies\"],\n    [\n        ({}, {}),\n        ({\"HTTP_PROXY\": \"http://127.0.0.1\"}, {\"http\": \"http://127.0.0.1\"}),\n        (\n            {\"https_proxy\": \"http://127.0.0.1\", \"HTTP_PROXY\": \"https://127.0.0.1\"},\n            {\"https\": \"http://127.0.0.1\", \"http\": \"https://127.0.0.1\"},\n        ),\n        (\n            {\"all_proxy\": \"http://127.0.0.1\", \"ALL_PROXY\": \"https://1.1.1.1\"},\n            {\"all\": \"http://127.0.0.1\"},\n        ),\n        (\n            {\"https_proxy\": \"http://127.0.0.1\", \"HTTPS_PROXY\": \"https://1.1.1.1\"},\n            {\"https\": \"http://127.0.0.1\"},\n        ),\n        ({\"TRAVIS_APT_PROXY\": \"http://127.0.0.1\"}, {}),\n    ],\n)\ndef test_get_environment_proxies(environment, proxies):\n    os.environ.update(environment)\n\n    assert get_environment_proxies() == proxies\n",
+  "unified_diff": "--- a/tests/test_utils.py\n+++ b/tests/test_utils.py\n@@ -1,3 +1,4 @@\n+import asyncio\n import logging\n import os\n \n@@ -6,8 +7,10 @@\n import httpx\n from httpx import utils\n from httpx.utils import (\n+    ElapsedTimer,\n+    get_ca_bundle_from_env,\n+    get_environment_proxies,\n     get_netrc_login,\n-    get_ssl_cert_file,\n     guess_json_utf,\n     parse_header_links,\n )\n@@ -119,16 +122,73 @@\n \n \n def test_get_ssl_cert_file():\n+    # Two environments is not set.\n+    assert get_ca_bundle_from_env() is None\n+\n+    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n+    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.\n+    assert get_ca_bundle_from_env() == \"tests\"\n+\n+    del os.environ[\"SSL_CERT_DIR\"]\n     os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n-    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n+    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.\n+    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n \n-    os.environ[\"CURL_CA_BUNDLE\"] = \"tests/test_utils.py\"\n-    os.environ[\"SSL_CERT_FILE\"] = \"wrongpath\"\n-    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n+    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n+    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.\n+    assert get_ca_bundle_from_env() is None\n \n-    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"tests/test_utils.py\"\n-    os.environ[\"CURL_CA_BUNDLE\"] = \"wrongpath\"\n-    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n+    del os.environ[\"SSL_CERT_FILE\"]\n+    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n+    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.\n+    assert get_ca_bundle_from_env() is None\n \n-    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"wrongpath\"\n-    assert get_ssl_cert_file() is None\n+    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n+    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n+    # Two environments is correctly set.\n+    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n+\n+    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n+    # Two environments is set but SSL_CERT_FILE is not a file.\n+    assert get_ca_bundle_from_env() == \"tests\"\n+\n+    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n+    # Two environments is set but both are not correct.\n+    assert get_ca_bundle_from_env() is None\n+\n+\n+@pytest.mark.asyncio\n+async def test_elapsed_timer():\n+    with ElapsedTimer() as timer:\n+        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)\n+        await asyncio.sleep(0.1)\n+    await asyncio.sleep(\n+        0.1\n+    )  # test to ensure time spent after timer exits isn't accounted for.\n+    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)\n+\n+\n+@pytest.mark.parametrize(\n+    [\"environment\", \"proxies\"],\n+    [\n+        ({}, {}),\n+        ({\"HTTP_PROXY\": \"http://127.0.0.1\"}, {\"http\": \"http://127.0.0.1\"}),\n+        (\n+            {\"https_proxy\": \"http://127.0.0.1\", \"HTTP_PROXY\": \"https://127.0.0.1\"},\n+            {\"https\": \"http://127.0.0.1\", \"http\": \"https://127.0.0.1\"},\n+        ),\n+        (\n+            {\"all_proxy\": \"http://127.0.0.1\", \"ALL_PROXY\": \"https://1.1.1.1\"},\n+            {\"all\": \"http://127.0.0.1\"},\n+        ),\n+        (\n+            {\"https_proxy\": \"http://127.0.0.1\", \"HTTPS_PROXY\": \"https://1.1.1.1\"},\n+            {\"https\": \"http://127.0.0.1\"},\n+        ),\n+        ({\"TRAVIS_APT_PROXY\": \"http://127.0.0.1\"}, {}),\n+    ],\n+)\n+def test_get_environment_proxies(environment, proxies):\n+    os.environ.update(environment)\n+\n+    assert get_environment_proxies() == proxies\n",
+  "changed_files": [
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/advanced.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/api.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/async.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/contributing.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/environment_variables.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/index.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/quickstart.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/__version__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/concurrency/asyncio.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/concurrency/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/concurrency/trio.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/dispatch/asgi.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/dispatch/connection.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/dispatch/connection_pool.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/dispatch/http11.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/dispatch/http2.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/dispatch/proxy_http.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/exceptions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/base.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/basic_auth.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/custom_auth.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/digest_auth.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/middleware/redirect.py",
+      "status": "renamed",
+      "previous_path": "httpx/middleware.py",
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "scripts/publish",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "setup.cfg",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "setup.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "test-requirements.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_async_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_auth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_headers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_proxies.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_redirects.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/concurrency.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/dispatch/test_connection_pools.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/dispatch/test_connections.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/dispatch/test_http2.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/dispatch/test_proxy_http.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/dispatch/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_responses.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_url.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/requests_compat/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/requests_compat/conftest.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/requests_compat/test_api.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_concurrency.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "tests/test_timeouts.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    }
+  ],
+  "test_files": {
+    "tests/test_config.py": "import os\nimport socket\nimport ssl\nimport sys\nfrom pathlib import Path\n\nimport pytest\n\nimport httpx\n\n\ndef test_load_ssl_config():\n    ssl_config = httpx.SSLConfig()\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_verify_non_existing_path():\n    ssl_config = httpx.SSLConfig(verify=\"/path/to/nowhere\")\n    with pytest.raises(IOError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_verify_existing_file():\n    ssl_config = httpx.SSLConfig(verify=httpx.config.DEFAULT_CA_BUNDLE_PATH)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\n@pytest.mark.parametrize(\"config\", (\"SSL_CERT_FILE\", \"SSL_CERT_DIR\"))\ndef test_load_ssl_config_verify_env_file(https_server, ca_cert_pem_file, config):\n    os.environ[config] = (\n        ca_cert_pem_file\n        if config.endswith(\"_FILE\")\n        else str(Path(ca_cert_pem_file).parent)\n    )\n    ssl_config = httpx.SSLConfig(trust_env=True)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n    assert ssl_config.verify == os.environ[config]\n\n    # Skipping 'SSL_CERT_DIR' functional test for now because\n    # we're unable to get the certificate within the directory to\n    # load into the SSLContext. :(\n    if config == \"SSL_CERT_FILE\":\n        host = https_server.url.host\n        port = https_server.url.port\n        conn = socket.create_connection((host, port))\n        context.wrap_socket(conn, server_hostname=host)\n        assert len(context.get_ca_certs()) == 1\n\n\ndef test_load_ssl_config_verify_directory():\n    path = httpx.config.DEFAULT_CA_BUNDLE_PATH.parent\n    ssl_config = httpx.SSLConfig(verify=path)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):\n    ssl_config = httpx.SSLConfig(cert=(cert_pem_file, cert_private_key_file))\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\n@pytest.mark.parametrize(\"password\", [b\"password\", \"password\"])\ndef test_load_ssl_config_cert_and_encrypted_key(\n    cert_pem_file, cert_encrypted_private_key_file, password\n):\n    ssl_config = httpx.SSLConfig(\n        cert=(cert_pem_file, cert_encrypted_private_key_file, password)\n    )\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_cert_and_key_invalid_password(\n    cert_pem_file, cert_encrypted_private_key_file\n):\n    ssl_config = httpx.SSLConfig(\n        cert=(cert_pem_file, cert_encrypted_private_key_file, \"password1\")\n    )\n\n    with pytest.raises(ssl.SSLError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_cert_without_key_raises(cert_pem_file):\n    ssl_config = httpx.SSLConfig(cert=cert_pem_file)\n    with pytest.raises(ssl.SSLError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_no_verify():\n    ssl_config = httpx.SSLConfig(verify=False)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_NONE\n    assert context.check_hostname is False\n\n\ndef test_load_ssl_context():\n    ssl_context = ssl.create_default_context()\n    ssl_config = httpx.SSLConfig(verify=ssl_context)\n\n    assert ssl_config.verify is True\n    assert ssl_config.ssl_context is ssl_context\n    assert repr(ssl_config) == \"SSLConfig(cert=None, verify=True)\"\n\n\ndef test_ssl_repr():\n    ssl = httpx.SSLConfig(verify=False)\n    assert repr(ssl) == \"SSLConfig(cert=None, verify=False)\"\n\n\ndef test_http_versions_repr():\n    http_versions = httpx.HTTPVersionConfig()\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])\"\n\n\ndef test_http_versions_from_string():\n    http_versions = httpx.HTTPVersionConfig(\"HTTP/1.1\")\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_http_versions_from_list():\n    http_versions = httpx.HTTPVersionConfig([\"http/1.1\"])\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_http_versions_from_config():\n    http_versions = httpx.HTTPVersionConfig(httpx.HTTPVersionConfig(\"HTTP/1.1\"))\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_invalid_http_version():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig(\"HTTP/9\")\n\n\ndef test_invalid_http_version_type():\n    with pytest.raises(TypeError):\n        httpx.HTTPVersionConfig(123)\n\n\ndef test_invalid_http_version_list_type():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig([123])\n\n\ndef test_empty_http_version():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig([])\n\n\ndef test_timeout_repr():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert repr(timeout) == \"TimeoutConfig(timeout=5.0)\"\n\n    timeout = httpx.TimeoutConfig(read_timeout=5.0)\n    assert (\n        repr(timeout)\n        == \"TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)\"\n    )\n\n\ndef test_limits_repr():\n    limits = httpx.PoolLimits(hard_limit=100)\n    assert (\n        repr(limits) == \"PoolLimits(soft_limit=None, hard_limit=100, pool_timeout=None)\"\n    )\n\n\ndef test_ssl_eq():\n    ssl = httpx.SSLConfig(verify=False)\n    assert ssl == httpx.SSLConfig(verify=False)\n\n\ndef test_timeout_eq():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert timeout == httpx.TimeoutConfig(timeout=5.0)\n\n\ndef test_limits_eq():\n    limits = httpx.PoolLimits(hard_limit=100)\n    assert limits == httpx.PoolLimits(hard_limit=100)\n\n\ndef test_timeout_from_tuple():\n    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0))\n    assert timeout == httpx.TimeoutConfig(timeout=5.0)\n\n\ndef test_timeout_from_config_instance():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)\n\n\n@pytest.mark.skipif(\n    not hasattr(ssl.SSLContext, \"keylog_filename\"),\n    reason=\"requires OpenSSL 1.1.1 or higher\",\n)\n@pytest.mark.skipif(sys.version_info < (3, 8), reason=\"requires python3.8 or higher\")\ndef test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):\n    with monkeypatch.context() as m:\n        m.delenv(\"SSLKEYLOGFILE\", raising=False)\n\n        ssl_config = httpx.SSLConfig(trust_env=True)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename is None\n\n    filename = str(tmpdir.join(\"test.log\"))\n\n    with monkeypatch.context() as m:\n        m.setenv(\"SSLKEYLOGFILE\", filename)\n\n        ssl_config = httpx.SSLConfig(trust_env=True)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename == filename\n\n        ssl_config = httpx.SSLConfig(trust_env=False)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename is None\n",
+    "tests/test_utils.py": "import asyncio\nimport logging\nimport os\n\nimport pytest\n\nimport httpx\nfrom httpx import utils\nfrom httpx.utils import (\n    ElapsedTimer,\n    get_ca_bundle_from_env,\n    get_environment_proxies,\n    get_netrc_login,\n    guess_json_utf,\n    parse_header_links,\n)\n\n\n@pytest.mark.parametrize(\n    \"encoding\",\n    (\n        \"utf-32\",\n        \"utf-8-sig\",\n        \"utf-16\",\n        \"utf-8\",\n        \"utf-16-be\",\n        \"utf-16-le\",\n        \"utf-32-be\",\n        \"utf-32-le\",\n    ),\n)\ndef test_encoded(encoding):\n    data = \"{}\".encode(encoding)\n    assert guess_json_utf(data) == encoding\n\n\ndef test_bad_utf_like_encoding():\n    assert guess_json_utf(b\"\\x00\\x00\\x00\\x00\") is None\n\n\n@pytest.mark.parametrize(\n    (\"encoding\", \"expected\"),\n    (\n        (\"utf-16-be\", \"utf-16\"),\n        (\"utf-16-le\", \"utf-16\"),\n        (\"utf-32-be\", \"utf-32\"),\n        (\"utf-32-le\", \"utf-32\"),\n    ),\n)\ndef test_guess_by_bom(encoding, expected):\n    data = \"\\ufeff{}\".encode(encoding)\n    assert guess_json_utf(data) == expected\n\n\ndef test_bad_get_netrc_login():\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"wrongpath\"\n    assert get_netrc_login(\"url\") is None\n\n    from httpx import utils\n\n    utils.NETRC_STATIC_FILES = ()\n    os.environ[\"NETRC\"] = \"\"\n    assert utils.get_netrc_login(\"url\") is None\n\n\ndef test_get_netrc_login():\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"netrcexample.org\") == (\n        \"example-username\",\n        None,\n        \"example-password\",\n    )\n\n\n@pytest.mark.parametrize(\n    \"value, expected\",\n    (\n        (\n            '<http:/.../front.jpeg>; rel=front; type=\"image/jpeg\"',\n            [{\"url\": \"http:/.../front.jpeg\", \"rel\": \"front\", \"type\": \"image/jpeg\"}],\n        ),\n        (\"<http:/.../front.jpeg>\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\"<http:/.../front.jpeg>;\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\n            '<http:/.../front.jpeg>; type=\"image/jpeg\",<http://.../back.jpeg>;',\n            [\n                {\"url\": \"http:/.../front.jpeg\", \"type\": \"image/jpeg\"},\n                {\"url\": \"http://.../back.jpeg\"},\n            ],\n        ),\n        (\"\", []),\n    ),\n)\ndef test_parse_header_links(value, expected):\n    assert parse_header_links(value) == expected\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"httpx_debug\", [\"0\", \"1\", \"True\", \"False\"])\nasync def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):\n    os.environ[\"HTTPX_DEBUG\"] = httpx_debug\n\n    # Force a reload on the logging handlers\n    utils._LOGGER_INITIALIZED = False\n    utils.get_logger(\"httpx\")\n\n    async with httpx.AsyncClient() as client:\n        await client.get(server.url)\n\n    if httpx_debug in (\"1\", \"True\"):\n        assert \"httpx.dispatch.connection_pool\" in capsys.readouterr().err\n    else:\n        assert \"httpx.dispatch.connection_pool\" not in capsys.readouterr().err\n\n    # Reset the logger so we don't have verbose output in all unit tests\n    logging.getLogger(\"httpx\").handlers = []\n\n\ndef test_get_ssl_cert_file():\n    # Two environments is not set.\n    assert get_ca_bundle_from_env() is None\n\n    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n    # SSL_CERT_DIR is correctly set, SSL_CERT_FILE is not set.\n    assert get_ca_bundle_from_env() == \"tests\"\n\n    del os.environ[\"SSL_CERT_DIR\"]\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    # SSL_CERT_FILE is correctly set, SSL_CERT_DIR is not set.\n    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n    # SSL_CERT_FILE is set with wrong file,  SSL_CERT_DIR is not set.\n    assert get_ca_bundle_from_env() is None\n\n    del os.environ[\"SSL_CERT_FILE\"]\n    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n    # SSL_CERT_DIR is set with wrong path,  SSL_CERT_FILE is not set.\n    assert get_ca_bundle_from_env() is None\n\n    os.environ[\"SSL_CERT_DIR\"] = \"tests/\"\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    # Two environments is correctly set.\n    assert get_ca_bundle_from_env() == \"tests/test_utils.py\"\n\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongfile\"\n    # Two environments is set but SSL_CERT_FILE is not a file.\n    assert get_ca_bundle_from_env() == \"tests\"\n\n    os.environ[\"SSL_CERT_DIR\"] = \"wrongpath\"\n    # Two environments is set but both are not correct.\n    assert get_ca_bundle_from_env() is None\n\n\n@pytest.mark.asyncio\nasync def test_elapsed_timer():\n    with ElapsedTimer() as timer:\n        assert timer.elapsed.total_seconds() == pytest.approx(0, abs=0.05)\n        await asyncio.sleep(0.1)\n    await asyncio.sleep(\n        0.1\n    )  # test to ensure time spent after timer exits isn't accounted for.\n    assert timer.elapsed.total_seconds() == pytest.approx(0.1, abs=0.05)\n\n\n@pytest.mark.parametrize(\n    [\"environment\", \"proxies\"],\n    [\n        ({}, {}),\n        ({\"HTTP_PROXY\": \"http://127.0.0.1\"}, {\"http\": \"http://127.0.0.1\"}),\n        (\n            {\"https_proxy\": \"http://127.0.0.1\", \"HTTP_PROXY\": \"https://127.0.0.1\"},\n            {\"https\": \"http://127.0.0.1\", \"http\": \"https://127.0.0.1\"},\n        ),\n        (\n            {\"all_proxy\": \"http://127.0.0.1\", \"ALL_PROXY\": \"https://1.1.1.1\"},\n            {\"all\": \"http://127.0.0.1\"},\n        ),\n        (\n            {\"https_proxy\": \"http://127.0.0.1\", \"HTTPS_PROXY\": \"https://1.1.1.1\"},\n            {\"https\": \"http://127.0.0.1\"},\n        ),\n        ({\"TRAVIS_APT_PROXY\": \"http://127.0.0.1\"}, {}),\n    ],\n)\ndef test_get_environment_proxies(environment, proxies):\n    os.environ.update(environment)\n\n    assert get_environment_proxies() == proxies\n"
+  },
+  "test_files_before": {
+    "tests/test_config.py": "import os\nimport ssl\nimport sys\n\nimport pytest\n\nimport httpx\n\n\ndef test_load_ssl_config():\n    ssl_config = httpx.SSLConfig()\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_verify_non_existing_path():\n    ssl_config = httpx.SSLConfig(verify=\"/path/to/nowhere\")\n    with pytest.raises(IOError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_verify_existing_file():\n    ssl_config = httpx.SSLConfig(verify=httpx.config.DEFAULT_CA_BUNDLE_PATH)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\n@pytest.mark.parametrize(\n    \"config\", (\"REQUESTS_CA_BUNDLE\", \"SSL_CERT_FILE\", \"CURL_CA_BUNDLE\")\n)\ndef test_load_ssl_config_verify_env_file(config):\n    os.environ[config] = str(httpx.config.DEFAULT_CA_BUNDLE_PATH)\n    ssl_config = httpx.SSLConfig(verify=None, trust_env=True)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n    os.environ[config] = \"wrongfile\"\n\n\ndef test_load_ssl_config_verify_directory():\n    path = httpx.config.DEFAULT_CA_BUNDLE_PATH.parent\n    ssl_config = httpx.SSLConfig(verify=path)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_cert_and_key(cert_pem_file, cert_private_key_file):\n    ssl_config = httpx.SSLConfig(cert=(cert_pem_file, cert_private_key_file))\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\n@pytest.mark.parametrize(\"password\", [b\"password\", \"password\"])\ndef test_load_ssl_config_cert_and_encrypted_key(\n    cert_pem_file, cert_encrypted_private_key_file, password\n):\n    ssl_config = httpx.SSLConfig(\n        cert=(cert_pem_file, cert_encrypted_private_key_file, password)\n    )\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_REQUIRED\n    assert context.check_hostname is True\n\n\ndef test_load_ssl_config_cert_and_key_invalid_password(\n    cert_pem_file, cert_encrypted_private_key_file\n):\n    ssl_config = httpx.SSLConfig(\n        cert=(cert_pem_file, cert_encrypted_private_key_file, \"password1\")\n    )\n\n    with pytest.raises(ssl.SSLError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_cert_without_key_raises(cert_pem_file):\n    ssl_config = httpx.SSLConfig(cert=cert_pem_file)\n    with pytest.raises(ssl.SSLError):\n        ssl_config.load_ssl_context()\n\n\ndef test_load_ssl_config_no_verify():\n    ssl_config = httpx.SSLConfig(verify=False)\n    context = ssl_config.load_ssl_context()\n    assert context.verify_mode == ssl.VerifyMode.CERT_NONE\n    assert context.check_hostname is False\n\n\ndef test_load_ssl_context():\n    ssl_context = ssl.create_default_context()\n    ssl_config = httpx.SSLConfig(verify=ssl_context)\n\n    assert ssl_config.verify is True\n    assert ssl_config.ssl_context is ssl_context\n    assert repr(ssl_config) == \"SSLConfig(cert=None, verify=True)\"\n\n\ndef test_ssl_repr():\n    ssl = httpx.SSLConfig(verify=False)\n    assert repr(ssl) == \"SSLConfig(cert=None, verify=False)\"\n\n\ndef test_http_versions_repr():\n    http_versions = httpx.HTTPVersionConfig()\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1', 'HTTP/2'])\"\n\n\ndef test_http_versions_from_string():\n    http_versions = httpx.HTTPVersionConfig(\"HTTP/1.1\")\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_http_versions_from_list():\n    http_versions = httpx.HTTPVersionConfig([\"http/1.1\"])\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_http_versions_from_config():\n    http_versions = httpx.HTTPVersionConfig(httpx.HTTPVersionConfig(\"HTTP/1.1\"))\n    assert repr(http_versions) == \"HTTPVersionConfig(['HTTP/1.1'])\"\n\n\ndef test_invalid_http_version():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig(\"HTTP/9\")\n\n\ndef test_invalid_http_version_type():\n    with pytest.raises(TypeError):\n        httpx.HTTPVersionConfig(123)\n\n\ndef test_invalid_http_version_list_type():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig([123])\n\n\ndef test_empty_http_version():\n    with pytest.raises(ValueError):\n        httpx.HTTPVersionConfig([])\n\n\ndef test_timeout_repr():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert repr(timeout) == \"TimeoutConfig(timeout=5.0)\"\n\n    timeout = httpx.TimeoutConfig(read_timeout=5.0)\n    assert (\n        repr(timeout)\n        == \"TimeoutConfig(connect_timeout=None, read_timeout=5.0, write_timeout=None)\"\n    )\n\n\ndef test_limits_repr():\n    limits = httpx.PoolLimits(hard_limit=100)\n    assert (\n        repr(limits) == \"PoolLimits(soft_limit=None, hard_limit=100, pool_timeout=None)\"\n    )\n\n\ndef test_ssl_eq():\n    ssl = httpx.SSLConfig(verify=False)\n    assert ssl == httpx.SSLConfig(verify=False)\n\n\ndef test_timeout_eq():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert timeout == httpx.TimeoutConfig(timeout=5.0)\n\n\ndef test_limits_eq():\n    limits = httpx.PoolLimits(hard_limit=100)\n    assert limits == httpx.PoolLimits(hard_limit=100)\n\n\ndef test_timeout_from_tuple():\n    timeout = httpx.TimeoutConfig(timeout=(5.0, 5.0, 5.0))\n    assert timeout == httpx.TimeoutConfig(timeout=5.0)\n\n\ndef test_timeout_from_config_instance():\n    timeout = httpx.TimeoutConfig(timeout=5.0)\n    assert httpx.TimeoutConfig(timeout) == httpx.TimeoutConfig(timeout=5.0)\n\n\n@pytest.mark.skipif(\n    not hasattr(ssl.SSLContext, \"keylog_filename\"),\n    reason=\"requires OpenSSL 1.1.1 or higher\",\n)\n@pytest.mark.skipif(sys.version_info < (3, 8), reason=\"requires python3.8 or higher\")\ndef test_ssl_config_support_for_keylog_file(tmpdir, monkeypatch):\n    with monkeypatch.context() as m:\n        m.delenv(\"SSLKEYLOGFILE\", raising=False)\n\n        ssl_config = httpx.SSLConfig(trust_env=True)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename is None\n\n    filename = str(tmpdir.join(\"test.log\"))\n\n    with monkeypatch.context() as m:\n        m.setenv(\"SSLKEYLOGFILE\", filename)\n\n        ssl_config = httpx.SSLConfig(trust_env=True)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename == filename\n\n        ssl_config = httpx.SSLConfig(trust_env=False)\n        ssl_config.load_ssl_context()\n\n        assert ssl_config.ssl_context.keylog_filename is None\n",
+    "tests/test_utils.py": "import logging\nimport os\n\nimport pytest\n\nimport httpx\nfrom httpx import utils\nfrom httpx.utils import (\n    get_netrc_login,\n    get_ssl_cert_file,\n    guess_json_utf,\n    parse_header_links,\n)\n\n\n@pytest.mark.parametrize(\n    \"encoding\",\n    (\n        \"utf-32\",\n        \"utf-8-sig\",\n        \"utf-16\",\n        \"utf-8\",\n        \"utf-16-be\",\n        \"utf-16-le\",\n        \"utf-32-be\",\n        \"utf-32-le\",\n    ),\n)\ndef test_encoded(encoding):\n    data = \"{}\".encode(encoding)\n    assert guess_json_utf(data) == encoding\n\n\ndef test_bad_utf_like_encoding():\n    assert guess_json_utf(b\"\\x00\\x00\\x00\\x00\") is None\n\n\n@pytest.mark.parametrize(\n    (\"encoding\", \"expected\"),\n    (\n        (\"utf-16-be\", \"utf-16\"),\n        (\"utf-16-le\", \"utf-16\"),\n        (\"utf-32-be\", \"utf-32\"),\n        (\"utf-32-le\", \"utf-32\"),\n    ),\n)\ndef test_guess_by_bom(encoding, expected):\n    data = \"\\ufeff{}\".encode(encoding)\n    assert guess_json_utf(data) == expected\n\n\ndef test_bad_get_netrc_login():\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"url\") is None\n\n    os.environ[\"NETRC\"] = \"wrongpath\"\n    assert get_netrc_login(\"url\") is None\n\n    from httpx import utils\n\n    utils.NETRC_STATIC_FILES = ()\n    os.environ[\"NETRC\"] = \"\"\n    assert utils.get_netrc_login(\"url\") is None\n\n\ndef test_get_netrc_login():\n    os.environ[\"NETRC\"] = \"tests/.netrc\"\n    assert get_netrc_login(\"netrcexample.org\") == (\n        \"example-username\",\n        None,\n        \"example-password\",\n    )\n\n\n@pytest.mark.parametrize(\n    \"value, expected\",\n    (\n        (\n            '<http:/.../front.jpeg>; rel=front; type=\"image/jpeg\"',\n            [{\"url\": \"http:/.../front.jpeg\", \"rel\": \"front\", \"type\": \"image/jpeg\"}],\n        ),\n        (\"<http:/.../front.jpeg>\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\"<http:/.../front.jpeg>;\", [{\"url\": \"http:/.../front.jpeg\"}]),\n        (\n            '<http:/.../front.jpeg>; type=\"image/jpeg\",<http://.../back.jpeg>;',\n            [\n                {\"url\": \"http:/.../front.jpeg\", \"type\": \"image/jpeg\"},\n                {\"url\": \"http://.../back.jpeg\"},\n            ],\n        ),\n        (\"\", []),\n    ),\n)\ndef test_parse_header_links(value, expected):\n    assert parse_header_links(value) == expected\n\n\n@pytest.mark.asyncio\n@pytest.mark.parametrize(\"httpx_debug\", [\"0\", \"1\", \"True\", \"False\"])\nasync def test_httpx_debug_enabled_stderr_logging(server, capsys, httpx_debug):\n    os.environ[\"HTTPX_DEBUG\"] = httpx_debug\n\n    # Force a reload on the logging handlers\n    utils._LOGGER_INITIALIZED = False\n    utils.get_logger(\"httpx\")\n\n    async with httpx.AsyncClient() as client:\n        await client.get(server.url)\n\n    if httpx_debug in (\"1\", \"True\"):\n        assert \"httpx.dispatch.connection_pool\" in capsys.readouterr().err\n    else:\n        assert \"httpx.dispatch.connection_pool\" not in capsys.readouterr().err\n\n    # Reset the logger so we don't have verbose output in all unit tests\n    logging.getLogger(\"httpx\").handlers = []\n\n\ndef test_get_ssl_cert_file():\n    os.environ[\"SSL_CERT_FILE\"] = \"tests/test_utils.py\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"CURL_CA_BUNDLE\"] = \"tests/test_utils.py\"\n    os.environ[\"SSL_CERT_FILE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"tests/test_utils.py\"\n    os.environ[\"CURL_CA_BUNDLE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() == \"tests/test_utils.py\"\n\n    os.environ[\"REQUESTS_CA_BUNDLE\"] = \"wrongpath\"\n    assert get_ssl_cert_file() is None\n"
+  },
+  "ingested_at": "2026-09-24T06:12:50.107553Z"
+}

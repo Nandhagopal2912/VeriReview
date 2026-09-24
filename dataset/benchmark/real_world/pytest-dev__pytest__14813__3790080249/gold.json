@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14813__3790080249",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use `except AssertionError as e: s = str(e)` (suggestion)",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "testing/test_assertrewrite_coverage.py unchanged: still sys.exc_info()",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

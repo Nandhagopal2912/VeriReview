@@ -1,6 +1,7 @@
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 from pydantic import SecretStr
@@ -227,3 +228,35 @@ def test_freeze_needs_gold_and_detects_changes(tmp_path: Path) -> None:
     assert verify(root, manifest) == []
     write_gold(rw.directory, gold(rw.case_id, "not_satisfied"))
     assert verify(root, manifest) == ["real-world test cases changed"]
+
+
+def test_very_large_files_are_skipped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    import verireview.benchmark.mining as mining
+
+    monkeypatch.setattr(mining, "MAX_FILE_CHARS", 10)
+
+    report = collect(api(), list(find_candidates(api(), REPO)), n=5, seed=1, dataset_root=tmp_path)
+
+    assert report.written == [] and report.skipped[KEY].startswith("file_too_large")
+
+
+def test_bot_accounts_are_excluded_even_without_a_bot_login(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Phase 9b finding: GitHub's Copilot reviewer has the login 'Copilot' (no '[bot]'); only
+    the account type says it is a bot. 8 of the first 9 collected cases were such reviews."""
+    reader = api()
+    real = reader.list_review_comments
+
+    def as_copilot(repo: RepoRef, number: int) -> list[Any]:
+        out = []
+        for c in real(repo, number):
+            if c.id == 5001:
+                user = c.user.model_copy(update={"login": "Copilot", "type": "Bot"})  # type: ignore[union-attr]
+                c = c.model_copy(update={"user": user})
+            out.append(c)
+        return out
+
+    monkeypatch.setattr(reader, "list_review_comments", as_copilot)
+
+    assert list(find_candidates(reader, REPO)) == []

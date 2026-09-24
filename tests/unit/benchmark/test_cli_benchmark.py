@@ -176,3 +176,28 @@ def test_calibration_sheet(tmp_path: Path) -> None:
 
     html = out.read_text(encoding="utf-8")
     assert html.count('"reference": {') == 10
+
+
+def test_provisional_model_gold_never_replaces_human_gold(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    root = mine_and_collect(tmp_path)
+    claude = export(tmp_path / "claude.json", "claude", "not_satisfied")
+    gold_path = root / "benchmark" / "real_world" / KEY / "gold.json"
+
+    assert cli.main(["build-gold", str(claude), "--dataset", str(root)]) == 2  # source required
+    args = ["build-gold", str(claude), "--single-source", "model", "--dataset", str(root)]
+    assert cli.main(args) == 0
+    gold = json.loads(gold_path.read_text(encoding="utf-8"))
+    assert gold["label_source"] == "model" and gold["annotators"] == ["claude"]
+    assert cli.main(["benchmark-stats", "--dataset", str(root)]) == 0
+    assert "provisional model 1" in capsys.readouterr().out
+
+    a = export(tmp_path / "a.json", "ann-a", "satisfied")
+    b = export(tmp_path / "b.json", "ann-b", "satisfied")
+    assert cli.main(["build-gold", str(a), str(b), "--dataset", str(root)]) == 0
+    assert json.loads(gold_path.read_text(encoding="utf-8"))["label_source"] == "human"
+
+    assert cli.main(args) == 0  # the model label comes back...
+    assert "kept human gold" in capsys.readouterr().out  # ...but does not overwrite humans
+    assert json.loads(gold_path.read_text(encoding="utf-8"))["label_source"] == "human"

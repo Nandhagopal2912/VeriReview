@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__4021067646",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Add a `# GH#63221` issue reference as the first line of the test",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/series/accessors/test_list_accessor.py:153 '# GH#63221' inside the test",
+    "confidence": "high",
+    "notes": "A requirement that is satisfied by adding a comment (hard case for comment-skeptical rules)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

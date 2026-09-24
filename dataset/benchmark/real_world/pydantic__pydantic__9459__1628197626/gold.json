@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1628197626",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "'I don't think we need to do it now' - a future idea, not a request; the author added a TODO."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

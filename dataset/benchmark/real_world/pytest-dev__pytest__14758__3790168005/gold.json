@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3790168005",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the unused `override` compatibility shim",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/compat.py: the override block is removed",
+    "confidence": "high",
+    "notes": "Implied request ('No longer used')."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

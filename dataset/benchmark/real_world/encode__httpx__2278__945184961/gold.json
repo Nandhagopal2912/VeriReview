@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2278__945184961",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Pass the boundary parsed from the content-type header to encode_request instead of a content_type argument",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_models.py:336-346: boundary=get_multipart_boundary_from_content_type(...) replaces content_type=",
+    "confidence": "high",
+    "notes": "Implemented slightly differently from the suggestion (header encoded to bytes first); equivalent."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,2218 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#178506/3766178333",
+  "repository": "home-assistant/core",
+  "pull_number": 178506,
+  "pull_title": "Migrate ZhongHong to a config entry",
+  "base_sha": "23c63e93030c597908272833944b656ca443f9df",
+  "head_sha": "20b231f80db75e89c5a933158e52f68a98fb116b",
+  "thread": {
+    "root_comment_id": 3766178333,
+    "path": "homeassistant/components/zhong_hong/__init__.py",
+    "line": null,
+    "original_line": 93,
+    "start_line": null,
+    "original_start_line": 64,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -1 +1,125 @@\n-\"\"\"The zhong_hong component.\"\"\"\n+\"\"\"The ZhongHong HVAC integration.\"\"\"\n+\n+from collections.abc import Iterable\n+\n+from zhong_hong_hvac.hub import ZhongHongGateway\n+from zhong_hong_hvac.hvac import HVAC as ZhongHongHVAC\n+\n+from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN\n+from homeassistant.const import CONF_HOST, CONF_PORT, Platform\n+from homeassistant.core import HomeAssistant, callback\n+from homeassistant.exceptions import ConfigEntryNotReady\n+from homeassistant.helpers import entity_registry as er\n+\n+from .const import CONF_GATEWAY_ADDRESS, DOMAIN\n+from .coordinator import (\n+    DeviceAddress,\n+    ZhongHongConfigEntry,\n+    ZhongHongCoordinator,\n+    ZhongHongData,\n+    device_unique_id,\n+    legacy_device_unique_id,\n+)\n+\n+PLATFORMS: list[Platform] = [Platform.CLIMATE]\n+\n+\n+@callback\n+def _async_migrate_unique_ids(\n+    hass: HomeAssistant, entry: ZhongHongConfigEntry, addresses: Iterable[DeviceAddress]\n+) -> None:\n+    \"\"\"Move the entities off the identifier the YAML platform gave them.\n+\n+    That identifier was the address on the bus and nothing else, so a second\n+    gateway with an air conditioner at the same address produced an entity\n+    Home Assistant refused to add. Moving them keeps their entity IDs, and\n+    with those their recorded history.\n+\n+    Only entities this entry owns are moved. An entity the YAML platform\n+    registered has no owner yet, and is claimed by whichever entry sets up\n+    first; there can only be one, since the old identifier is what stopped a\n+    second from ever being created.\n+    \"\"\"\n+    entity_registry = er.async_get(hass)\n+\n+    for address in addresses:\n+        entity_id = entity_registry.async_get_entity_id(\n+            CLIMATE_DOMAIN, DOMAIN, legacy_device_unique_id(address)\n+        )\n+        if entity_id is None:\n+            continue\n+\n+        registry_entry = entity_registry.async_get(entity_id)\n+        if registry_entry is None or registry_entry.config_entry_id not in (\n+            None,\n+            entry.entry_id,\n+        ):\n+            continue\n+\n+        entity_registry.async_update_entity(\n+            entity_id, new_unique_id=device_unique_id(entry, address)\n+        )\n+\n+\n+async def _async_connect(\n+    hass: HomeAssistant, hub: ZhongHongGateway\n+) -> dict[DeviceAddress, ZhongHongHVAC]:\n+    \"\"\"Ask the gateway what is on its bus, then start listening to it.\n+\n+    Discovery has to finish before the listener thread starts, because the two\n+    read from the same socket.\n+    \"\"\"\n+    try:\n+        addresses = await hass.async_add_executor_job(hub.discovery_ac)\n+    except OSError as err:\n+        raise ConfigEntryNotReady(\n+            translation_domain=DOMAIN,\n+            translation_key=\"cannot_connect\",\n+            translation_placeholders={\"host\": hub.ip_addr},\n+        ) from err\n+\n+    if not addresses:\n+        raise ConfigEntryNotReady(\n+            translation_domain=DOMAIN,\n+            translation_key=\"no_devices_found\",\n+            translation_placeholders={\"host\": hub.ip_addr},\n+        )\n+\n+    # Creating the device registers it with the hub, which is what routes the\n+    # gateway's pushes to it.\n+    devices = {address: ZhongHongHVAC(hub, *address) for address in addresses}\n+\n+    await hass.async_add_executor_job(hub.start_listen)\n+    return devices",
+    "original_commit_sha": "8832f76712296ce5c3f6cf8a26ad6aa64f6c232a",
+    "commit_sha": "8832f76712296ce5c3f6cf8a26ad6aa64f6c232a",
+    "comments": [
+      {
+        "id": 3766178333,
+        "author": "reviewer",
+        "body": "Ideally we try to group executor jobs, so I think it'd make sense to make this a sync method and run it in a single executor job",
+        "created_at": "2026-08-12T11:58:58Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 3768539733,
+        "author": "author",
+        "body": "Done — `_connect()` is a sync method doing both, run as one job.\n",
+        "created_at": "2026-08-12T16:58:32Z",
+        "in_reply_to_id": 3766178333
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "8832f76712296ce5c3f6cf8a26ad6aa64f6c232a",
+    "end_commit_sha": "20b231f80db75e89c5a933158e52f68a98fb116b",
+    "subsequent_commits": [
+      {
+        "sha": "1154bfabb3597cb8be611bf31b2b99084dadab4c",
+        "message": "Bump zhong-hong-hvac to 1.0.19\n\ndiscovery_ac() opened its socket before applying the timeout it was given,\nand connect() takes its bound from the same place every other socket\noperation does. An address with nothing behind it therefore ran to thirty\nseconds however small a budget the caller asked for, which is exactly the\ncase a config flow needs answered quickly.\n\n- Library diff: https://github.com/crhan/ZhongHongHVAC/compare/v1.0.18...v1.0.19\n- Release notes: https://github.com/crhan/ZhongHongHVAC/releases/tag/v1.0.19",
+        "authored_at": "2026-08-12T16:56:54Z",
+        "committed_at": "2026-08-12T16:56:54Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e0bb763310b4e65fabcef63689d9fd79828ed3d0",
+        "message": "Leave the ZhongHong socket to the library\n\nThe config flow opened a socket of its own before discovering, so that a\nmistyped address was answered for in seconds rather than at the pace of a\ndiscovery that had not been bounded where it mattered. That is the\nlibrary's business, and 1.0.19 does it: the timeout now covers connecting,\nso discovery alone reports an address with nothing behind it just as fast.\n\nBREAKS_IN_HA_VERSION moves to const.py, since the import step needs it too.",
+        "authored_at": "2026-08-12T16:56:54Z",
+        "committed_at": "2026-08-12T16:56:54Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b2d7033e13dbe2fe4fcf287fe53cc20bf3930558",
+        "message": "Leave the ZhongHong entity naming to a later PR\n\nhas_entity_name, the device registry entry and the translation key for the\ntwo fan speeds climate has no name of its own for are all worth having, and\nnone of them is what migrating to a config entry is about. They come back\ntogether, with the tests that go with them.\n\nThe entity keeps a name of its own in the meantime, as it had before.",
+        "authored_at": "2026-08-12T16:57:06Z",
+        "committed_at": "2026-08-12T16:57:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ce6b2ff70e5914de5bb5ca32bfcf0f370dd3fa67",
+        "message": "Connect to the ZhongHong gateway in one executor job\n\nDiscovery and starting the listener both block and have to happen in that\norder, so they were two jobs with a trip back to the event loop in between\nthat had nothing to do while it waited. They are one job now.",
+        "authored_at": "2026-08-12T16:57:07Z",
+        "committed_at": "2026-08-12T16:57:07Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2304e1a0686a0beaaec5ba4e5cc703d88ba21548",
+        "message": "Tell the user when ZhongHong YAML cannot be imported\n\nThe import created a configuration entry without contacting the gateway,\non the grounds that it takes one connection at a time and could still be\nholding the previous run's, so a check would fail for reasons that say\nnothing about the configuration.\n\nThat reasoning covers a gateway that is temporarily busy, and not one that\nhas been replaced or taken away, which the YAML has no way of knowing about.\nBoth ended the same way: an entry that never works. The gateway is now\ncontacted, and a repair issue names which part no longer holds instead.",
+        "authored_at": "2026-08-12T16:57:07Z",
+        "committed_at": "2026-08-12T16:57:07Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7357caa4fad45aa32f5f7427dda8ac56ee59bbed",
+        "message": "Merge remote-tracking branch 'origin/dev' into zhong-hong-migrate-config-flow",
+        "authored_at": "2026-08-16T00:33:47Z",
+        "committed_at": "2026-08-16T00:33:47Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c9b2084fff74c58d153deb8d32a422587d0c9524",
+        "message": "Only ask for the YAML to be removed once it has been imported\n\nThe notice that a YAML configuration has been imported asks the user to\ndelete it. It was raised whatever the import did, so a gateway that no\nlonger answers got both that notice and the repair issue naming what had\nfailed -- and following the first would have left the integration with\nnothing at all, the YAML gone and no entry to replace it.\n\nWhich issue to raise is now decided in one place, from what the flow\nreturned, the way the other imports in core do it. The config flow goes\nback to aborting with a reason and no side effect of its own.",
+        "authored_at": "2026-08-17T13:25:57Z",
+        "committed_at": "2026-08-17T13:25:57Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "20b231f80db75e89c5a933158e52f68a98fb116b",
+        "message": "Keep the coordinator for a follow-up PR\n\nThe migration to a config entry does not need one. The gateway pushes\nevery change on its own socket, so the entities take their state the way\nthey did under the YAML platform, and what this PR is actually about --\nwhere the connection lives, which entry owns which entity, importing the\nYAML -- is unaffected by who schedules the updates.\n\nSo the coordinator goes out, and with it the three things only it could\noffer: polling as a fallback for pushes missed while the connection was\ndown, availability derived from that poll, and the re-read a few seconds\nafter a command for the reports that never arrive. Those come back\ntogether in the PR after this one, where they can be reviewed as the\nchange they are.\n\nThe entry still asks the gateway for the state of every unit once, when\nit is set up. Without it the entities would sit unknown until somebody\ntouched a unit, since the gateway reports a unit only when it changes.",
+        "authored_at": "2026-08-17T13:35:45Z",
+        "committed_at": "2026-08-17T13:35:45Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "homeassistant/components/zhong_hong/__init__.py",
+  "before_code": "\"\"\"The ZhongHong HVAC integration.\"\"\"\n\nfrom collections.abc import Iterable\n\nfrom zhong_hong_hvac.hub import ZhongHongGateway\nfrom zhong_hong_hvac.hvac import HVAC as ZhongHongHVAC\n\nfrom homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN\nfrom homeassistant.const import CONF_HOST, CONF_PORT, Platform\nfrom homeassistant.core import HomeAssistant, callback\nfrom homeassistant.exceptions import ConfigEntryNotReady\nfrom homeassistant.helpers import entity_registry as er\n\nfrom .const import CONF_GATEWAY_ADDRESS, DOMAIN\nfrom .coordinator import (\n    DeviceAddress,\n    ZhongHongConfigEntry,\n    ZhongHongCoordinator,\n    ZhongHongData,\n    device_unique_id,\n    legacy_device_unique_id,\n)\n\nPLATFORMS: list[Platform] = [Platform.CLIMATE]\n\n\n@callback\ndef _async_migrate_unique_ids(\n    hass: HomeAssistant, entry: ZhongHongConfigEntry, addresses: Iterable[DeviceAddress]\n) -> None:\n    \"\"\"Move the entities off the identifier the YAML platform gave them.\n\n    That identifier was the address on the bus and nothing else, so a second\n    gateway with an air conditioner at the same address produced an entity\n    Home Assistant refused to add. Moving them keeps their entity IDs, and\n    with those their recorded history.\n\n    Only entities this entry owns are moved. An entity the YAML platform\n    registered has no owner yet, and is claimed by whichever entry sets up\n    first; there can only be one, since the old identifier is what stopped a\n    second from ever being created.\n    \"\"\"\n    entity_registry = er.async_get(hass)\n\n    for address in addresses:\n        entity_id = entity_registry.async_get_entity_id(\n            CLIMATE_DOMAIN, DOMAIN, legacy_device_unique_id(address)\n        )\n        if entity_id is None:\n            continue\n\n        registry_entry = entity_registry.async_get(entity_id)\n        if registry_entry is None or registry_entry.config_entry_id not in (\n            None,\n            entry.entry_id,\n        ):\n            continue\n\n        entity_registry.async_update_entity(\n            entity_id, new_unique_id=device_unique_id(entry, address)\n        )\n\n\nasync def _async_connect(\n    hass: HomeAssistant, hub: ZhongHongGateway\n) -> dict[DeviceAddress, ZhongHongHVAC]:\n    \"\"\"Ask the gateway what is on its bus, then start listening to it.\n\n    Discovery has to finish before the listener thread starts, because the two\n    read from the same socket.\n    \"\"\"\n    try:\n        addresses = await hass.async_add_executor_job(hub.discovery_ac)\n    except OSError as err:\n        raise ConfigEntryNotReady(\n            translation_domain=DOMAIN,\n            translation_key=\"cannot_connect\",\n            translation_placeholders={\"host\": hub.ip_addr},\n        ) from err\n\n    if not addresses:\n        raise ConfigEntryNotReady(\n            translation_domain=DOMAIN,\n            translation_key=\"no_devices_found\",\n            translation_placeholders={\"host\": hub.ip_addr},\n        )\n\n    # Creating the device registers it with the hub, which is what routes the\n    # gateway's pushes to it.\n    devices = {address: ZhongHongHVAC(hub, *address) for address in addresses}\n\n    await hass.async_add_executor_job(hub.start_listen)\n    return devices\n\n\nasync def async_setup_entry(hass: HomeAssistant, entry: ZhongHongConfigEntry) -> bool:\n    \"\"\"Set up ZhongHong from a config entry.\"\"\"\n    hub = ZhongHongGateway(\n        entry.data[CONF_HOST],\n        entry.data[CONF_PORT],\n        entry.data[CONF_GATEWAY_ADDRESS],\n    )\n\n    async def _async_close() -> None:\n        await hass.async_add_executor_job(hub.stop_listen)\n\n    # Registered before the socket is opened rather than after: the gateway\n    # takes one connection at a time, so a discovery that fails half way has\n    # to give its socket back or the retry is refused by our own.\n    entry.async_on_unload(_async_close)\n\n    devices = await _async_connect(hass, hub)\n\n    coordinator = ZhongHongCoordinator(hass, entry, hub, devices)\n    await coordinator.async_config_entry_first_refresh()\n\n    entry.runtime_data = ZhongHongData(hub, devices, coordinator)\n    _async_migrate_unique_ids(hass, entry, devices)\n    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)\n    return True\n\n\nasync def async_unload_entry(hass: HomeAssistant, entry: ZhongHongConfigEntry) -> bool:\n    \"\"\"Unload a config entry.\"\"\"\n    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)\n",
+  "anchor_line": 93,
+  "after_code": "\"\"\"The ZhongHong HVAC integration.\"\"\"\n\nfrom collections.abc import Iterable\nfrom dataclasses import dataclass\n\nfrom zhong_hong_hvac.hub import ZhongHongGateway\nfrom zhong_hong_hvac.hvac import HVAC as ZhongHongHVAC\n\nfrom homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN\nfrom homeassistant.config_entries import ConfigEntry\nfrom homeassistant.const import CONF_HOST, CONF_PORT, Platform\nfrom homeassistant.core import HomeAssistant, callback\nfrom homeassistant.exceptions import ConfigEntryNotReady\nfrom homeassistant.helpers import entity_registry as er\n\nfrom .const import CONF_GATEWAY_ADDRESS, DOMAIN\n\nPLATFORMS: list[Platform] = [Platform.CLIMATE]\n\ntype DeviceAddress = tuple[int, int]\n\n\n@dataclass\nclass ZhongHongData:\n    \"\"\"What a loaded config entry holds.\n\n    The air conditioners are found once, when the entry is set up: discovery\n    needs the listener thread stopped, so the gateway cannot be asked again\n    while the entry is running.\n    \"\"\"\n\n    hub: ZhongHongGateway\n    devices: dict[DeviceAddress, ZhongHongHVAC]\n\n\ntype ZhongHongConfigEntry = ConfigEntry[ZhongHongData]\n\n\ndef device_unique_id(entry: ZhongHongConfigEntry, address: DeviceAddress) -> str:\n    \"\"\"Return the unique ID of the air conditioner at an address.\"\"\"\n    return f\"{entry.entry_id}_{address[0]}_{address[1]}\"\n\n\ndef legacy_device_unique_id(address: DeviceAddress) -> str:\n    \"\"\"Return the identifier the YAML platform gave the air conditioner.\n\n    It carried only the address on the bus, so two gateways with an air\n    conditioner at the same address, which `(1, 1)` commonly is, produced the\n    same one and the second entity was dropped. Entities are moved off it on\n    setup; it is still needed to find them.\n    \"\"\"\n    return f\"zhong_hong_hvac_{address[0]}_{address[1]}\"\n\n\n@callback\ndef _async_migrate_unique_ids(\n    hass: HomeAssistant, entry: ZhongHongConfigEntry, addresses: Iterable[DeviceAddress]\n) -> None:\n    \"\"\"Move the entities off the identifier the YAML platform gave them.\n\n    That identifier was the address on the bus and nothing else, so a second\n    gateway with an air conditioner at the same address produced an entity\n    Home Assistant refused to add. Moving them keeps their entity IDs, and\n    with those their recorded history.\n\n    Only entities this entry owns are moved. An entity the YAML platform\n    registered has no owner yet, and is claimed by whichever entry sets up\n    first; there can only be one, since the old identifier is what stopped a\n    second from ever being created.\n    \"\"\"\n    entity_registry = er.async_get(hass)\n\n    for address in addresses:\n        entity_id = entity_registry.async_get_entity_id(\n            CLIMATE_DOMAIN, DOMAIN, legacy_device_unique_id(address)\n        )\n        if entity_id is None:\n            continue\n\n        registry_entry = entity_registry.async_get(entity_id)\n        if registry_entry is None or registry_entry.config_entry_id not in (\n            None,\n            entry.entry_id,\n        ):\n            continue\n\n        entity_registry.async_update_entity(\n            entity_id, new_unique_id=device_unique_id(entry, address)\n        )\n\n\ndef _connect(hub: ZhongHongGateway) -> dict[DeviceAddress, ZhongHongHVAC]:\n    \"\"\"Ask the gateway what is on its bus, then start listening to it.\n\n    Discovery has to finish before the listener thread starts, because the two\n    read from the same socket. All of it blocks, so it runs as one executor\n    job rather than hopping back to the event loop in between.\n    \"\"\"\n    addresses = hub.discovery_ac()\n    if not addresses:\n        return {}\n\n    # Creating the device registers it with the hub, which is what routes the\n    # gateway's pushes to it.\n    devices = {address: ZhongHongHVAC(hub, *address) for address in addresses}\n\n    hub.start_listen()\n\n    # The gateway reports a unit only when it changes, so without asking once\n    # here the entities would have no state until someone touched a unit.\n    if not hub.query_all_status():\n        raise OSError(f\"The gateway at {hub.ip_addr} did not answer the first query\")\n\n    return devices\n\n\nasync def _async_connect(\n    hass: HomeAssistant, hub: ZhongHongGateway\n) -> dict[DeviceAddress, ZhongHongHVAC]:\n    \"\"\"Connect to the gateway, or say why the entry is not ready.\"\"\"\n    try:\n        devices = await hass.async_add_executor_job(_connect, hub)\n    except OSError as err:\n        raise ConfigEntryNotReady(\n            translation_domain=DOMAIN,\n            translation_key=\"cannot_connect\",\n            translation_placeholders={\"host\": hub.ip_addr},\n        ) from err\n\n    if not devices:\n        raise ConfigEntryNotReady(\n            translation_domain=DOMAIN,\n            translation_key=\"no_devices_found\",\n            translation_placeholders={\"host\": hub.ip_addr},\n        )\n\n    return devices\n\n\nasync def async_setup_entry(hass: HomeAssistant, entry: ZhongHongConfigEntry) -> bool:\n    \"\"\"Set up ZhongHong from a config entry.\"\"\"\n    hub = ZhongHongGateway(\n        entry.data[CONF_HOST],\n        entry.data[CONF_PORT],\n        entry.data[CONF_GATEWAY_ADDRESS],\n    )\n\n    async def _async_close() -> None:\n        await hass.async_add_executor_job(hub.stop_listen)\n\n    # Registered before the socket is opened rather than after: the gateway\n    # takes one connection at a time, so a discovery that fails half way has\n    # to give its socket back or the retry is refused by our own.\n    entry.async_on_unload(_async_close)\n\n    devices = await _async_connect(hass, hub)\n\n    entry.runtime_data = ZhongHongData(hub, devices)\n    _async_migrate_unique_ids(hass, entry, devices)\n    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)\n    return True\n\n\nasync def async_unload_entry(hass: HomeAssistant, entry: ZhongHongConfigEntry) -> bool:\n    \"\"\"Unload a config entry.\"\"\"\n    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)\n",
+  "unified_diff": "--- a/homeassistant/components/zhong_hong/__init__.py\n+++ b/homeassistant/components/zhong_hong/__init__.py\n@@ -1,27 +1,55 @@\n \"\"\"The ZhongHong HVAC integration.\"\"\"\n \n from collections.abc import Iterable\n+from dataclasses import dataclass\n \n from zhong_hong_hvac.hub import ZhongHongGateway\n from zhong_hong_hvac.hvac import HVAC as ZhongHongHVAC\n \n from homeassistant.components.climate import DOMAIN as CLIMATE_DOMAIN\n+from homeassistant.config_entries import ConfigEntry\n from homeassistant.const import CONF_HOST, CONF_PORT, Platform\n from homeassistant.core import HomeAssistant, callback\n from homeassistant.exceptions import ConfigEntryNotReady\n from homeassistant.helpers import entity_registry as er\n \n from .const import CONF_GATEWAY_ADDRESS, DOMAIN\n-from .coordinator import (\n-    DeviceAddress,\n-    ZhongHongConfigEntry,\n-    ZhongHongCoordinator,\n-    ZhongHongData,\n-    device_unique_id,\n-    legacy_device_unique_id,\n-)\n \n PLATFORMS: list[Platform] = [Platform.CLIMATE]\n+\n+type DeviceAddress = tuple[int, int]\n+\n+\n+@dataclass\n+class ZhongHongData:\n+    \"\"\"What a loaded config entry holds.\n+\n+    The air conditioners are found once, when the entry is set up: discovery\n+    needs the listener thread stopped, so the gateway cannot be asked again\n+    while the entry is running.\n+    \"\"\"\n+\n+    hub: ZhongHongGateway\n+    devices: dict[DeviceAddress, ZhongHongHVAC]\n+\n+\n+type ZhongHongConfigEntry = ConfigEntry[ZhongHongData]\n+\n+\n+def device_unique_id(entry: ZhongHongConfigEntry, address: DeviceAddress) -> str:\n+    \"\"\"Return the unique ID of the air conditioner at an address.\"\"\"\n+    return f\"{entry.entry_id}_{address[0]}_{address[1]}\"\n+\n+\n+def legacy_device_unique_id(address: DeviceAddress) -> str:\n+    \"\"\"Return the identifier the YAML platform gave the air conditioner.\n+\n+    It carried only the address on the bus, so two gateways with an air\n+    conditioner at the same address, which `(1, 1)` commonly is, produced the\n+    same one and the second entity was dropped. Entities are moved off it on\n+    setup; it is still needed to find them.\n+    \"\"\"\n+    return f\"zhong_hong_hvac_{address[0]}_{address[1]}\"\n \n \n @callback\n@@ -61,16 +89,37 @@\n         )\n \n \n+def _connect(hub: ZhongHongGateway) -> dict[DeviceAddress, ZhongHongHVAC]:\n+    \"\"\"Ask the gateway what is on its bus, then start listening to it.\n+\n+    Discovery has to finish before the listener thread starts, because the two\n+    read from the same socket. All of it blocks, so it runs as one executor\n+    job rather than hopping back to the event loop in between.\n+    \"\"\"\n+    addresses = hub.discovery_ac()\n+    if not addresses:\n+        return {}\n+\n+    # Creating the device registers it with the hub, which is what routes the\n+    # gateway's pushes to it.\n+    devices = {address: ZhongHongHVAC(hub, *address) for address in addresses}\n+\n+    hub.start_listen()\n+\n+    # The gateway reports a unit only when it changes, so without asking once\n+    # here the entities would have no state until someone touched a unit.\n+    if not hub.query_all_status():\n+        raise OSError(f\"The gateway at {hub.ip_addr} did not answer the first query\")\n+\n+    return devices\n+\n+\n async def _async_connect(\n     hass: HomeAssistant, hub: ZhongHongGateway\n ) -> dict[DeviceAddress, ZhongHongHVAC]:\n-    \"\"\"Ask the gateway what is on its bus, then start listening to it.\n-\n-    Discovery has to finish before the listener thread starts, because the two\n-    read from the same socket.\n-    \"\"\"\n+    \"\"\"Connect to the gateway, or say why the entry is not ready.\"\"\"\n     try:\n-        addresses = await hass.async_add_executor_job(hub.discovery_ac)\n+        devices = await hass.async_add_executor_job(_connect, hub)\n     except OSError as err:\n         raise ConfigEntryNotReady(\n             translation_domain=DOMAIN,\n@@ -78,18 +127,13 @@\n             translation_placeholders={\"host\": hub.ip_addr},\n         ) from err\n \n-    if not addresses:\n+    if not devices:\n         raise ConfigEntryNotReady(\n             translation_domain=DOMAIN,\n             translation_key=\"no_devices_found\",\n             translation_placeholders={\"host\": hub.ip_addr},\n         )\n \n-    # Creating the device registers it with the hub, which is what routes the\n-    # gateway's pushes to it.\n-    devices = {address: ZhongHongHVAC(hub, *address) for address in addresses}\n-\n-    await hass.async_add_executor_job(hub.start_listen)\n     return devices\n \n \n@@ -111,10 +155,7 @@\n \n     devices = await _async_connect(hass, hub)\n \n-    coordinator = ZhongHongCoordinator(hass, entry, hub, devices)\n-    await coordinator.async_config_entry_first_refresh()\n-\n-    entry.runtime_data = ZhongHongData(hub, devices, coordinator)\n+    entry.runtime_data = ZhongHongData(hub, devices)\n     _async_migrate_unique_ids(hass, entry, devices)\n     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)\n     return True\n",
+  "changed_files": [
+    {
+      "path": ".github/renovate.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/auth/permissions/entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/cover.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ambient_network/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/analytics/analytics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/api/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/pipeline.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/avea/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/google_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/config/config_entries.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/config/device_registry.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/conversation/default_agent.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/daikin/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/daikin/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/deconz/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/derivative/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/device_tracker/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/diagnostics/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dlna_dmr/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/electric_kiwi/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/energenie_power_sockets/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/energenie_power_sockets/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/energenie_power_sockets/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/entry_data.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/fan.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flow_it/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/frontend/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/image.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gatus/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gatus/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gatus/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/generic_hygrostat/humidifier.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/generic_thermostat/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/trait.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/history_stats/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/holiday/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/services.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit_controller/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit_controller/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homematicip_cloud/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homematicip_cloud/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homematicip_cloud/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homematicip_cloud/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homematicip_cloud/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hortimax/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hortimax/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/helpers.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/number.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hotspring/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/huawei_lte/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hue/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hunterdouglas_powerview/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/incomfort/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/integration/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/intelliclima/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/intent/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/intent/timers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/israel_rail/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/izone/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/izone/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/izone/discovery.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/izone/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kitchen_sink/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kitchen_sink/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/dpt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/entity_store_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/knx_selector.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/text.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/validation.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lcn/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lg_netcast/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lg_soundbar/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/loqed/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lyngdorf/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lyric/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lyric/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lyric/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lyric/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/matter/adapter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/matter/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/melcloud_home/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/midea/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mikrotik/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mikrotik/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mikrotik/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mold_indicator/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monarch_money/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/event.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/monzo/webhook.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/motioneye/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/motioneye/media_source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mta/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nad/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nanoleaf/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netatmo/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netatmo/device.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netatmo/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netatmo/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netatmo/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nexia/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ntfy/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nut/device_action.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/opendisplay/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/overkiz/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/overkiz/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/persistent_notification/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/plugwise/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/portainer/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/prometheus/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/radarr/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/reolink/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/russound_rio/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/russound_rnet/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/samsungtv/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/scrape/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/search/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sensoterra/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shelly/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shelly/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shelly/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shelly/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/simplisafe/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sleepiq/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sma/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sma/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smlight/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smlight/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smlight/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smtp/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smtp/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/smtp/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/somfy_mylink/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/somfy_mylink/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/somfy_mylink/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/somfy_mylink/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/srp_energy/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/srp_energy/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/statistics/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steam_online/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/stiebel_eltron/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbee/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbot/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbot/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbot/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbot_cloud/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/switchbot_cloud/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/technove/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tedee/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/telegram_bot/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/event.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/fan.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/schemas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/vacuum.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/template/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tesla_fleet/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/teslemetry/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/teslemetry/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tessie/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/threshold/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trend/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tts/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/twinkly/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/twinkly/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/twinkly/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/unifi/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/unifi/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/unifiprotect/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/unifiprotect/views.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/upnp/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/utility_meter/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vacuum/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vacuum/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vacuum/significant_change.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vallox/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/services.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vizio/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/voip/assist_satellite.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/webostv/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/whois/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/whois/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/whois/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/whois/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/whois/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wirelesstag/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/withings/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wolflink/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/workday/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wyoming/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wyoming/conversation.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wyoming/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wyoming/error.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T06:06:23.398055Z"
+}

@@ -1,0 +1,989 @@
+{
+  "annotator": "claude",
+  "batch": "rw-v1",
+  "sheet_version": "phase9-sheet-1",
+  "annotations": [
+    {
+      "case_id": "encode__httpx__2278__905948476",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Drop the content-type header case (invalid content-type check) from encode_multipart_data",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_content.py:152-157: the header / content-type branch is removed",
+      "confidence": "medium",
+      "notes": "The comment refers to another thread for its reason, but the request itself is clear."
+    },
+    {
+      "case_id": "encode__httpx__2278__945184961",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Pass the boundary parsed from the content-type header to encode_request instead of a content_type argument",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_models.py:336-346: boundary=get_multipart_boundary_from_content_type(...) replaces content_type=",
+      "confidence": "high",
+      "notes": "Implemented slightly differently from the suggestion (header encoded to bytes first); equivalent."
+    },
+    {
+      "case_id": "encode__httpx__2278__945822783",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Match 'boundary=' case-insensitively and strip the prefix instead of splitting (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_multipart.py:32-33: the suggestion is applied exactly",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__307__320043132",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Test the case where all variables are set",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Test the case where none of them is a valid file",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Verify the order in which the variables are checked",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_utils.py:146-157: both set, both wrong, and file-over-dir precedence are asserted",
+      "confidence": "medium",
+      "notes": "The function changed from three env vars to two (SSL_CERT_FILE / SSL_CERT_DIR); the tests cover the requested cases for the new set."
+    },
+    {
+      "case_id": "encode__httpx__307__320416523",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Handle SSL_CERT_DIR as a directory (the is_file check cannot work for it)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/utils.py get_ca_bundle_from_env: SSL_CERT_DIR is checked with is_dir()",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__307__321404735",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename get_ssl_cert_file to get_ca_bundle_from_env (or similar)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/utils.py:114 def get_ca_bundle_from_env(); tests updated",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__307__321405215",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Use a non-default CA bundle in the env-var test",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Verify that the configured certificates are actually loaded",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_config.py:33-53: ca_cert_pem_file fixture, verify == env value, get_ca_certs() == 1",
+      "confidence": "medium",
+      "notes": "Loading is checked for SSL_CERT_FILE only; the SSL_CERT_DIR variant is skipped with an explanation."
+    },
+    {
+      "case_id": "encode__httpx__307__321714538",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the env CA-bundle loading into load_ssl_context_verify()",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/config.py: block removed from load_ssl_context and added at the top of load_ssl_context_verify",
+      "confidence": "high",
+      "notes": "The second paragraph (default verify=True) is a question, not a requirement (guide §3)."
+    },
+    {
+      "case_id": "encode__httpx__307__323458263",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Check SSL_CERT_DIR is set in the environment before using it (bool(Path) is always true)",
+          "status": "satisfied"
+        },
+        {
+          "category": "validation",
+          "description": "Do the same for SSL_CERT_FILE",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/utils.py:115-122: 'in os.environ' checks for both variables, as suggested",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__3818__3896004144",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Replace the report callable with an optional exit_message string that is echoed",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "src/click/core.py unchanged; the author declined with a reason (report can be e.show, not only a message)",
+      "confidence": "high",
+      "notes": "Hedged suggestion ('Maybe we can...') declined by the author and resolved without change: not satisfied per guide; a human decides whether the decline is fine."
+    },
+    {
+      "case_id": "pallets__click__3818__3896043269",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Remove the real-pty, timeout-based interrupt test",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_abort_interrupt.py: the pty section (CHILD_SCRIPT and its tests) and its imports are removed",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13718__3870614620",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the _ATTRIBUTE_MISSING docstring (empty suggestion over lines 125-129)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/main.py: the docstring after _ATTRIBUTE_MISSING is removed",
+      "confidence": "high",
+      "notes": "Empty suggestion block = delete the selected lines (original_start_line 125 to 129)."
+    },
+    {
+      "case_id": "pydantic__pydantic__13731__3878890386",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Delete test_smart_union_before_validator_field_count (empty suggestion over lines 861-896)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic-core/tests/validators/test_union.py: the test and its now-unused PyAndJson import are removed",
+      "confidence": "high",
+      "notes": "Empty suggestion block = delete the selected lines."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1625056588",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename class Validate to Pipeline (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:129: class _Pipeline(Generic[_InT, _OutT])",
+      "confidence": "low",
+      "notes": "Final name is _Pipeline (renamed, then made private in later commits); the exact suggested name differs. Human check advised."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1625060916",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use a set literal instead of a tuple for the Len type membership test (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:517: s['type'] in {'str', 'list', ...}",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1625061228",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the assert that duplicates the membership check above it",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:517-525: the duplicating assert is still there",
+      "confidence": "medium",
+      "notes": "Implied request ('this appears to duplicate the line above'); resolved without removing it."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1626184742",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename _Parse (to _ValidateAs)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:37 class _ValidateAs",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1627950143",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "The reviewer reports having removed something themselves ('I removed this in the next commit'); nothing is asked of the author."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1628183067",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use a tuple instead of a list for _steps",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Make the _Pipeline dataclass frozen",
+          "status": "not_satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Make the step dataclasses frozen",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "PARTIALLY_SATISFIED",
+      "evidence": "pipeline.py:132 tuple[_Step, ...]; step classes use _slots_frozen (lines 33-108); _Pipeline still _slots_true (128) with a TODO",
+      "confidence": "low",
+      "notes": "The reviewer hedged ('okay leaving as-is'); freezing _Pipeline was declined for a technical reason. Human check advised."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1628197626",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "'I don't think we need to do it now' - a future idea, not a request; the author added a TODO."
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1628205456",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move predicate() to the start or the end of the constraint methods",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:246 predicate now comes before gt (250)",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3636503756",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "'we might need ... lets note that for later research' - discussion; both sides agree to keep it as is."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3636749625",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Use a more verbose name than `id` (e.g. nodeid_obj)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "src/_pytest/nodes.py: still `id`",
+      "confidence": "medium",
+      "notes": "The author declined and the reviewer accepted ('nothing is ideal'); judged as written, the rename was not done."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3763967358",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Inline get_file_part_from_node_id",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/findpaths.py: helper removed, NodeId.parse(arg).path used inline",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3790168005",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the unused `override` compatibility shim",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/compat.py: the override block is removed",
+      "confidence": "high",
+      "notes": "Implied request ('No longer used')."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3790181129",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Do not call the string form of a nodeid 'legacy' in the module docstring",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/nodeid.py:10: now 'The traditional ::-joined string form'",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14813__3790074595",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the paragraph explaining strict xfails from the module docstring",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "testing/test_assertrewrite_coverage.py unchanged (no commit after the comment)",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14813__3790080249",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use `except AssertionError as e: s = str(e)` (suggestion)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "testing/test_assertrewrite_coverage.py unchanged: still sys.exc_info()",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14813__3790083013",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use sphinx format in the docstrings (this one and those below)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "testing/test_assertrewrite_coverage.py unchanged: numpy-style Parameters sections remain",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14813__3790089375",
+      "include": false,
+      "exclusion_reason": "requires_external_context",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "Conditional on another thread's suggestion ('If take the Sequence suggestion, can remove the or []'), which was not taken."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14984__3957564522",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use itertools.chain instead of building a list",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "src/_pytest/fixtures.py:2390-2397 unchanged",
+      "confidence": "medium",
+      "notes": "Hedged suggestion ('might be ... or maybe not'); the author declined with a benchmark. Not satisfied as written."
+    },
+    {
+      "case_id": "pytest-dev__pytest__15011__4005738828",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Annotate keywords as Literal[1] to guarantee the documented value",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/reports.py:348,376: Mapping[str, Literal[1]] on the parameter and the attribute",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__3875929102",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Simplify the negative-index implementation with the suggested _list_element_neg approach",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/arrays/arrow/accessors.py:59-68 _list_element_neg added; __getitem__ uses it for key < 0",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__3996402200",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Drop the never-hit else branch (pa_array is always a ChunkedArray)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/arrays/arrow/accessors.py: chunks = pa_array.chunks",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__4021067646",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add a `# GH#63221` issue reference as the first line of the test",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/series/accessors/test_list_accessor.py:153 '# GH#63221' inside the test",
+      "confidence": "high",
+      "notes": "A requirement that is satisfied by adding a comment (hard case for comment-skeptical rules)."
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__4057000586",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the `# GH#63221` comment inside the test, as its first line",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/series/accessors/test_list_accessor.py:153",
+      "confidence": "high",
+      "notes": "Satisfied by moving a comment."
+    },
+    {
+      "case_id": "pandas-dev__pandas__67288__4053330974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Match only 'Unalignable boolean Series provided as indexer' in the expected message (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/frame/methods/test_filter.py:321 msg shortened as suggested",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67288__4054164782",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Pass copy=False to pd_array (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/methods/filter.py:92 pd_array(values, dtype='boolean', copy=False)",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67462__3928400700",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Make the test sufficient for RangeIndex: check the index values were not modified, not only start/stop/step",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/copy_view/test_constructors.py: tm.assert_numpy_array_equal(get_array(idx), get_array(expected)) after each mutation",
+      "confidence": "medium",
+      "notes": "Implied request ('I don't think this is a sufficient test')."
+    },
+    {
+      "case_id": "pandas-dev__pandas__67857__4085471095",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Point the chunking docs link at the stable user guide URL (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/io/parsers/readers.py:1577 link updated as suggested",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__69123__4056913750",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Check the full result with tm.assert_series_equal",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/window/test_rolling_skew_kurt.py: expected full series parametrized; assert_series_equal(result, ...)",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__178114__3791822425",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move this change into its own PR",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "homeassistant/components/rest/entity.py: the commented helpers are still in the final file",
+      "confidence": "low",
+      "notes": "Undecidable from the case: the helpers may have been split into their own PR, merged, and come back via the base branch (flag base_drift_possible)."
+    },
+    {
+      "case_id": "home-assistant__core__178506__3766173069",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "Clarifying questions plus a 'can we maybe' idea resting on a misunderstanding that the author corrected; discussion, not a request."
+    },
+    {
+      "case_id": "home-assistant__core__178506__3766178333",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Group the executor jobs: make the connect logic a sync method run in a single executor job",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/zhong_hong/__init__.py:92,122: def _connect(hub) run via one async_add_executor_job",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__178506__3766183655",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Do not add has_entity_name in this PR",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Do not add entity translation keys in this PR",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Do not add device info in this PR",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/zhong_hong/climate.py: no has_entity_name, no entity translation key, no device_info; _attr_name kept (195)",
+      "confidence": "high",
+      "notes": "Remaining translation_key uses are for error and repair messages, not the entity."
+    },
+    {
+      "case_id": "home-assistant__core__178506__3766190046",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Do not open connections in the config flow; use discovery or move the probing into the library",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/zhong_hong/config_flow.py:47-56: hub.discovery_ac(timeout=...) replaces asyncio.open_connection",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__178506__3766240145",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Try to connect to the gateway when importing from YAML",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "When the gateway cannot be reached, alert the user and do not import",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "config_flow.py:119-120 _async_validate_gateway then async_abort(reason=error); climate.py raises a deprecated_yaml_import_issue_{reason} repair issue",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__182554__4044075953",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Define the select entities with entity descriptions instead of dedicated classes",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/hotspring/select.py:95-120 JET_DESCRIPTIONS / HEATING_MODE_DESCRIPTIONS drive the entities",
+      "confidence": "medium",
+      "notes": "Two entity classes remain, one per behaviour (jets vs heating mode), which is the usual pattern."
+    },
+    {
+      "case_id": "home-assistant__core__182554__4052376495",
+      "include": false,
+      "exclusion_reason": "requires_external_context",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "Asks to follow how the Portainer integration adds entities; checking that needs code outside the case."
+    },
+    {
+      "case_id": "home-assistant__core__182648__4052370961",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Advance time with the freezer instead of triggering the coordinator directly",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/portainer/test_update.py:248-249 freezer.tick + async_fire_time_changed; no coordinator.async_refresh",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__2278__945186645",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Support a double-quoted boundary in the content-type header",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_multipart.py:33 .strip(b'\"') on the boundary value",
+      "confidence": "medium",
+      "notes": "Raised as a question; the thread settles on double quotes only, no quoted pairs."
+    },
+    {
+      "case_id": "encode__httpx__307__320250534",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Keep the current behaviour when verify is True and no CA bundle env var is set",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Inspect the environment in load_ssl_context rather than in __init__",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/config.py: env lookup removed from __init__, done in load_ssl_context_verify and only overrides when a bundle is found",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__3996403416",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Keep the removed valid out-of-range test cases",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Add a test that ser.list[-4] raises",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/series/accessors/test_list_accessor.py:129-134 list[5], list[-4] and list['abc'] raise",
+      "confidence": "medium",
+      "notes": "The comment's anchor line could not be located (anchor_line is None)."
+    },
+    {
+      "case_id": "pandas-dev__pandas__67004__4057000269",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Put the list dtypes directly in the test instead of a module-level variable",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "test_list_accessor.py:166-172 dtypes inlined in @pytest.mark.parametrize",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__9459__1625057594",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add a docstring to _apply_constraint",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:451 'Apply a single constraint to a schema.'",
+      "confidence": "high",
+      "notes": "A requirement satisfied by adding a docstring."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14758__3790249947",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "A question confirming intent ('the intention is that nodeid can remain None?'), answered 'Yes'."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14813__3790078057",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Shorten the rewrite sentence in the _exec_check docstring (suggestion)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "testing/test_assertrewrite_coverage.py unchanged (no commit after the comment)",
+      "confidence": "high",
+      "notes": ""
+    }
+  ]
+}

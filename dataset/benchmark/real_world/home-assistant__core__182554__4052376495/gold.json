@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__182554__4052376495",
+    "include": false,
+    "exclusion_reason": "requires_external_context",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "Asks to follow how the Portainer integration adds entities; checking that needs code outside the case."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1625057594",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Add a docstring to _apply_constraint",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/experimental/pipeline.py:451 'Apply a single constraint to a schema.'",
+    "confidence": "high",
+    "notes": "A requirement satisfied by adding a docstring."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

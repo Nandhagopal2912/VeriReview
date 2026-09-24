@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3636749625",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Use a more verbose name than `id` (e.g. nodeid_obj)",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "src/_pytest/nodes.py: still `id`",
+    "confidence": "medium",
+    "notes": "The author declined and the reviewer accepted ('nothing is ideal'); judged as written, the rename was not done."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

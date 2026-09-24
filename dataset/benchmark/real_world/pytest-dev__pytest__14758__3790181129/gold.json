@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3790181129",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Do not call the string form of a nodeid 'legacy' in the module docstring",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/nodeid.py:10: now 'The traditional ::-joined string form'",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

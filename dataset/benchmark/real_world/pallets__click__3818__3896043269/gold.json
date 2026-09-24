@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__3818__3896043269",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Remove the real-pty, timeout-based interrupt test",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_abort_interrupt.py: the pty section (CHILD_SCRIPT and its tests) and its imports are removed",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -7,6 +7,7 @@
     verireview agreement A.json B.json                Cohen's kappa + disagreements
     verireview adjudication-sheet A.json B.json --batch NAME   page for the adjudicator
     verireview build-gold A.json B.json [--adjudication ADJ.json]   write gold.json files
+    verireview build-gold A.json --single-source model              provisional one-annotator gold
     verireview benchmark-freeze --version v1          write the frozen test manifest
 
 Mining only works for repositories listed in ``dataset/benchmark/repositories.json``, which records
@@ -28,7 +29,7 @@ from verireview.benchmark import (
     build_gold,
     iter_real_world,
 )
-from verireview.benchmark.agreement import Kappa
+from verireview.benchmark.agreement import Kappa, single_annotator_gold
 from verireview.benchmark.manifest import MANIFEST, FreezeError, freeze, stats
 from verireview.benchmark.mining import (
     Candidate,
@@ -96,8 +97,13 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
 
     p = sub.add_parser("build-gold", help="write gold.json from two exports + adjudication")
     p.add_argument("a", type=Path)
-    p.add_argument("b", type=Path)
+    p.add_argument("b", type=Path, nargs="?", help="second annotator (omit with --single-source)")
     p.add_argument("--adjudication", type=Path)
+    p.add_argument(
+        "--single-source",
+        choices=["human", "model"],
+        help="provisional gold from ONE annotator; never replaces existing human gold",
+    )
     p.add_argument("--dataset", type=Path, default=DATASET)
 
     p = sub.add_parser("benchmark-freeze", help="write the frozen test-split manifest")
@@ -131,7 +137,8 @@ def _stats(dataset: Path) -> int:
     rw = s.real_world
     print(
         f"real-world:       collected {rw.collected} (dev {rw.dev}, test {rw.test}), "
-        f"gold {rw.with_gold} (included {rw.included}, excluded {rw.excluded})"
+        f"gold {rw.with_gold} (human {rw.human_gold}, provisional model {rw.model_gold}; "
+        f"included {rw.included}, excluded {rw.excluded})"
     )
     print("\ntargets (v1):")
     for t in s.targets:
@@ -264,24 +271,38 @@ def _adjudication_sheet(args: argparse.Namespace) -> int:
 
 
 def _build_gold(args: argparse.Namespace) -> int:
-    adjudication = (
-        AdjudicationFile.model_validate_json(args.adjudication.read_text(encoding="utf-8"))
-        if args.adjudication
-        else None
-    )
-    try:
-        gold = build_gold(_annotations(args.a), _annotations(args.b), adjudication)
-    except PendingAdjudicationError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+    if (args.b is None) == (args.single_source is None):
+        print("error: give two annotation files, or one with --single-source", file=sys.stderr)
+        return 2
+    if args.b is None:
+        gold = single_annotator_gold(_annotations(args.a), args.single_source)
+    else:
+        adjudication = (
+            AdjudicationFile.model_validate_json(args.adjudication.read_text(encoding="utf-8"))
+            if args.adjudication
+            else None
+        )
+        try:
+            gold = build_gold(_annotations(args.a), _annotations(args.b), adjudication)
+        except PendingAdjudicationError as exc:
+            print(f"error: {exc}", file=sys.stderr)
+            return 1
     root = args.dataset / REAL_WORLD
-    known = {rw.case_id: rw.directory for rw in iter_real_world(root)}
-    unknown = sorted(set(gold) - set(known))
+    existing = {rw.case_id: rw for rw in iter_real_world(root)}
+    unknown = sorted(set(gold) - set(existing))
     if unknown:
         print(f"error: annotated cases not in {root}: {unknown}", file=sys.stderr)
         return 1
+    kept = []
     for case_id, label in gold.items():
-        write_gold(known[case_id], label)
+        current = existing[case_id].gold
+        if label.label_source == "model" and current and current.label_source == "human":
+            kept.append(case_id)  # a human label is never replaced by a model label
+            continue
+        write_gold(existing[case_id].directory, label)
+    gold = {k: v for k, v in gold.items() if k not in kept}
+    if kept:
+        print(f"kept human gold for {len(kept)} case(s): {kept}")
     agreed = sum(g.agreed for g in gold.values())
     print(f"wrote gold for {len(gold)} case(s): {agreed} agreed, {len(gold) - agreed} adjudicated")
     return 0

@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14758__3636503756",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "'we might need ... lets note that for later research' - discussion; both sides agree to keep it as is."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

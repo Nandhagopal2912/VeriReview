@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178506__3766173069",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "Clarifying questions plus a 'can we maybe' idea resting on a misunderstanding that the author corrected; discussion, not a request."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

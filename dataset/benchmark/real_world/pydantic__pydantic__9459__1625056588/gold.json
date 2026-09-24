@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__9459__1625056588",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Rename class Validate to Pipeline (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/experimental/pipeline.py:129: class _Pipeline(Generic[_InT, _OutT])",
+    "confidence": "low",
+    "notes": "Final name is _Pipeline (renamed, then made private in later commits); the exact suggested name differs. Human check advised."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

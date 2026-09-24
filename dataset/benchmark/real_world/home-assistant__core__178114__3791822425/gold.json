@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178114__3791822425",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move this change into its own PR",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "homeassistant/components/rest/entity.py: the commented helpers are still in the final file",
+    "confidence": "low",
+    "notes": "Undecidable from the case: the helpers may have been split into their own PR, merged, and come back via the base branch (flag base_drift_possible)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

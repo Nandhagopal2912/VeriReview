@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14813__3790074595",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the paragraph explaining strict xfails from the module docstring",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "testing/test_assertrewrite_coverage.py unchanged (no commit after the comment)",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

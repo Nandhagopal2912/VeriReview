@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67004__3875929102",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Simplify the negative-index implementation with the suggested _list_element_neg approach",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/arrays/arrow/accessors.py:59-68 _list_element_neg added; __getitem__ uses it for key < 0",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

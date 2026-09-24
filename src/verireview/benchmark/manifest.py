@@ -42,6 +42,8 @@ class RealWorldStatus(BaseModel):
     dev: int
     test: int
     with_gold: int
+    human_gold: int
+    model_gold: int
     included: int
     excluded: int
 
@@ -90,6 +92,8 @@ def stats(dataset_root: Path, real_world_target: int = 50) -> BenchmarkStats:
             dev=sum(r.provenance.split == Split.DEV for r in rw),
             test=sum(r.provenance.split == Split.TEST for r in rw),
             with_gold=len(labelled),
+            human_gold=sum(r.gold is not None and r.gold.label_source == "human" for r in rw),
+            model_gold=sum(r.gold is not None and r.gold.label_source == "model" for r in rw),
             included=sum(r.gold is not None and r.gold.label.include for r in rw),
             excluded=sum(r.gold is not None and not r.gold.label.include for r in rw),
         ),

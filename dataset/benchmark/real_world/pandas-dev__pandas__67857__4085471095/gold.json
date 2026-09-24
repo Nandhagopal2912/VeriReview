@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__67857__4085471095",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Point the chunking docs link at the stable user guide URL (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/io/parsers/readers.py:1577 link updated as suggested",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

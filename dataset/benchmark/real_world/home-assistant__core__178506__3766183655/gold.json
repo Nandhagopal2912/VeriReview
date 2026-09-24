@@ -1,0 +1,33 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178506__3766183655",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Do not add has_entity_name in this PR",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Do not add entity translation keys in this PR",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Do not add device info in this PR",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "homeassistant/components/zhong_hong/climate.py: no has_entity_name, no entity translation key, no device_info; _attr_name kept (195)",
+    "confidence": "high",
+    "notes": "Remaining translation_key uses are for error and repair messages, not the entity."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

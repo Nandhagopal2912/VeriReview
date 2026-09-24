@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178506__3766190046",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Do not open connections in the config flow; use discovery or move the probing into the library",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "homeassistant/components/zhong_hong/config_flow.py:47-56: hub.discovery_ac(timeout=...) replaces asyncio.open_connection",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

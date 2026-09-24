@@ -1,0 +1,2096 @@
+{
+  "schema_version": "3",
+  "case_id": "pandas-dev/pandas#67288/4053330974",
+  "repository": "pandas-dev/pandas",
+  "pull_number": 67288,
+  "pull_title": "ENH: DataFrame.filter and Series.filter to take a boolean masks",
+  "base_sha": "ec06595892600c5ee624ba96c554e2fff9587eff",
+  "head_sha": "2b2a5076d5244791db085145bcdc970e2f3ea447",
+  "thread": {
+    "root_comment_id": 4053330974,
+    "path": "pandas/tests/frame/methods/test_filter.py",
+    "line": null,
+    "original_line": 323,
+    "start_line": null,
+    "original_start_line": 322,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -152,3 +155,334 @@ def test_filter_different_dtype(self):\n         result = df.filter(items=[\"B\", \"A\"])\n         expected = df[[]]\n         tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.fixture\n+def df():\n+    return pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]}, index=[\"x\", \"y\", \"z\"])\n+\n+\n+@pytest.mark.parametrize(\n+    \"mask\",\n+    [\n+        [False, True, True],\n+        np.array([False, True, True]),\n+        pd.array([False, True, True], dtype=\"boolean\"),\n+        pd.Index([False, True, True]),\n+        pd.Series([False, True, True], index=[\"x\", \"y\", \"z\"]),\n+        lambda df: df[\"a\"] > 1,\n+        pd.col(\"a\") > 1,\n+    ],\n+)\n+def test_filter_cond_rows(df, mask):\n+    # GH#61317\n+    result = df.filter(cond=mask)\n+    expected = df.iloc[1:]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\"mask\", [lambda df: df[\"a\"] > 1, pd.col(\"a\") > 1])\n+def test_filter_positional_callable_is_mask(df, mask):\n+    # GH#61317\n+    result = df.filter(mask)\n+    expected = df.iloc[1:]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\n+    \"mask\",\n+    [\n+        [True, False, True],\n+        [True, None, False],\n+        np.array([True, False, True]),\n+        pd.array([True, False, True], dtype=\"boolean\"),\n+        pd.Index([True, False, True]),\n+        pd.Series([True, False, True], index=[\"x\", \"y\", \"z\"]),\n+    ],\n+)\n+def test_filter_positional_bools_select_labels(df, mask):\n+    # GH#61317\n+    # A list-like of booleans passed positionally selects labels, as it did\n+    # before masks were supported, but warns since it is likely meant as a mask\n+    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n+    with tm.assert_produces_warning(UserWarning, match=msg):\n+        result = df.filter(mask)\n+    expected = df.iloc[:, []]\n+    tm.assert_frame_equal(result, expected)\n+\n+    # the explicit keyword does not warn\n+    result = df.filter(items=mask)\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\n+    \"arg, cols\",\n+    [\n+        ([\"b\", \"a\"], [\"b\", \"a\"]),\n+        ((\"b\", \"a\"), [\"b\", \"a\"]),\n+        ((True, False, True), []),\n+    ],\n+)\n+def test_filter_positional_labels_no_warning(df, arg, cols):\n+    # GH#61317\n+    # tuples are never masks\n+    result = df.filter(arg)\n+    expected = df[cols]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+def test_filter_na_label():\n+    # GH#61317\n+    df = pd.DataFrame({np.nan: [1], \"a\": [2]})\n+    result = df.filter(items=[np.nan])\n+    expected = df.iloc[:, [0]]\n+    tm.assert_frame_equal(result, expected, check_column_type=False)\n+\n+    df = pd.DataFrame({\"a\": [1, 2]}, index=[np.nan, \"x\"])\n+    result = df.filter(items=[np.nan], axis=0)\n+    expected = df.iloc[[0]]\n+    tm.assert_frame_equal(result, expected, check_index_type=False)\n+\n+\n+def test_filter_tuple_labels_multiindex():\n+    # GH#61317\n+    mi = pd.MultiIndex.from_tuples([(True, False), (False, True)])\n+    df = pd.DataFrame({\"a\": [1, 2]}, index=mi)\n+    result = df.filter([(True, False)], axis=0)\n+    expected = df.iloc[[0]]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\n+    \"dtype\",\n+    [\n+        \"bool\",\n+        \"boolean\",\n+        pytest.param(\"bool[pyarrow]\", marks=td.skip_if_no(\"pyarrow\")),\n+    ],\n+)\n+def test_filter_bool_labels(dtype):\n+    # GH#61317\n+    df = pd.DataFrame({\"a\": [1, 2]}, index=pd.Index([True, False], dtype=dtype))\n+    result = df.filter(items=[True], axis=0)\n+    expected = df.iloc[[0]]\n+    tm.assert_frame_equal(result, expected)\n+\n+    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n+    with tm.assert_produces_warning(UserWarning, match=msg):\n+        result = df.filter([True], axis=0)\n+    tm.assert_frame_equal(result, expected)\n+\n+    result = df.filter(cond=[False, True], axis=0)\n+    expected = df.iloc[[1]]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\n+    \"kwargs\",\n+    [\n+        {\"items\": [\"a\"]},\n+        {\"cond\": [True, False, True]},\n+        {\"like\": \"a\"},\n+        {\"regex\": \"a\"},\n+    ],\n+)\n+def test_filter_positional_and_keyword_mutually_exclusive(df, kwargs):\n+    # GH#61317\n+    msg = \"mutually exclusive\"\n+    with pytest.raises(TypeError, match=msg):\n+        df.filter([\"a\"], **kwargs)\n+    with pytest.raises(TypeError, match=msg):\n+        df.filter(cond=[True, False, True], items=[\"a\"])\n+\n+\n+@pytest.mark.parametrize(\n+    \"cond\",\n+    [[\"a\"], [1, 0, 1], (True, False, True), \"abc\", np.array([1.0, 0.0, 1.0])],\n+)\n+def test_filter_cond_not_mask_raises(df, cond):\n+    # GH#61317\n+    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n+    with pytest.raises(TypeError, match=msg):\n+        df.filter(cond=cond)\n+\n+\n+def test_filter_cond_series_aligns(df):\n+    # GH#61317\n+    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"x\"])\n+    result = df.filter(cond=mask)\n+    expected = df.iloc[1:]\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+def test_filter_cond_series_unalignable(df):\n+    # GH#61317\n+    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n+    msg = (\n+        \"Unalignable boolean Series provided as indexer \\\\(index of the boolean \"\n+        \"Series and of the indexed object do not match\\\\).\"",
+    "original_commit_sha": "6274131e30a8fa1cbe7c72ca171d5f2e191df34b",
+    "commit_sha": "8696ae4a4eb2e9ed6fe867ca02c20858d9fd1df0",
+    "comments": [
+      {
+        "id": 4053330974,
+        "author": "reviewer",
+        "body": "```suggestion\n        \"Unalignable boolean Series provided as indexer\"\n```\n\nsufficient to test against?\n",
+        "created_at": "2026-09-19T13:38:36Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "reviewer",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "6274131e30a8fa1cbe7c72ca171d5f2e191df34b",
+    "end_commit_sha": "2b2a5076d5244791db085145bcdc970e2f3ea447",
+    "subsequent_commits": [
+      {
+        "sha": "7633ac8b61402ff0d475f83579402cf84e800918",
+        "message": "Merge remote-tracking branch 'upstream/main' into enh_filter\n\n# Conflicts:\n#\tdoc/source/whatsnew/v3.1.0.rst",
+        "authored_at": "2026-09-19T13:55:02Z",
+        "committed_at": "2026-09-19T13:55:02Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b01da8f780657b94dbecdca56cacaeee8aad5f95",
+        "message": "Raise on axis=1 for callable/expression",
+        "authored_at": "2026-09-19T17:17:44Z",
+        "committed_at": "2026-09-19T17:17:44Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "8696ae4a4eb2e9ed6fe867ca02c20858d9fd1df0",
+        "message": "fixup",
+        "authored_at": "2026-09-19T17:22:50Z",
+        "committed_at": "2026-09-19T17:22:50Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2b2a5076d5244791db085145bcdc970e2f3ea447",
+        "message": "Refinements",
+        "authored_at": "2026-09-19T18:27:40Z",
+        "committed_at": "2026-09-19T18:27:40Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "pandas/tests/frame/methods/test_filter.py",
+  "before_code": "import numpy as np\nimport pytest\n\nimport pandas.util._test_decorators as td\n\nimport pandas as pd\nimport pandas._testing as tm\n\n\nclass TestDataFrameFilter:\n    def test_filter(self, float_frame, float_string_frame):\n        # Items\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"])\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"], axis=\"columns\")\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        # Other axis\n        idx = float_frame.index[0:4]\n        filtered = float_frame.filter(idx, axis=\"index\")\n        expected = float_frame.reindex(index=idx)\n        tm.assert_frame_equal(filtered, expected)\n\n        # like\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        filtered = fcopy.filter(like=\"A\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # like with ints in column names\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, 1, \"_A\", \"_B\"])\n        filtered = df.filter(like=\"_\")\n        assert len(filtered.columns) == 2\n\n        # regex with ints in column names\n        # from PR #10384\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[\"A1\", 1, \"B\", 2, \"C\"])\n        expected = pd.DataFrame(\n            0.0, index=[0, 1, 2], columns=pd.Index([1, 2], dtype=object)\n        )\n        filtered = df.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        expected = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, \"0\", 1, \"1\"])\n        # shouldn't remove anything\n        filtered = expected.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        # pass in None\n        no_arg_msg = \"Must pass a positional argument or one of `items`, `cond`\"\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter()\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(items=None)\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(axis=1)\n\n        # test mutually exclusive arguments\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", like=\"bbi\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", axis=1)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\", axis=0)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\")\n\n        # objects\n        filtered = float_string_frame.filter(like=\"foo\")\n        assert \"foo\" in filtered\n\n        # unicode columns, won't ascii-encode\n        df = float_frame.rename(columns={\"B\": \"\\u2202\"})\n        filtered = df.filter(like=\"C\")\n        assert \"C\" in filtered\n\n    def test_filter_regex_search(self, float_frame):\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        # regex\n        filtered = fcopy.filter(regex=\"[A]+\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # doesn't have to be at beginning\n        df = pd.DataFrame(\n            {\"aBBa\": [1, 2], \"BBaBB\": [1, 2], \"aCCa\": [1, 2], \"aCCaBB\": [1, 2]}\n        )\n\n        result = df.filter(regex=\"BB\")\n        exp = df[[x for x in df.columns if \"BB\" in x]]\n        tm.assert_frame_equal(result, exp)\n\n    @pytest.mark.parametrize(\n        \"name,expected_data\",\n        [\n            (\"a\", {\"a\": [1, 2]}),\n            (\"あ\", {\"あ\": [3, 4]}),\n        ],\n    )\n    def test_filter_unicode(self, name, expected_data):\n        # GH13101\n        df = pd.DataFrame({\"a\": [1, 2], \"あ\": [3, 4]})\n        expected = pd.DataFrame(expected_data)\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_bytestring(self):\n        # GH13101\n        name = \"a\"\n        df = pd.DataFrame({b\"a\": [1, 2], b\"b\": [3, 4]})\n        expected = pd.DataFrame({b\"a\": [1, 2]})\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_corner(self):\n        empty = pd.DataFrame()\n\n        result = empty.filter([])\n        tm.assert_frame_equal(result, empty)\n\n        result = empty.filter(like=\"foo\")\n        tm.assert_frame_equal(result, empty)\n\n    def test_filter_regex_non_string(self):\n        # GH#5798 trying to filter on non-string columns should drop,\n        #  not raise\n        df = pd.DataFrame(\n            np.random.default_rng(2).random((3, 2)), columns=[\"STRING\", 123]\n        )\n        result = df.filter(regex=\"STRING\")\n        expected = df[[\"STRING\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_keep_order(self):\n        # GH#54980\n        df = pd.DataFrame({\"A\": [1, 2, 3], \"B\": [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[\"B\", \"A\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_different_dtype(self):\n        # GH#54980\n        df = pd.DataFrame({1: [1, 2, 3], 2: [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[]]\n        tm.assert_frame_equal(result, expected)\n\n\n@pytest.fixture\ndef df():\n    return pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]}, index=[\"x\", \"y\", \"z\"])\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [False, True, True],\n        np.array([False, True, True]),\n        pd.array([False, True, True], dtype=\"boolean\"),\n        pd.Index([False, True, True]),\n        pd.Series([False, True, True], index=[\"x\", \"y\", \"z\"]),\n        lambda df: df[\"a\"] > 1,\n        pd.col(\"a\") > 1,\n    ],\n)\ndef test_filter_cond_rows(df, mask):\n    # GH#61317\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"mask\", [lambda df: df[\"a\"] > 1, pd.col(\"a\") > 1])\ndef test_filter_positional_callable_is_mask(df, mask):\n    # GH#61317\n    result = df.filter(mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, False, True],\n        [True, None, False],\n        np.array([True, False, True]),\n        pd.array([True, False, True], dtype=\"boolean\"),\n        pd.Index([True, False, True]),\n        pd.Series([True, False, True], index=[\"x\", \"y\", \"z\"]),\n    ],\n)\ndef test_filter_positional_bools_select_labels(df, mask):\n    # GH#61317\n    # A list-like of booleans passed positionally selects labels, as it did\n    # before masks were supported, but warns since it is likely meant as a mask\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter(mask)\n    expected = df.iloc[:, []]\n    tm.assert_frame_equal(result, expected)\n\n    # the explicit keyword does not warn\n    result = df.filter(items=mask)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"arg, cols\",\n    [\n        ([\"b\", \"a\"], [\"b\", \"a\"]),\n        ((\"b\", \"a\"), [\"b\", \"a\"]),\n        ((True, False, True), []),\n    ],\n)\ndef test_filter_positional_labels_no_warning(df, arg, cols):\n    # GH#61317\n    # tuples are never masks\n    result = df.filter(arg)\n    expected = df[cols]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_na_label():\n    # GH#61317\n    df = pd.DataFrame({np.nan: [1], \"a\": [2]})\n    result = df.filter(items=[np.nan])\n    expected = df.iloc[:, [0]]\n    tm.assert_frame_equal(result, expected, check_column_type=False)\n\n    df = pd.DataFrame({\"a\": [1, 2]}, index=[np.nan, \"x\"])\n    result = df.filter(items=[np.nan], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected, check_index_type=False)\n\n\ndef test_filter_tuple_labels_multiindex():\n    # GH#61317\n    mi = pd.MultiIndex.from_tuples([(True, False), (False, True)])\n    df = pd.DataFrame({\"a\": [1, 2]}, index=mi)\n    result = df.filter([(True, False)], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"dtype\",\n    [\n        \"bool\",\n        \"boolean\",\n        pytest.param(\"bool[pyarrow]\", marks=td.skip_if_no(\"pyarrow\")),\n    ],\n)\ndef test_filter_bool_labels(dtype):\n    # GH#61317\n    df = pd.DataFrame({\"a\": [1, 2]}, index=pd.Index([True, False], dtype=dtype))\n    result = df.filter(items=[True], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter([True], axis=0)\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[False, True], axis=0)\n    expected = df.iloc[[1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"cond\": [True, False, True]},\n        {\"like\": \"a\"},\n        {\"regex\": \"a\"},\n    ],\n)\ndef test_filter_positional_and_keyword_mutually_exclusive(df, kwargs):\n    # GH#61317\n    msg = \"mutually exclusive\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter([\"a\"], **kwargs)\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=[True, False, True], items=[\"a\"])\n\n\n@pytest.mark.parametrize(\n    \"cond\",\n    [[\"a\"], [1, 0, 1], (True, False, True), \"abc\", np.array([1.0, 0.0, 1.0])],\n)\ndef test_filter_cond_not_mask_raises(df, cond):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=cond)\n\n\ndef test_filter_cond_series_aligns(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"x\"])\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_series_unalignable(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n    msg = (\n        \"Unalignable boolean Series provided as indexer \\\\(index of the boolean \"\n        \"Series and of the indexed object do not match\\\\).\"\n    )\n    with pytest.raises(pd.errors.IndexingError, match=msg):\n        df.filter(cond=mask)\n\n\ndef test_filter_cond_wrong_length(df):\n    # GH#61317\n    msg = \"Boolean index has wrong length: 2 instead of 3\"\n    with pytest.raises(IndexError, match=msg):\n        df.filter(cond=np.array([True, False]))\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_cond_columns(df, axis):\n    # GH#61317\n    result = df.filter(cond=[False, True], axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_2d_raises(df):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=df > 1)\n    msg = \"must evaluate to a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: df > 1)\n\n    msg = \"The mask passed to DataFrame.filter must be one-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=np.array([[True, False, True]]))\n\n\ndef test_filter_positional_frame_selects_labels(df):\n    # GH#61317\n    # a DataFrame is not a mask positionally; it fails as a list of labels\n    # without warning\n    msg = \"Index data must be 1-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(df > 1)\n\n\ndef test_filter_callable_must_return_mask(df):\n    # GH#61317\n    msg = \"The callable passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: [\"a\"])\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=lambda df: [\"a\"])\n\n\ndef test_filter_expression_must_return_mask(df):\n    # GH#61317\n    msg = \"The expression passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(pd.col(\"a\"))\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, None, False],\n        np.array([True, None, False], dtype=object),\n        pd.array([True, None, False], dtype=\"boolean\"),\n        pd.Series([True, None, False], dtype=\"boolean\", index=[\"x\", \"y\", \"z\"]),\n        pd.Index([True, None, False], dtype=object),\n    ],\n)\ndef test_filter_cond_na(df, mask):\n    # GH#61317\n    # missing values are treated as False by default, matching df[mask]\n    # for a nullable boolean mask\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=mask, na=False)\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@td.skip_if_no(\"pyarrow\")\ndef test_filter_cond_na_pyarrow(df):\n    # GH#61317\n    mask = pd.array([True, None, False], dtype=\"bool[pyarrow]\")\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_all_na(df):\n    # GH#61317\n    result = df.filter(cond=[None, None, None])\n    expected = df.iloc[[]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[None, None, None], na=True)\n    tm.assert_frame_equal(result, df)\n\n    with pytest.raises(ValueError, match=\"The mask contains missing values\"):\n        df.filter(cond=[None, None, None], na=\"raise\")\n\n\ndef test_filter_invalid_na(df):\n    # GH#61317\n    msg = \"na must be 'raise', True, or False, got 'ignore'\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=[True, False, True], na=\"ignore\")\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"items\": [\"x\"], \"axis\": 0},\n        {\"like\": \"a\"},\n        {\"like\": \"x\", \"axis\": \"index\"},\n        {\"regex\": \"a\"},\n        {\"regex\": \"x\", \"axis\": 0},\n    ],\n)\ndef test_filter_labels(df, kwargs):\n    # GH#61317\n    # label-based usage keeps working and defaults to the columns\n    result = df.filter(**kwargs)\n    if kwargs.get(\"axis\") in (0, \"index\"):\n        expected = df.iloc[[0]]\n    else:\n        expected = df[[\"a\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_default_axis_is_index(df):\n    # GH#61317\n    # unlike the label-based usage, a mask defaults to the index\n    result = df.filter(cond=[True, False, True])\n    expected = df.iloc[[0, 2]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_like_regex_positional():\n    # GH#61317\n    # like, regex, and axis remain positional-or-keyword after the\n    # positional-only first argument\n    df = pd.DataFrame({\"a\": [1]}, index=[\"x\"])\n    result = df.filter(None, \"x\", None, 0)\n    tm.assert_frame_equal(result, df)\n    result = df.filter(None, None, \"^x\", 0)\n    tm.assert_frame_equal(result, df)\n",
+  "anchor_line": 323,
+  "after_code": "import numpy as np\nimport pytest\n\nimport pandas.util._test_decorators as td\n\nimport pandas as pd\nimport pandas._testing as tm\n\n\nclass TestDataFrameFilter:\n    def test_filter(self, float_frame, float_string_frame):\n        # Items\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"])\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"], axis=\"columns\")\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        # Other axis\n        idx = float_frame.index[0:4]\n        filtered = float_frame.filter(idx, axis=\"index\")\n        expected = float_frame.reindex(index=idx)\n        tm.assert_frame_equal(filtered, expected)\n\n        # like\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        filtered = fcopy.filter(like=\"A\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # like with ints in column names\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, 1, \"_A\", \"_B\"])\n        filtered = df.filter(like=\"_\")\n        assert len(filtered.columns) == 2\n\n        # regex with ints in column names\n        # from PR #10384\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[\"A1\", 1, \"B\", 2, \"C\"])\n        expected = pd.DataFrame(\n            0.0, index=[0, 1, 2], columns=pd.Index([1, 2], dtype=object)\n        )\n        filtered = df.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        expected = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, \"0\", 1, \"1\"])\n        # shouldn't remove anything\n        filtered = expected.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        # pass in None\n        no_arg_msg = \"Must pass a positional argument or one of `items`, `cond`\"\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter()\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(items=None)\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(axis=1)\n\n        # test mutually exclusive arguments\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", like=\"bbi\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", axis=1)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\", axis=0)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\")\n\n        # objects\n        filtered = float_string_frame.filter(like=\"foo\")\n        assert \"foo\" in filtered\n\n        # unicode columns, won't ascii-encode\n        df = float_frame.rename(columns={\"B\": \"\\u2202\"})\n        filtered = df.filter(like=\"C\")\n        assert \"C\" in filtered\n\n    def test_filter_regex_search(self, float_frame):\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        # regex\n        filtered = fcopy.filter(regex=\"[A]+\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # doesn't have to be at beginning\n        df = pd.DataFrame(\n            {\"aBBa\": [1, 2], \"BBaBB\": [1, 2], \"aCCa\": [1, 2], \"aCCaBB\": [1, 2]}\n        )\n\n        result = df.filter(regex=\"BB\")\n        exp = df[[x for x in df.columns if \"BB\" in x]]\n        tm.assert_frame_equal(result, exp)\n\n    @pytest.mark.parametrize(\n        \"name,expected_data\",\n        [\n            (\"a\", {\"a\": [1, 2]}),\n            (\"あ\", {\"あ\": [3, 4]}),\n        ],\n    )\n    def test_filter_unicode(self, name, expected_data):\n        # GH13101\n        df = pd.DataFrame({\"a\": [1, 2], \"あ\": [3, 4]})\n        expected = pd.DataFrame(expected_data)\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_bytestring(self):\n        # GH13101\n        name = \"a\"\n        df = pd.DataFrame({b\"a\": [1, 2], b\"b\": [3, 4]})\n        expected = pd.DataFrame({b\"a\": [1, 2]})\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_corner(self):\n        empty = pd.DataFrame()\n\n        result = empty.filter([])\n        tm.assert_frame_equal(result, empty)\n\n        result = empty.filter(like=\"foo\")\n        tm.assert_frame_equal(result, empty)\n\n    def test_filter_regex_non_string(self):\n        # GH#5798 trying to filter on non-string columns should drop,\n        #  not raise\n        df = pd.DataFrame(\n            np.random.default_rng(2).random((3, 2)), columns=[\"STRING\", 123]\n        )\n        result = df.filter(regex=\"STRING\")\n        expected = df[[\"STRING\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_keep_order(self):\n        # GH#54980\n        df = pd.DataFrame({\"A\": [1, 2, 3], \"B\": [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[\"B\", \"A\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_different_dtype(self):\n        # GH#54980\n        df = pd.DataFrame({1: [1, 2, 3], 2: [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[]]\n        tm.assert_frame_equal(result, expected)\n\n\n@pytest.fixture\ndef df():\n    return pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]}, index=[\"x\", \"y\", \"z\"])\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [False, True, True],\n        np.array([False, True, True]),\n        pd.array([False, True, True], dtype=\"boolean\"),\n        pd.Index([False, True, True]),\n        pd.Series([False, True, True], index=[\"x\", \"y\", \"z\"]),\n        lambda df: df[\"a\"] > 1,\n        pd.col(\"a\") > 1,\n    ],\n)\ndef test_filter_cond_rows(df, mask):\n    # GH#61317\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"mask\", [lambda df: df[\"a\"] > 1, pd.col(\"a\") > 1])\ndef test_filter_positional_callable_is_mask(df, mask):\n    # GH#61317\n    result = df.filter(mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, False, True],\n        [True, None, False],\n        np.array([True, False, True]),\n        pd.array([True, False, True], dtype=\"boolean\"),\n        pd.Index([True, False, True]),\n        pd.Series([True, False, True], index=[\"x\", \"y\", \"z\"]),\n    ],\n)\ndef test_filter_positional_bools_select_labels(df, mask):\n    # GH#61317\n    # A list-like of booleans passed positionally selects labels, as it did\n    # before masks were supported, but warns since it is likely meant as a mask\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter(mask)\n    expected = df.iloc[:, []]\n    tm.assert_frame_equal(result, expected)\n\n    # the explicit keyword does not warn\n    result = df.filter(items=mask)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"arg, cols\",\n    [\n        ([\"b\", \"a\"], [\"b\", \"a\"]),\n        ((\"b\", \"a\"), [\"b\", \"a\"]),\n        ((True, False, True), []),\n    ],\n)\ndef test_filter_positional_labels_no_warning(df, arg, cols):\n    # GH#61317\n    # tuples are never masks\n    result = df.filter(arg)\n    expected = df[cols]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_na_label():\n    # GH#61317\n    df = pd.DataFrame({np.nan: [1], \"a\": [2]})\n    result = df.filter(items=[np.nan])\n    expected = df.iloc[:, [0]]\n    tm.assert_frame_equal(result, expected, check_column_type=False)\n\n    df = pd.DataFrame({\"a\": [1, 2]}, index=[np.nan, \"x\"])\n    result = df.filter(items=[np.nan], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected, check_index_type=False)\n\n\ndef test_filter_tuple_labels_multiindex():\n    # GH#61317\n    mi = pd.MultiIndex.from_tuples([(True, False), (False, True)])\n    df = pd.DataFrame({\"a\": [1, 2]}, index=mi)\n    result = df.filter([(True, False)], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"dtype\",\n    [\n        \"bool\",\n        \"boolean\",\n        pytest.param(\"bool[pyarrow]\", marks=td.skip_if_no(\"pyarrow\")),\n    ],\n)\ndef test_filter_bool_labels(dtype):\n    # GH#61317\n    df = pd.DataFrame({\"a\": [1, 2]}, index=pd.Index([True, False], dtype=dtype))\n    result = df.filter(items=[True], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter([True], axis=0)\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[False, True], axis=0)\n    expected = df.iloc[[1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"cond\": [True, False, True]},\n        {\"like\": \"a\"},\n        {\"regex\": \"a\"},\n    ],\n)\ndef test_filter_positional_and_keyword_mutually_exclusive(df, kwargs):\n    # GH#61317\n    msg = \"mutually exclusive\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter([\"a\"], **kwargs)\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=[True, False, True], items=[\"a\"])\n\n\n@pytest.mark.parametrize(\n    \"cond\",\n    [[\"a\"], [1, 0, 1], (True, False, True), \"abc\", np.array([1.0, 0.0, 1.0])],\n)\ndef test_filter_cond_not_mask_raises(df, cond):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=cond)\n\n\ndef test_filter_cond_series_aligns(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"x\"])\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_series_unalignable(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n    msg = \"Unalignable boolean Series provided as indexer\"\n    with pytest.raises(pd.errors.IndexingError, match=msg):\n        df.filter(cond=mask)\n\n\ndef test_filter_cond_wrong_length(df):\n    # GH#61317\n    msg = \"Boolean index has wrong length: 2 instead of 3\"\n    with pytest.raises(IndexError, match=msg):\n        df.filter(cond=np.array([True, False]))\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_cond_columns(df, axis):\n    # GH#61317\n    result = df.filter(cond=[False, True], axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_callable_columns(df, axis):\n    # GH#61317\n    result = df.filter(lambda df: df.columns == \"b\", axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=lambda df: df.columns == \"b\", axis=axis)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_expression_columns_raises(df, axis):\n    # GH#61317\n    cond = pd.col(\"a\") > 1\n    msg = (\n        \"Expressions such as pd.col\\\\(...\\\\) are only supported by DataFrame.filter \"\n        \"with axis=0\"\n    )\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond, axis=axis)\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=cond, axis=axis)\n\n\ndef test_filter_cond_2d_raises(df):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=df > 1)\n    msg = \"must evaluate to a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: df > 1)\n\n    msg = \"The mask passed to DataFrame.filter must be one-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=np.array([[True, False, True]]))\n\n\ndef test_filter_positional_frame_selects_labels(df):\n    # GH#61317\n    # a DataFrame is not a mask positionally; it fails as a list of labels\n    # without warning\n    msg = \"Index data must be 1-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(df > 1)\n\n\ndef test_filter_callable_must_return_mask(df):\n    # GH#61317\n    msg = \"The callable passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: [\"a\"])\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=lambda df: [\"a\"])\n\n\ndef test_filter_expression_must_return_mask(df):\n    # GH#61317\n    msg = \"The expression passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(pd.col(\"a\"))\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, None, False],\n        np.array([True, None, False], dtype=object),\n        pd.array([True, None, False], dtype=\"boolean\"),\n        pd.Series([True, None, False], dtype=\"boolean\", index=[\"x\", \"y\", \"z\"]),\n        pd.Index([True, None, False], dtype=object),\n    ],\n)\ndef test_filter_cond_na(df, mask):\n    # GH#61317\n    # missing values are treated as False by default, matching df[mask]\n    # for a nullable boolean mask\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=mask, na=False)\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@td.skip_if_no(\"pyarrow\")\ndef test_filter_cond_na_pyarrow(df):\n    # GH#61317\n    mask = pd.array([True, None, False], dtype=\"bool[pyarrow]\")\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_all_na(df):\n    # GH#61317\n    result = df.filter(cond=[None, None, None])\n    expected = df.iloc[[]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[None, None, None], na=True)\n    tm.assert_frame_equal(result, df)\n\n    with pytest.raises(ValueError, match=\"The mask contains missing values\"):\n        df.filter(cond=[None, None, None], na=\"raise\")\n\n\ndef test_filter_invalid_na(df):\n    # GH#61317\n    msg = \"na must be 'raise', True, or False, got 'ignore'\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=[True, False, True], na=\"ignore\")\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"items\": [\"x\"], \"axis\": 0},\n        {\"like\": \"a\"},\n        {\"like\": \"x\", \"axis\": \"index\"},\n        {\"regex\": \"a\"},\n        {\"regex\": \"x\", \"axis\": 0},\n    ],\n)\ndef test_filter_labels(df, kwargs):\n    # GH#61317\n    # label-based usage keeps working and defaults to the columns\n    result = df.filter(**kwargs)\n    if kwargs.get(\"axis\") in (0, \"index\"):\n        expected = df.iloc[[0]]\n    else:\n        expected = df[[\"a\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_default_axis_is_index(df):\n    # GH#61317\n    # unlike the label-based usage, a mask defaults to the index\n    result = df.filter(cond=[True, False, True])\n    expected = df.iloc[[0, 2]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_like_regex_positional():\n    # GH#61317\n    # like, regex, and axis remain positional-or-keyword after the\n    # positional-only first argument\n    df = pd.DataFrame({\"a\": [1]}, index=[\"x\"])\n    result = df.filter(None, \"x\", None, 0)\n    tm.assert_frame_equal(result, df)\n    result = df.filter(None, None, \"^x\", 0)\n    tm.assert_frame_equal(result, df)\n",
+  "unified_diff": "--- a/pandas/tests/frame/methods/test_filter.py\n+++ b/pandas/tests/frame/methods/test_filter.py\n@@ -318,10 +318,7 @@\n def test_filter_cond_series_unalignable(df):\n     # GH#61317\n     mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n-    msg = (\n-        \"Unalignable boolean Series provided as indexer \\\\(index of the boolean \"\n-        \"Series and of the indexed object do not match\\\\).\"\n-    )\n+    msg = \"Unalignable boolean Series provided as indexer\"\n     with pytest.raises(pd.errors.IndexingError, match=msg):\n         df.filter(cond=mask)\n \n@@ -339,6 +336,31 @@\n     result = df.filter(cond=[False, True], axis=axis)\n     expected = df[[\"b\"]]\n     tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\n+def test_filter_callable_columns(df, axis):\n+    # GH#61317\n+    result = df.filter(lambda df: df.columns == \"b\", axis=axis)\n+    expected = df[[\"b\"]]\n+    tm.assert_frame_equal(result, expected)\n+\n+    result = df.filter(cond=lambda df: df.columns == \"b\", axis=axis)\n+    tm.assert_frame_equal(result, expected)\n+\n+\n+@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\n+def test_filter_expression_columns_raises(df, axis):\n+    # GH#61317\n+    cond = pd.col(\"a\") > 1\n+    msg = (\n+        \"Expressions such as pd.col\\\\(...\\\\) are only supported by DataFrame.filter \"\n+        \"with axis=0\"\n+    )\n+    with pytest.raises(ValueError, match=msg):\n+        df.filter(cond, axis=axis)\n+    with pytest.raises(ValueError, match=msg):\n+        df.filter(cond=cond, axis=axis)\n \n \n def test_filter_cond_2d_raises(df):\n",
+  "changed_files": [
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/comment-commands.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/security.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/unit-tests.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/strftime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "ci/suppressions/ubsan.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/_templates/sidebar-nav-bs.html",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/conf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/community.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/contributing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/frame.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/general_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/dsintro.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/indexing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "doc/source/user_guide/io.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/text.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/user_defined_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "doc/source/whatsnew/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.5.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.6.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "meson.options",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_config/localization.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/include/pandas/vendored/klib/khash_python.h",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/internals.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/khash.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/simd/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/sparse.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/parser/tokenizer.cpp",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/ujson/lib/ultrajsondec.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/testing.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/np_datetime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/period.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timezones.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/asserters.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/api/typing/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/algorithms.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/_ranges.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/boolean.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/masked.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/string_.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/col.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/expr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/config_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/cast.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/frame.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/generic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pandas/core/groupby/groupby.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexers/objects.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/accessors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/blocks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/managers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/describe.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/filter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pandas/core/methods/select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/nanops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/array_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/invalid.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/resample.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/melt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/merge.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/tile.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/series.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/sorting.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/ewm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/expanding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/rolling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/_util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/excel/_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/html.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/json/_json.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/arrow_parser_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/python_parser.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/readers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/sql.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/converter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/core.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/timeseries.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/api/test_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_datetime64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_object.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_timedelta64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/boolean/test_logical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_replace.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/masked/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_arithmetics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_combine_concat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_dtype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/string_/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/test_timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/timedeltas/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/computation/test_eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/config/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/config/test_localization.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/index/test_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_chained_assignment_deprecation.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_replace.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/dtypes/cast/test_downcast.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/dtypes/test_common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/methods.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/plotting.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/reduce.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/json/test_json.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/list/test_list.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_arrow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_datetime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_masked.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_numpy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_sparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/uuid/test_uuid.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/indexing/test_mask.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/indexing/test_setitem.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_combine_first.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_describe.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_filter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_select_dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_set_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_shift.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_to_numpy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_arithmetic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_arrow_interface.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_logical_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_query_eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_stack_unstack.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/generic/test_duplicate_labels.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_raises.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_sparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/base_class/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_date_range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_join.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_setops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/test_old_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/timedeltas/methods/test_shift.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/timedeltas/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/multiindex/test_indexing_slow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/multiindex/test_multiindex.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_iloc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_loc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/internals/test_internals.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/excel/test_readers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/excel/test_writers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/formats/test_to_csv.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/json/test_pandas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_common_basic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_data_list.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_float.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_read_errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/dtypes/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/dtypes/test_dtypes_basic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_c_parser_only.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_dialect.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_na_values.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_parallel_read.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_python_parser_only.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_read_fwf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_unsupported.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_append.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_round_trip.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_timezones.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_feather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_html.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_spss.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_sql.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/frame/test_frame.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_converter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_misc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_series.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reductions/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/resample/test_datetime_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/resample/test_timedelta.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/concat/test_append.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/merge/test_join.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/merge/test_merge.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/merge/test_merge_asof.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/merge/test_multi.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/test_melt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/test_pivot.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/test_qcut.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/period/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/timedelta/test_arithmetic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/timedelta/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/timedelta/test_timedelta.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/timestamp/test_arithmetic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/scalar/timestamp/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/indexing/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/indexing/test_setitem.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/methods/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/methods/test_combine.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/methods/test_convert_dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/methods/test_reset_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/test_arrow_interface.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/test_logical_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/series/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/strings/test_cat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/strings/test_strings.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/test_algos.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/test_common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/test_nanops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tools/test_to_datetime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tools/test_to_numeric.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tools/test_to_timedelta.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tseries/frequencies/test_inference.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tseries/offsets/test_offsets_properties.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tslibs/test_conversion.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tslibs/test_parsing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/tslibs/test_timezones.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/util/test_assert_almost_equal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/util/test_assert_extension_array_equal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/util/test_assert_index_equal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/util/test_assert_numpy_array_equal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/util/test_assert_series_equal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/window/test_rolling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tseries/frequencies.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pixi.lock",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "web/pandas/community/ecosystem.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "pandas/tests/frame/methods/test_filter.py": "import numpy as np\nimport pytest\n\nimport pandas.util._test_decorators as td\n\nimport pandas as pd\nimport pandas._testing as tm\n\n\nclass TestDataFrameFilter:\n    def test_filter(self, float_frame, float_string_frame):\n        # Items\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"])\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"], axis=\"columns\")\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        # Other axis\n        idx = float_frame.index[0:4]\n        filtered = float_frame.filter(idx, axis=\"index\")\n        expected = float_frame.reindex(index=idx)\n        tm.assert_frame_equal(filtered, expected)\n\n        # like\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        filtered = fcopy.filter(like=\"A\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # like with ints in column names\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, 1, \"_A\", \"_B\"])\n        filtered = df.filter(like=\"_\")\n        assert len(filtered.columns) == 2\n\n        # regex with ints in column names\n        # from PR #10384\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[\"A1\", 1, \"B\", 2, \"C\"])\n        expected = pd.DataFrame(\n            0.0, index=[0, 1, 2], columns=pd.Index([1, 2], dtype=object)\n        )\n        filtered = df.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        expected = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, \"0\", 1, \"1\"])\n        # shouldn't remove anything\n        filtered = expected.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        # pass in None\n        no_arg_msg = \"Must pass a positional argument or one of `items`, `cond`\"\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter()\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(items=None)\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(axis=1)\n\n        # test mutually exclusive arguments\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", like=\"bbi\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", axis=1)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\", axis=0)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\")\n\n        # objects\n        filtered = float_string_frame.filter(like=\"foo\")\n        assert \"foo\" in filtered\n\n        # unicode columns, won't ascii-encode\n        df = float_frame.rename(columns={\"B\": \"\\u2202\"})\n        filtered = df.filter(like=\"C\")\n        assert \"C\" in filtered\n\n    def test_filter_regex_search(self, float_frame):\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        # regex\n        filtered = fcopy.filter(regex=\"[A]+\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # doesn't have to be at beginning\n        df = pd.DataFrame(\n            {\"aBBa\": [1, 2], \"BBaBB\": [1, 2], \"aCCa\": [1, 2], \"aCCaBB\": [1, 2]}\n        )\n\n        result = df.filter(regex=\"BB\")\n        exp = df[[x for x in df.columns if \"BB\" in x]]\n        tm.assert_frame_equal(result, exp)\n\n    @pytest.mark.parametrize(\n        \"name,expected_data\",\n        [\n            (\"a\", {\"a\": [1, 2]}),\n            (\"あ\", {\"あ\": [3, 4]}),\n        ],\n    )\n    def test_filter_unicode(self, name, expected_data):\n        # GH13101\n        df = pd.DataFrame({\"a\": [1, 2], \"あ\": [3, 4]})\n        expected = pd.DataFrame(expected_data)\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_bytestring(self):\n        # GH13101\n        name = \"a\"\n        df = pd.DataFrame({b\"a\": [1, 2], b\"b\": [3, 4]})\n        expected = pd.DataFrame({b\"a\": [1, 2]})\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_corner(self):\n        empty = pd.DataFrame()\n\n        result = empty.filter([])\n        tm.assert_frame_equal(result, empty)\n\n        result = empty.filter(like=\"foo\")\n        tm.assert_frame_equal(result, empty)\n\n    def test_filter_regex_non_string(self):\n        # GH#5798 trying to filter on non-string columns should drop,\n        #  not raise\n        df = pd.DataFrame(\n            np.random.default_rng(2).random((3, 2)), columns=[\"STRING\", 123]\n        )\n        result = df.filter(regex=\"STRING\")\n        expected = df[[\"STRING\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_keep_order(self):\n        # GH#54980\n        df = pd.DataFrame({\"A\": [1, 2, 3], \"B\": [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[\"B\", \"A\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_different_dtype(self):\n        # GH#54980\n        df = pd.DataFrame({1: [1, 2, 3], 2: [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[]]\n        tm.assert_frame_equal(result, expected)\n\n\n@pytest.fixture\ndef df():\n    return pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]}, index=[\"x\", \"y\", \"z\"])\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [False, True, True],\n        np.array([False, True, True]),\n        pd.array([False, True, True], dtype=\"boolean\"),\n        pd.Index([False, True, True]),\n        pd.Series([False, True, True], index=[\"x\", \"y\", \"z\"]),\n        lambda df: df[\"a\"] > 1,\n        pd.col(\"a\") > 1,\n    ],\n)\ndef test_filter_cond_rows(df, mask):\n    # GH#61317\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"mask\", [lambda df: df[\"a\"] > 1, pd.col(\"a\") > 1])\ndef test_filter_positional_callable_is_mask(df, mask):\n    # GH#61317\n    result = df.filter(mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, False, True],\n        [True, None, False],\n        np.array([True, False, True]),\n        pd.array([True, False, True], dtype=\"boolean\"),\n        pd.Index([True, False, True]),\n        pd.Series([True, False, True], index=[\"x\", \"y\", \"z\"]),\n    ],\n)\ndef test_filter_positional_bools_select_labels(df, mask):\n    # GH#61317\n    # A list-like of booleans passed positionally selects labels, as it did\n    # before masks were supported, but warns since it is likely meant as a mask\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter(mask)\n    expected = df.iloc[:, []]\n    tm.assert_frame_equal(result, expected)\n\n    # the explicit keyword does not warn\n    result = df.filter(items=mask)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"arg, cols\",\n    [\n        ([\"b\", \"a\"], [\"b\", \"a\"]),\n        ((\"b\", \"a\"), [\"b\", \"a\"]),\n        ((True, False, True), []),\n    ],\n)\ndef test_filter_positional_labels_no_warning(df, arg, cols):\n    # GH#61317\n    # tuples are never masks\n    result = df.filter(arg)\n    expected = df[cols]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_na_label():\n    # GH#61317\n    df = pd.DataFrame({np.nan: [1], \"a\": [2]})\n    result = df.filter(items=[np.nan])\n    expected = df.iloc[:, [0]]\n    tm.assert_frame_equal(result, expected, check_column_type=False)\n\n    df = pd.DataFrame({\"a\": [1, 2]}, index=[np.nan, \"x\"])\n    result = df.filter(items=[np.nan], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected, check_index_type=False)\n\n\ndef test_filter_tuple_labels_multiindex():\n    # GH#61317\n    mi = pd.MultiIndex.from_tuples([(True, False), (False, True)])\n    df = pd.DataFrame({\"a\": [1, 2]}, index=mi)\n    result = df.filter([(True, False)], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"dtype\",\n    [\n        \"bool\",\n        \"boolean\",\n        pytest.param(\"bool[pyarrow]\", marks=td.skip_if_no(\"pyarrow\")),\n    ],\n)\ndef test_filter_bool_labels(dtype):\n    # GH#61317\n    df = pd.DataFrame({\"a\": [1, 2]}, index=pd.Index([True, False], dtype=dtype))\n    result = df.filter(items=[True], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter([True], axis=0)\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[False, True], axis=0)\n    expected = df.iloc[[1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"cond\": [True, False, True]},\n        {\"like\": \"a\"},\n        {\"regex\": \"a\"},\n    ],\n)\ndef test_filter_positional_and_keyword_mutually_exclusive(df, kwargs):\n    # GH#61317\n    msg = \"mutually exclusive\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter([\"a\"], **kwargs)\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=[True, False, True], items=[\"a\"])\n\n\n@pytest.mark.parametrize(\n    \"cond\",\n    [[\"a\"], [1, 0, 1], (True, False, True), \"abc\", np.array([1.0, 0.0, 1.0])],\n)\ndef test_filter_cond_not_mask_raises(df, cond):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=cond)\n\n\ndef test_filter_cond_series_aligns(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"x\"])\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_series_unalignable(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n    msg = \"Unalignable boolean Series provided as indexer\"\n    with pytest.raises(pd.errors.IndexingError, match=msg):\n        df.filter(cond=mask)\n\n\ndef test_filter_cond_wrong_length(df):\n    # GH#61317\n    msg = \"Boolean index has wrong length: 2 instead of 3\"\n    with pytest.raises(IndexError, match=msg):\n        df.filter(cond=np.array([True, False]))\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_cond_columns(df, axis):\n    # GH#61317\n    result = df.filter(cond=[False, True], axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_callable_columns(df, axis):\n    # GH#61317\n    result = df.filter(lambda df: df.columns == \"b\", axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=lambda df: df.columns == \"b\", axis=axis)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_expression_columns_raises(df, axis):\n    # GH#61317\n    cond = pd.col(\"a\") > 1\n    msg = (\n        \"Expressions such as pd.col\\\\(...\\\\) are only supported by DataFrame.filter \"\n        \"with axis=0\"\n    )\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond, axis=axis)\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=cond, axis=axis)\n\n\ndef test_filter_cond_2d_raises(df):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=df > 1)\n    msg = \"must evaluate to a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: df > 1)\n\n    msg = \"The mask passed to DataFrame.filter must be one-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=np.array([[True, False, True]]))\n\n\ndef test_filter_positional_frame_selects_labels(df):\n    # GH#61317\n    # a DataFrame is not a mask positionally; it fails as a list of labels\n    # without warning\n    msg = \"Index data must be 1-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(df > 1)\n\n\ndef test_filter_callable_must_return_mask(df):\n    # GH#61317\n    msg = \"The callable passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: [\"a\"])\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=lambda df: [\"a\"])\n\n\ndef test_filter_expression_must_return_mask(df):\n    # GH#61317\n    msg = \"The expression passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(pd.col(\"a\"))\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, None, False],\n        np.array([True, None, False], dtype=object),\n        pd.array([True, None, False], dtype=\"boolean\"),\n        pd.Series([True, None, False], dtype=\"boolean\", index=[\"x\", \"y\", \"z\"]),\n        pd.Index([True, None, False], dtype=object),\n    ],\n)\ndef test_filter_cond_na(df, mask):\n    # GH#61317\n    # missing values are treated as False by default, matching df[mask]\n    # for a nullable boolean mask\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=mask, na=False)\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@td.skip_if_no(\"pyarrow\")\ndef test_filter_cond_na_pyarrow(df):\n    # GH#61317\n    mask = pd.array([True, None, False], dtype=\"bool[pyarrow]\")\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_all_na(df):\n    # GH#61317\n    result = df.filter(cond=[None, None, None])\n    expected = df.iloc[[]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[None, None, None], na=True)\n    tm.assert_frame_equal(result, df)\n\n    with pytest.raises(ValueError, match=\"The mask contains missing values\"):\n        df.filter(cond=[None, None, None], na=\"raise\")\n\n\ndef test_filter_invalid_na(df):\n    # GH#61317\n    msg = \"na must be 'raise', True, or False, got 'ignore'\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=[True, False, True], na=\"ignore\")\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"items\": [\"x\"], \"axis\": 0},\n        {\"like\": \"a\"},\n        {\"like\": \"x\", \"axis\": \"index\"},\n        {\"regex\": \"a\"},\n        {\"regex\": \"x\", \"axis\": 0},\n    ],\n)\ndef test_filter_labels(df, kwargs):\n    # GH#61317\n    # label-based usage keeps working and defaults to the columns\n    result = df.filter(**kwargs)\n    if kwargs.get(\"axis\") in (0, \"index\"):\n        expected = df.iloc[[0]]\n    else:\n        expected = df[[\"a\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_default_axis_is_index(df):\n    # GH#61317\n    # unlike the label-based usage, a mask defaults to the index\n    result = df.filter(cond=[True, False, True])\n    expected = df.iloc[[0, 2]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_like_regex_positional():\n    # GH#61317\n    # like, regex, and axis remain positional-or-keyword after the\n    # positional-only first argument\n    df = pd.DataFrame({\"a\": [1]}, index=[\"x\"])\n    result = df.filter(None, \"x\", None, 0)\n    tm.assert_frame_equal(result, df)\n    result = df.filter(None, None, \"^x\", 0)\n    tm.assert_frame_equal(result, df)\n"
+  },
+  "test_files_before": {
+    "pandas/tests/frame/methods/test_filter.py": "import numpy as np\nimport pytest\n\nimport pandas.util._test_decorators as td\n\nimport pandas as pd\nimport pandas._testing as tm\n\n\nclass TestDataFrameFilter:\n    def test_filter(self, float_frame, float_string_frame):\n        # Items\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"])\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        filtered = float_frame.filter([\"A\", \"B\", \"E\"], axis=\"columns\")\n        assert len(filtered.columns) == 2\n        assert \"E\" not in filtered\n\n        # Other axis\n        idx = float_frame.index[0:4]\n        filtered = float_frame.filter(idx, axis=\"index\")\n        expected = float_frame.reindex(index=idx)\n        tm.assert_frame_equal(filtered, expected)\n\n        # like\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        filtered = fcopy.filter(like=\"A\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # like with ints in column names\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, 1, \"_A\", \"_B\"])\n        filtered = df.filter(like=\"_\")\n        assert len(filtered.columns) == 2\n\n        # regex with ints in column names\n        # from PR #10384\n        df = pd.DataFrame(0.0, index=[0, 1, 2], columns=[\"A1\", 1, \"B\", 2, \"C\"])\n        expected = pd.DataFrame(\n            0.0, index=[0, 1, 2], columns=pd.Index([1, 2], dtype=object)\n        )\n        filtered = df.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        expected = pd.DataFrame(0.0, index=[0, 1, 2], columns=[0, \"0\", 1, \"1\"])\n        # shouldn't remove anything\n        filtered = expected.filter(regex=\"^[0-9]+$\")\n        tm.assert_frame_equal(filtered, expected)\n\n        # pass in None\n        no_arg_msg = \"Must pass a positional argument or one of `items`, `cond`\"\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter()\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(items=None)\n        with pytest.raises(TypeError, match=no_arg_msg):\n            float_frame.filter(axis=1)\n\n        # test mutually exclusive arguments\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", like=\"bbi\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\", axis=1)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], regex=\"e$\")\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\", axis=0)\n        with pytest.raises(TypeError, match=\"mutually exclusive\"):\n            float_frame.filter(items=[\"one\", \"three\"], like=\"bbi\")\n\n        # objects\n        filtered = float_string_frame.filter(like=\"foo\")\n        assert \"foo\" in filtered\n\n        # unicode columns, won't ascii-encode\n        df = float_frame.rename(columns={\"B\": \"\\u2202\"})\n        filtered = df.filter(like=\"C\")\n        assert \"C\" in filtered\n\n    def test_filter_regex_search(self, float_frame):\n        fcopy = float_frame.copy()\n        fcopy[\"AA\"] = 1\n\n        # regex\n        filtered = fcopy.filter(regex=\"[A]+\")\n        assert len(filtered.columns) == 2\n        assert \"AA\" in filtered\n\n        # doesn't have to be at beginning\n        df = pd.DataFrame(\n            {\"aBBa\": [1, 2], \"BBaBB\": [1, 2], \"aCCa\": [1, 2], \"aCCaBB\": [1, 2]}\n        )\n\n        result = df.filter(regex=\"BB\")\n        exp = df[[x for x in df.columns if \"BB\" in x]]\n        tm.assert_frame_equal(result, exp)\n\n    @pytest.mark.parametrize(\n        \"name,expected_data\",\n        [\n            (\"a\", {\"a\": [1, 2]}),\n            (\"あ\", {\"あ\": [3, 4]}),\n        ],\n    )\n    def test_filter_unicode(self, name, expected_data):\n        # GH13101\n        df = pd.DataFrame({\"a\": [1, 2], \"あ\": [3, 4]})\n        expected = pd.DataFrame(expected_data)\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_bytestring(self):\n        # GH13101\n        name = \"a\"\n        df = pd.DataFrame({b\"a\": [1, 2], b\"b\": [3, 4]})\n        expected = pd.DataFrame({b\"a\": [1, 2]})\n\n        tm.assert_frame_equal(df.filter(like=name), expected)\n        tm.assert_frame_equal(df.filter(regex=name), expected)\n\n    def test_filter_corner(self):\n        empty = pd.DataFrame()\n\n        result = empty.filter([])\n        tm.assert_frame_equal(result, empty)\n\n        result = empty.filter(like=\"foo\")\n        tm.assert_frame_equal(result, empty)\n\n    def test_filter_regex_non_string(self):\n        # GH#5798 trying to filter on non-string columns should drop,\n        #  not raise\n        df = pd.DataFrame(\n            np.random.default_rng(2).random((3, 2)), columns=[\"STRING\", 123]\n        )\n        result = df.filter(regex=\"STRING\")\n        expected = df[[\"STRING\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_keep_order(self):\n        # GH#54980\n        df = pd.DataFrame({\"A\": [1, 2, 3], \"B\": [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[\"B\", \"A\"]]\n        tm.assert_frame_equal(result, expected)\n\n    def test_filter_different_dtype(self):\n        # GH#54980\n        df = pd.DataFrame({1: [1, 2, 3], 2: [4, 5, 6]})\n        result = df.filter(items=[\"B\", \"A\"])\n        expected = df[[]]\n        tm.assert_frame_equal(result, expected)\n\n\n@pytest.fixture\ndef df():\n    return pd.DataFrame({\"a\": [1, 2, 3], \"b\": [4, 5, 6]}, index=[\"x\", \"y\", \"z\"])\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [False, True, True],\n        np.array([False, True, True]),\n        pd.array([False, True, True], dtype=\"boolean\"),\n        pd.Index([False, True, True]),\n        pd.Series([False, True, True], index=[\"x\", \"y\", \"z\"]),\n        lambda df: df[\"a\"] > 1,\n        pd.col(\"a\") > 1,\n    ],\n)\ndef test_filter_cond_rows(df, mask):\n    # GH#61317\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\"mask\", [lambda df: df[\"a\"] > 1, pd.col(\"a\") > 1])\ndef test_filter_positional_callable_is_mask(df, mask):\n    # GH#61317\n    result = df.filter(mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, False, True],\n        [True, None, False],\n        np.array([True, False, True]),\n        pd.array([True, False, True], dtype=\"boolean\"),\n        pd.Index([True, False, True]),\n        pd.Series([True, False, True], index=[\"x\", \"y\", \"z\"]),\n    ],\n)\ndef test_filter_positional_bools_select_labels(df, mask):\n    # GH#61317\n    # A list-like of booleans passed positionally selects labels, as it did\n    # before masks were supported, but warns since it is likely meant as a mask\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter(mask)\n    expected = df.iloc[:, []]\n    tm.assert_frame_equal(result, expected)\n\n    # the explicit keyword does not warn\n    result = df.filter(items=mask)\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"arg, cols\",\n    [\n        ([\"b\", \"a\"], [\"b\", \"a\"]),\n        ((\"b\", \"a\"), [\"b\", \"a\"]),\n        ((True, False, True), []),\n    ],\n)\ndef test_filter_positional_labels_no_warning(df, arg, cols):\n    # GH#61317\n    # tuples are never masks\n    result = df.filter(arg)\n    expected = df[cols]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_na_label():\n    # GH#61317\n    df = pd.DataFrame({np.nan: [1], \"a\": [2]})\n    result = df.filter(items=[np.nan])\n    expected = df.iloc[:, [0]]\n    tm.assert_frame_equal(result, expected, check_column_type=False)\n\n    df = pd.DataFrame({\"a\": [1, 2]}, index=[np.nan, \"x\"])\n    result = df.filter(items=[np.nan], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected, check_index_type=False)\n\n\ndef test_filter_tuple_labels_multiindex():\n    # GH#61317\n    mi = pd.MultiIndex.from_tuples([(True, False), (False, True)])\n    df = pd.DataFrame({\"a\": [1, 2]}, index=mi)\n    result = df.filter([(True, False)], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"dtype\",\n    [\n        \"bool\",\n        \"boolean\",\n        pytest.param(\"bool[pyarrow]\", marks=td.skip_if_no(\"pyarrow\")),\n    ],\n)\ndef test_filter_bool_labels(dtype):\n    # GH#61317\n    df = pd.DataFrame({\"a\": [1, 2]}, index=pd.Index([True, False], dtype=dtype))\n    result = df.filter(items=[True], axis=0)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"A list-like of booleans passed positionally to DataFrame.filter\"\n    with tm.assert_produces_warning(UserWarning, match=msg):\n        result = df.filter([True], axis=0)\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[False, True], axis=0)\n    expected = df.iloc[[1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"cond\": [True, False, True]},\n        {\"like\": \"a\"},\n        {\"regex\": \"a\"},\n    ],\n)\ndef test_filter_positional_and_keyword_mutually_exclusive(df, kwargs):\n    # GH#61317\n    msg = \"mutually exclusive\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter([\"a\"], **kwargs)\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=[True, False, True], items=[\"a\"])\n\n\n@pytest.mark.parametrize(\n    \"cond\",\n    [[\"a\"], [1, 0, 1], (True, False, True), \"abc\", np.array([1.0, 0.0, 1.0])],\n)\ndef test_filter_cond_not_mask_raises(df, cond):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=cond)\n\n\ndef test_filter_cond_series_aligns(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"x\"])\n    result = df.filter(cond=mask)\n    expected = df.iloc[1:]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_series_unalignable(df):\n    # GH#61317\n    mask = pd.Series([True, True, False], index=[\"z\", \"y\", \"w\"])\n    msg = (\n        \"Unalignable boolean Series provided as indexer \\\\(index of the boolean \"\n        \"Series and of the indexed object do not match\\\\).\"\n    )\n    with pytest.raises(pd.errors.IndexingError, match=msg):\n        df.filter(cond=mask)\n\n\ndef test_filter_cond_wrong_length(df):\n    # GH#61317\n    msg = \"Boolean index has wrong length: 2 instead of 3\"\n    with pytest.raises(IndexError, match=msg):\n        df.filter(cond=np.array([True, False]))\n\n\n@pytest.mark.parametrize(\"axis\", [1, \"columns\"])\ndef test_filter_cond_columns(df, axis):\n    # GH#61317\n    result = df.filter(cond=[False, True], axis=axis)\n    expected = df[[\"b\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_2d_raises(df):\n    # GH#61317\n    msg = \"cond passed to DataFrame.filter must be a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=df > 1)\n    msg = \"must evaluate to a one-dimensional boolean mask\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: df > 1)\n\n    msg = \"The mask passed to DataFrame.filter must be one-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=np.array([[True, False, True]]))\n\n\ndef test_filter_positional_frame_selects_labels(df):\n    # GH#61317\n    # a DataFrame is not a mask positionally; it fails as a list of labels\n    # without warning\n    msg = \"Index data must be 1-dimensional\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(df > 1)\n\n\ndef test_filter_callable_must_return_mask(df):\n    # GH#61317\n    msg = \"The callable passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(lambda df: [\"a\"])\n    with pytest.raises(TypeError, match=msg):\n        df.filter(cond=lambda df: [\"a\"])\n\n\ndef test_filter_expression_must_return_mask(df):\n    # GH#61317\n    msg = \"The expression passed to DataFrame.filter must evaluate to a one-dimensional\"\n    with pytest.raises(TypeError, match=msg):\n        df.filter(pd.col(\"a\"))\n\n\n@pytest.mark.parametrize(\n    \"mask\",\n    [\n        [True, None, False],\n        np.array([True, None, False], dtype=object),\n        pd.array([True, None, False], dtype=\"boolean\"),\n        pd.Series([True, None, False], dtype=\"boolean\", index=[\"x\", \"y\", \"z\"]),\n        pd.Index([True, None, False], dtype=object),\n    ],\n)\ndef test_filter_cond_na(df, mask):\n    # GH#61317\n    # missing values are treated as False by default, matching df[mask]\n    # for a nullable boolean mask\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=mask, na=False)\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\n@td.skip_if_no(\"pyarrow\")\ndef test_filter_cond_na_pyarrow(df):\n    # GH#61317\n    mask = pd.array([True, None, False], dtype=\"bool[pyarrow]\")\n    result = df.filter(cond=mask)\n    expected = df.iloc[[0]]\n    tm.assert_frame_equal(result, expected)\n\n    msg = \"The mask contains missing values\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=mask, na=\"raise\")\n\n    result = df.filter(cond=mask, na=True)\n    expected = df.iloc[[0, 1]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_all_na(df):\n    # GH#61317\n    result = df.filter(cond=[None, None, None])\n    expected = df.iloc[[]]\n    tm.assert_frame_equal(result, expected)\n\n    result = df.filter(cond=[None, None, None], na=True)\n    tm.assert_frame_equal(result, df)\n\n    with pytest.raises(ValueError, match=\"The mask contains missing values\"):\n        df.filter(cond=[None, None, None], na=\"raise\")\n\n\ndef test_filter_invalid_na(df):\n    # GH#61317\n    msg = \"na must be 'raise', True, or False, got 'ignore'\"\n    with pytest.raises(ValueError, match=msg):\n        df.filter(cond=[True, False, True], na=\"ignore\")\n\n\n@pytest.mark.parametrize(\n    \"kwargs\",\n    [\n        {\"items\": [\"a\"]},\n        {\"items\": [\"x\"], \"axis\": 0},\n        {\"like\": \"a\"},\n        {\"like\": \"x\", \"axis\": \"index\"},\n        {\"regex\": \"a\"},\n        {\"regex\": \"x\", \"axis\": 0},\n    ],\n)\ndef test_filter_labels(df, kwargs):\n    # GH#61317\n    # label-based usage keeps working and defaults to the columns\n    result = df.filter(**kwargs)\n    if kwargs.get(\"axis\") in (0, \"index\"):\n        expected = df.iloc[[0]]\n    else:\n        expected = df[[\"a\"]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_cond_default_axis_is_index(df):\n    # GH#61317\n    # unlike the label-based usage, a mask defaults to the index\n    result = df.filter(cond=[True, False, True])\n    expected = df.iloc[[0, 2]]\n    tm.assert_frame_equal(result, expected)\n\n\ndef test_filter_like_regex_positional():\n    # GH#61317\n    # like, regex, and axis remain positional-or-keyword after the\n    # positional-only first argument\n    df = pd.DataFrame({\"a\": [1]}, index=[\"x\"])\n    result = df.filter(None, \"x\", None, 0)\n    tm.assert_frame_equal(result, df)\n    result = df.filter(None, None, \"^x\", 0)\n    tm.assert_frame_equal(result, df)\n"
+  },
+  "ingested_at": "2026-09-24T06:08:09.643858Z"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__182554__4044075953",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Define the select entities with entity descriptions instead of dedicated classes",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "homeassistant/components/hotspring/select.py:95-120 JET_DESCRIPTIONS / HEATING_MODE_DESCRIPTIONS drive the entities",
+    "confidence": "medium",
+    "notes": "Two entity classes remain, one per behaviour (jets vs heating mode), which is the usual pattern."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

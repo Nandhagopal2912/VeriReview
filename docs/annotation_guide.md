@@ -124,6 +124,19 @@ metrics.
 - The adjudicated labels are the gold standard. Individual labels are kept for the agreement
   analysis and are never overwritten.
 
+## 7a. Provisional model labels (current situation)
+
+No human annotator is available yet (owner decision, 2026-09-24). Until there is one, Claude labels
+the real-world cases as annotator `claude`, following this guide, with these safeguards:
+
+- Claude labels every case **before any verifier runs on it** and does not change labels afterwards.
+- Cases Claude is unsure about get `confidence: low`, so humans can check those first.
+- Gold built this way is marked `label_source: "model"`. Results on it are reported separately and
+  called provisional. Claude also wrote the rules, so its labels may share their blind spots.
+- When humans label later, their two-annotator, adjudicated labels replace the model labels. The
+  tools refuse the reverse. `agreement claude.json human.json` measures how often a human agrees
+  with Claude.
+
 ## 8. Worked examples (from the dev fixtures)
 
 | Case | Verdict | Why |

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__178506__3766178333",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Group the executor jobs: make the connect logic a sync method run in a single executor job",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "homeassistant/components/zhong_hong/__init__.py:92,122: def _connect(hub) run via one async_add_executor_job",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

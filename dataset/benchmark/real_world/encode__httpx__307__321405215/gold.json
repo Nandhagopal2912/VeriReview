@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__307__321405215",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Use a non-default CA bundle in the env-var test",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Verify that the configured certificates are actually loaded",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_config.py:33-53: ca_cert_pem_file fixture, verify == env value, get_ca_certs() == 1",
+    "confidence": "medium",
+    "notes": "Loading is checked for SSL_CERT_FILE only; the SSL_CERT_DIR variant is skipped with an explanation."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

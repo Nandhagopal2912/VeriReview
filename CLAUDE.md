@@ -28,7 +28,8 @@ The semantic model is one evidence source, never the final authority. Aggregatio
 
 Package map (`src/verireview/`): `api`, `gh` (GitHub client), `ingestion`, `threads`,
 `requirements`, `evidence`, `diff`, `syntax` (Tree-sitter), `rules`, `semantic`,
-`verification`, `policy`, `explanations`, `contracts` (shared Pydantic models), `db`.
+`verification`, `policy`, `explanations`, `contracts` (shared Pydantic models), `db`,
+`advisory` (GitHub App: webhooks, job queue, worker, neutral check run).
 Do not rename `syntax` to `ast`, because that shadows the stdlib `ast` module. Do not rename `gh` to `github`.
 
 ## Commands
@@ -59,6 +60,9 @@ uv run verireview annotation-sheet --batch B [--calibration]   # offline page ->
 uv run verireview agreement A.json B.json      # Cohen's kappa + disagreements
 uv run --group nlp verireview eval-benchmark --split dev   # ablation on benchmark v2 (--benchmark-version v1 for the old layout; test: --final-test-run)
 uv run verireview compare-reports OLD.json NEW.json --system F   # paired bootstrap across two reports
+uv run verireview worker [--once]         # advisory jobs (needs VERIREVIEW_GITHUB_APP_ID + key file)
+uv run verireview replay-webhook payload.json --event pull_request_review_thread   # signed, localhost only
+docker compose --profile advisory up -d --build   # api + worker; key in secrets/github-app.pem (git-ignored)
 uv run --group nlp pytest -m model             # tests that need a downloaded model
 ```
 
@@ -104,6 +108,14 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - Test data: `tests/fixtures/github/acme_shop_pr7` (synthetic) served by `tests/helpers/github.py::FakeGitHub`.
 - `httpx2` quirk: pass `params=None`, not `{}`, when the URL already has a query string, or the query is dropped.
 
+## Advisory mode notes (Phase 11)
+
+- The published check's conclusion is the constant `advisory.checks.CONCLUSION = "neutral"`; never make it depend on the policy (pinned by `test_check_stays_neutral_even_if_blocking_were_configured`). Blocking is Phase 12 and needs the owner's approval.
+- Webhooks: verify the signature over the **raw body before parsing** (`advisory.webhooks.verify_signature`). Take only validated ids from payloads; always re-read threads and code from GitHub. Never render repository text outside the fenced `text` block of the check.
+- The App private key and webhook secret come from settings (`SecretStr`, key file path preferred, `secrets/` git-ignored). Never read, print or paste them; never log tokens. Installation tokens are per job repository and least privilege (`INSTALLATION_PERMISSIONS`); do not widen them.
+- Audit queries must filter installation **and** repository (repository isolation).
+- No live calls in tests: `helpers.github.FakeGitHubApp` serves the App endpoints; RSA keys are generated at test time (`rsa_private_key_pem`), never committed.
+
 ## Conventions
 
 - Python 3.13, `src/` layout, strict mypy, ruff (line length 100).
@@ -129,6 +141,7 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - [x] Phase 9: benchmark v1 **frozen** (`dataset/benchmark/manifest.json`, pinned). 113 controlled + 40 adversarial + 50 real-world (6 approved repos, 57 collected, pseudonymised, licensed). Real-world labels are **provisional Claude labels** (blind, `label_source: model`); human κ not yet measurable. Findings: 2/3 of real requests are `other` (outside the rule categories); some requests are satisfied by a comment/docstring; declined suggestions are common. Bugs fixed: Copilot bot reviews slipped through the miner; tree-sitter `Point.row` heap corruption crashed the process (docs/phase9_benchmark.md).
 - [x] Phase 10: pre-registered protocol (docs/phase10_protocol.md), `eval-benchmark`, **one** blind test run (experiments/phase10_test.json). Full VeriReview on test: **accuracy 0.483 [0.39, 0.57], FAR 0.237 [0.14, 0.35], FBR 0.196, coverage 0.667; real-world coverage 0**. Beats lexical/embedding baselines on accuracy; far lower FAR than structural/code-model baselines; E = F (semantic neutral); gold requirements +0.117. Dev/held-out numbers (1.0/0.875, FAR 0) did not generalise. Security model documented (docs/security_model.md) (docs/phase10_evaluation.md).
 - [x] Phase 10.1: benchmark v2 frozen **first** (60 controlled + 30 adversarial written blind; 57 fresh real-world, provisional Claude labels; `dataset/benchmark/v2/`, FREEZE_LOG). v1 test became dev (203 cases). Extraction + rule fixes on dev only (tests that assert/run/are new, handlers that handle, cleanup, status names/raised HTTP exceptions/except branches/dead code/absence polarity, bounds, pydantic, alias, suggestion blocks + `other` rules in `rules/other.py`); pipelines now `mvp-2`. Pre-registered protocol (docs/phase10_1_protocol.md), one v2 test run, old rules (commit 1b530fa via `git archive`) vs new, paired: **accuracy 0.422 → 0.653 (+0.231 [0.16, 0.31]), FAR 0.302 → 0.151 (−0.151 [−0.25, −0.07])**, real-world coverage 0.09 → 0.44 (23/25 decided correct) (docs/phase10_1_rules_v2.md).
-- [ ] Next: Phase 11 (GitHub advisory mode; advisory only, FAR 0.15 does not justify gating) or more rule work evaluated on a **new** blind v3. The v1 and v2 test splits are both used: never tune against them.
+- [x] Phase 11: GitHub advisory mode (owner decisions: neutral Check Run only, trigger = thread resolved + check re-run, offline now / live later; PyJWT[crypto] added). `advisory/` package: App JWT → installation token scoped to one repo (contents/PR read, checks write), `POST /github/webhook` (HMAC before parsing, 401/503), Postgres queue `advisory_jobs` (unique delivery id, SKIP LOCKED, backoff), worker (`verireview worker`), `verification_audit` (inputs sha256 + full result), one neutral check per head. Forged → 401, redelivery processed once, conclusion pinned neutral even with enforcement. Offline end-to-end tested; **live run on a test repo pending the owner's GitHub App** (docs/phase11_github_advisory.md).
+- [ ] Next: live advisory check on a test repository (owner creates the App per the guide), then Phase 12 (staged enforcement; FAR 0.15 does not support it yet) or rule work on a **new** blind v3. The v1 and v2 test splits are both used: never tune against them.
 
 Decisions: D1–D5, D7 (UniXcoder), D8 (LLM deferred), D9 (process: Claude proposes, owner approves repos) settled; D6 open (`docs/ROADMAP.md` §7). ADR-001 and ADR-002 accepted.

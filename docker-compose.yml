@@ -24,6 +24,9 @@ services:
       VERIREVIEW_ENVIRONMENT: ${VERIREVIEW_ENVIRONMENT:-development}
       VERIREVIEW_LOG_LEVEL: ${VERIREVIEW_LOG_LEVEL:-INFO}
       VERIREVIEW_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-verireview}:${POSTGRES_PASSWORD:-verireview}@db:5432/${POSTGRES_DB:-verireview}
+      # Advisory mode (Phase 11): the webhook endpoint refuses every delivery until this is set.
+      VERIREVIEW_GITHUB_WEBHOOK_SECRET: ${VERIREVIEW_GITHUB_WEBHOOK_SECRET:-}
+      VERIREVIEW_ADVISORY_CHECK_NAME: ${VERIREVIEW_ADVISORY_CHECK_NAME:-VeriReview}
     ports:
       - "8000:8000"
     depends_on:
@@ -34,6 +37,33 @@ services:
       interval: 10s
       timeout: 3s
       retries: 5
+
+  # Advisory worker: only with `docker compose --profile advisory up`. Needs the GitHub App id
+  # in .env and the App's private key in the file below (git-ignored, mounted read-only as a
+  # Docker secret, never passed as an environment variable).
+  worker:
+    profiles: ["advisory"]
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    command: ["verireview", "worker"]
+    environment:
+      VERIREVIEW_ENVIRONMENT: ${VERIREVIEW_ENVIRONMENT:-development}
+      VERIREVIEW_LOG_LEVEL: ${VERIREVIEW_LOG_LEVEL:-INFO}
+      VERIREVIEW_DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-verireview}:${POSTGRES_PASSWORD:-verireview}@db:5432/${POSTGRES_DB:-verireview}
+      VERIREVIEW_GITHUB_APP_ID: ${VERIREVIEW_GITHUB_APP_ID:-}
+      VERIREVIEW_GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github_app_key
+      VERIREVIEW_ADVISORY_CHECK_NAME: ${VERIREVIEW_ADVISORY_CHECK_NAME:-VeriReview}
+      VERIREVIEW_POLICY_MODE: ${VERIREVIEW_POLICY_MODE:-advisory}
+    secrets:
+      - github_app_key
+    depends_on:
+      api:
+        condition: service_healthy  # the api container applies the migrations
+
+secrets:
+  github_app_key:
+    file: ${VERIREVIEW_GITHUB_APP_PRIVATE_KEY_FILE:-./secrets/github-app.pem}
 
 volumes:
   pgdata:

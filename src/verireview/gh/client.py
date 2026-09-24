@@ -78,6 +78,13 @@ class GitHubClient:
     def get_json(self, path: str, params: dict[str, Any] | None = None) -> Any:
         return self._request("GET", path, params=params).json()
 
+    def post_json(self, path: str, body: dict[str, Any]) -> Any:
+        """POST (e.g. create a check run). Advisory mode's only writes go through here and PATCH."""
+        return self._request("POST", path, json=body).json()
+
+    def patch_json(self, path: str, body: dict[str, Any]) -> Any:
+        return self._request("PATCH", path, json=body).json()
+
     def get_text(self, path: str, params: dict[str, Any] | None = None) -> str:
         response = self._request("GET", path, params=params, accept=RAW_ACCEPT)
         return response.content.decode("utf-8", errors="replace")

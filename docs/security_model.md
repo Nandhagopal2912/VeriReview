@@ -13,6 +13,8 @@ document states the assumptions, the threats, and what enforces each mitigation 
 | GitHub API responses | authenticated transport, content untrusted | validated with Pydantic models; `RepoRef` rejects path injection |
 | Configuration and environment (`.env`) | trusted (operator) | secrets as `SecretStr`, never logged or persisted |
 | Model weights (optional `nlp` group) | pinned revisions from Hugging Face | never loaded by the service image |
+| Webhook deliveries (Phase 11) | **untrusted until the HMAC signature verifies**; content untrusted after | signature over the raw body checked before parsing; only validated ids are taken, and the thread is re-read from GitHub |
+| GitHub App private key, webhook secret (Phase 11) | trusted (operator) | key file mounted as a Docker secret (`secrets/`, git-ignored); `SecretStr`; installation tokens only in memory |
 
 ## Threats and mitigations
 
@@ -27,6 +29,11 @@ document states the assumptions, the threats, and what enforces each mitigation 
 | **Wrong merge decisions** (a false acceptance lets an unresolved issue through) | Policy never blocks by default; BLOCK requires `enforcement` mode **and** an explicit opt-in; HIGH confidence is never emitted before calibration | `test_default_configuration_never_blocks`; policy tests |
 | **Scraping / privacy** in the benchmark | Only approved, permissively licensed repositories; logins pseudonymised, e-mails masked; license texts and provenance stored | `benchmark/mining.py` allowlist + approval file; `benchmark/privacy.py` tests |
 | **Bot-generated reviews** treated as human requirements | Account type `Bot` is filtered, not only `[bot]` logins | `test_bot_accounts_are_excluded_even_without_a_bot_login` |
+| **Forged or replayed webhooks** (Phase 11) | HMAC-SHA256 over the raw body with `compare_digest`, before any parsing; no secret means everything is refused; a delivery id is queued once | `tests/unit/advisory/test_webhooks.py`, `test_webhook_api.py`, `tests/integration/test_advisory.py` |
+| **Over-broad GitHub access** (Phase 11) | GitHub App instead of a PAT; installation tokens narrowed to the one repository of the job and to contents/PR read + checks write | `test_installation_token_is_scoped_to_one_repository_and_least_privilege` |
+| **Cross-repository leakage** (Phase 11) | Per-repository tokens; audit queries always filter installation and repository | `test_audit_results_are_isolated_by_installation_and_repository` |
+| **Markdown injection into the check** (links, images, @-mentions from review text) (Phase 11) | Repository text is rendered only inside a fenced `text` block (inner fences broken); webhook body text is never rendered | `test_untrusted_text_only_appears_inside_a_fenced_block` |
+| **The advisory check blocking a merge** (Phase 11) | Check conclusion is the constant `neutral`, independent of the policy mode | `test_check_stays_neutral_even_if_blocking_were_configured` |
 | **Model pipeline in the service** (heavy dependencies, supply chain) | Service image contains no ML libraries; a model pipeline requested through the API returns 501 | Docker image check (Phase 7); API test |
 
 ## Known limits

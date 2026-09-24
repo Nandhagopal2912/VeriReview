@@ -27,3 +27,6 @@ dataset/raw/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# GitHub App private keys (advisory mode). Never commit.
+secrets/

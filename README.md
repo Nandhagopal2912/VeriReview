@@ -13,7 +13,9 @@ relevant code, and checks it structurally. The result is a verdict backed by cit
 `SATISFIED` · `PARTIALLY_SATISFIED` · `NOT_SATISFIED` · `UNCERTAIN`
 
 A separate policy layer turns the verdict into `ALLOW` / `WARN` / `HUMAN_REVIEW` / `BLOCK`.
-**Blocking is disabled** (plan §4: not before the system is evaluated and calibrated).
+**Blocking is disabled** (plan §4: not before the system is evaluated and calibrated). As a
+GitHub App it posts a **neutral** "VeriReview" check when a review thread is resolved: advisory
+only, it can never fail a pull request.
 
 ---
 
@@ -21,16 +23,17 @@ A separate policy layer turns the verdict into `ALLOW` / `WARN` / `HUMAN_REVIEW`
 
 | | |
 |---|---|
-| **Current phase** | **Phase 10.1 done: rule improvements, measured on a new blind benchmark (v2).** v2 was frozen before any rule changed, and its test split was run once with a pre-registered protocol |
+| **Current phase** | **Phase 11 done: GitHub advisory mode.** A GitHub App receives signed webhooks, verifies each resolved review thread in a background worker, audits it, and posts one **neutral** check per pull request. Built and tested offline; the live run on a test repository follows the setup guide once an App exists |
+| **Advisory mode** | HMAC-verified webhooks (forged → 401), idempotent queue (redelivery → processed once), per-repository least-privilege App tokens, audit trail with inputs hash, check conclusion pinned to `neutral` |
 | **Blind test v2 (full VeriReview)** | **accuracy 0.65** [0.58, 0.73] · **false acceptance 0.15** [0.06, 0.26] · false blocking 0.04 · 147 cases |
 | **Against the Phase 10 rules, same cases** | accuracy **+0.23** [+0.16, +0.31] · false acceptance **−0.15** [−0.25, −0.07] (paired bootstrap) |
 | **What that means** | Clearly better, but still not safe enough to gate merges: 8 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
 | **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly and none a false acceptance. Nearly all through the new suggestion-block check. Labels are provisional (Claude, blind) |
-| **Next phase** | Awaiting approval: Phase 11 (GitHub advisory mode), or more rule work evaluated on a v3 test set |
+| **Next phase** | Awaiting approval: live advisory check on a test repository (needs a GitHub App, [guide](docs/phase11_github_advisory.md#live-setup-when-you-want-to-connect-a-real-repository)), then Phase 12 (staged enforcement, which the numbers do not support yet) or rule work on a v3 test set |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,030 unit + 8 integration + 2 model tests, strict mypy, CI on every push |
+| **Tests** | 1,067 unit + 17 integration + 2 model tests, strict mypy, CI on every push |
 
 ---
 
@@ -51,6 +54,7 @@ GitHub PR ──► ingestion ──► ReviewCase ──► requirement extract
 | Rules | One deterministic rule per category, querying code *structure*: guards, handlers, responses, test inputs. A comment that only *mentions* the fix never counts. GitHub suggestion blocks are checked against their exact code, and common `other` requests (remove this, add a docstring, use A instead of B) have rules too | 5, 10.1 |
 | Aggregation | Per-requirement status → overall verdict. Ambiguous requests → `UNCERTAIN`. Confidence is lowered when the case is unreliable | 5, 8a |
 | Policy | Verdict × confidence → action, in observe / advisory / human-review / enforcement mode | 8a |
+| GitHub App | Signed webhook → PostgreSQL job queue → worker (scoped installation token) → audit row → one neutral Check Run per PR head | 11 |
 | NLP baselines | Keyword overlap, TF-IDF and sentence-embedding similarity between comment and added code, scored by the same harness, for comparison ([results](#nlp-baselines-and-the-code-model)) | 6 |
 | Code model* | UniXcoder links each requirement to the added code most relevant to it (comments and docstrings removed), with its location. **Neutral evidence:** it never changes a verdict | 7 |
 
@@ -114,6 +118,13 @@ docker compose up -d --build      # API on http://localhost:8000, PostgreSQL on 
 uv run pytest -m integration      # integration tests (need the database)
 ```
 
+Advisory mode as a GitHub App (needs an App id, its private key in `secrets/github-app.pem` and a
+webhook secret; [setup guide](docs/phase11_github_advisory.md)):
+
+```bash
+docker compose --profile advisory up -d --build   # API + webhook endpoint + worker
+```
+
 Optional NLP and code models (PyTorch CPU, sentence-transformers, transformers; not needed by the
 service):
 
@@ -145,6 +156,8 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview annotation-sheet --batch B [--calibration]` | Write the offline annotation page for annotators |
 | `verireview mine-candidates OWNER/REPO` · `collect-cases FILE --n N --seed S` | Mine and collect real-world cases (approved repositories only, token needed) |
 | `verireview agreement A.json B.json` · `adjudication-sheet` · `build-gold` · `benchmark-freeze` | Cohen's kappa, adjudication, gold labels, frozen test manifest |
+| `verireview worker [--once]` | Advisory mode: process queued webhook jobs (GitHub App settings needed) |
+| `verireview replay-webhook PAYLOAD.json --event EVENT` | Sign a recorded webhook with the configured secret and POST it to a **local** server |
 
 Pipelines: `mvp` (default), `phase7-semantic` (needs the `nlp` group), and the earlier
 `phase2-locality` … `phase5-rules` for comparison. The rules changed in place in Phase 10.1
@@ -160,6 +173,7 @@ limits.
 |---|---|---|
 | `POST /verify` | `{"case": ReviewCase, "pipeline"?: name}` | `{"result": VerificationResult, "policy": PolicyDecision}` |
 | `POST /verify/github` | `{"repository": "owner/repo", "pull_number": N, "comment_id": N}` | same |
+| `POST /github/webhook` | a GitHub App delivery, signed (`X-Hub-Signature-256`) | `202 {"status": "queued" \| "duplicate" \| "ignored" \| "pong"}`; 401 if unsigned or forged, 503 without a configured secret |
 | `GET /health`, `GET /health/db` | — | liveness / database readiness |
 
 The service image has no model libraries: asking it for `phase7-semantic` returns **501** with the
@@ -389,7 +403,8 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 9 | ✅ | Benchmark v1: annotation guide, 100 blind test cases, 50 real-world cases (provisional labels), frozen manifest, annotation tooling | [phase9](docs/phase9_benchmark.md) |
 | 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 10.1 | ✅ | Rule and extraction fixes from the Phase 10 error analysis, suggestion-block and `other` rules, benchmark v2 frozen first, one blind v2 run old vs new | [protocol](docs/phase10_1_protocol.md), [results](docs/phase10_1_rules_v2.md) |
-| 11–13 | | GitHub advisory mode, staged enforcement, dashboard | — |
+| 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run (offline-tested; live run pending an App) | [phase11](docs/phase11_github_advisory.md) |
+| 12–13 | | Staged enforcement (only where measured FAR allows), dashboard | — |
 
 Decisions:
 - [ADR-001](docs/adr/001-pre-existing-implementation.md) (accepted): code that already did what was
@@ -420,7 +435,8 @@ src/verireview/
   semantic/      text and code views, lexical / TF-IDF / embedding / UniXcoder scorers, similarity verifier
   evaluation/    metrics, common Verifier harness; extraction, baseline, semantic and injection evaluation
   benchmark/     splits, real-world store, pseudonymisation, miner, annotation page, kappa, gold, freeze
-  api/  db/  cli.py  cli_benchmark.py  config.py
+  advisory/      GitHub App: JWT + scoped installation tokens, webhook signatures, job queue, worker, check run
+  api/  db/  cli.py  cli_benchmark.py  cli_advisory.py  config.py
 dataset/         fixtures + heldout_fixtures (dev), benchmark/ (test sets, real-world), annotations/,
                  requirements (held-out comments), raw/ (git-ignored: candidates, annotation pages)
 experiments/     evaluation reports (JSON)
@@ -437,6 +453,10 @@ Environment variables (prefix `VERIREVIEW_`, see `.env.example`):
 | `GITHUB_TOKEN` | — | Optional. Read-only PAT: resolution state, 5,000 req/h |
 | `POLICY_MODE` | `advisory` | `observe` / `advisory` / `human_review` / `enforcement` |
 | `POLICY_ALLOW_BLOCK` | `false` | Only valid with `enforcement`. Must stay off until Phase 12 |
+| `GITHUB_APP_ID` | — | Advisory mode: the GitHub App's id |
+| `GITHUB_APP_PRIVATE_KEY_PATH` | — | Advisory mode: path to the App's PEM key (the compose worker mounts `secrets/github-app.pem` as a Docker secret) |
+| `GITHUB_WEBHOOK_SECRET` | — | Advisory mode: webhook signing secret; without it the endpoint refuses every delivery |
+| `ADVISORY_CHECK_NAME` | `VeriReview` | Name of the published check |
 
 ## Development
 
@@ -454,7 +474,7 @@ uv run --group nlp verireview eval-semantic
 
 Dependency groups: runtime (the service), `dev` (tests, lint, scikit-learn), and optional `nlp`
 (sentence-transformers, transformers, PyTorch CPU). The Docker image contains only the runtime
-(480 MB, checked: no torch, transformers or numpy).
+(526 MB with PyJWT and cryptography for GitHub App auth, checked: no torch, transformers or numpy).
 
 Working rules (see [CLAUDE.md](CLAUDE.md)): one phase at a time; every rule has positive,
 negative and adversarial tests; evaluation sets are hash-pinned and never tuned against; repository
@@ -463,7 +483,13 @@ content is treated as untrusted data.
 ## Safety and limitations
 
 - **Never blocks merges** by default. Blocking requires enforcement mode *and* an explicit opt-in,
-  and a test pins that default.
+  and a test pins that default. The GitHub check is always `neutral`, whatever the policy mode
+  (pinned by a test).
+- **GitHub App security:** webhooks are HMAC-verified before parsing, each job's token is limited to
+  one repository and to read + checks-write, secrets never reach logs or the database, and the
+  thread is always re-read from GitHub rather than trusted from the webhook body
+  ([security model](docs/security_model.md)). The live App path is not yet exercised on a real
+  repository.
 - **Not accurate enough to gate merges.** On the blind v2 test, 15% of bad resolutions were
   accepted and 4% of good ones called unsatisfied. Use the output as an advisory flag.
 - **Confidence is rule-based, not calibrated.** On v2 test, MEDIUM verdicts were right 84% of the
@@ -491,7 +517,8 @@ content is treated as untrusted data.
   [4](docs/phase4_requirements.md) · [5](docs/phase5_rules.md) · [8a](docs/phase8a_mvp.md) ·
   [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md) ·
   [10 protocol](docs/phase10_protocol.md) · [10 results](docs/phase10_evaluation.md) ·
-  [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md)
+  [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md) ·
+  [11 advisory mode](docs/phase11_github_advisory.md)
 - Security model: [docs/security_model.md](docs/security_model.md)
 - Annotation guide: [docs/annotation_guide.md](docs/annotation_guide.md)
 - Decisions: [docs/adr/](docs/adr/)

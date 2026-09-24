@@ -95,3 +95,70 @@ def gh_commit(sha: str, committed_at: str | None, authored_at: str | None = None
 
 def ts(value: str) -> datetime:
     return datetime.fromisoformat(value)
+
+
+class FakeGitHubApp(FakeGitHub):
+    """FakeGitHub plus the GitHub App endpoints advisory mode uses.
+
+    Issues installation tokens (``POST /app/installations/{id}/access_tokens``) and stores check
+    runs (list / create / update), so tests can assert what was published and with which token.
+    """
+
+    TOKEN = "ghs_fake_installation_token_0123456789"  # noqa: S105 - test double
+
+    def __init__(self, fail_path: str | None = None) -> None:
+        super().__init__()
+        self.check_runs: dict[int, dict[str, Any]] = {}
+        self.token_requests: list[dict[str, Any]] = []
+        self.fail_path = fail_path  # answer 500 on this path (outage simulation)
+
+    def _handle(self, request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if self.fail_path and path == self.fail_path:
+            self.requests.append(request)
+            return httpx.Response(500, json={"message": "boom"})
+        if request.method == "POST" and path.startswith("/app/installations/"):
+            self.requests.append(request)
+            self.token_requests.append(json.loads(request.content))
+            return httpx.Response(
+                201, json={"token": self.TOKEN, "expires_at": "2099-01-01T00:00:00Z"}
+            )
+        if path.startswith("/repos/acme/shop/commits/") and path.endswith("/check-runs"):
+            self.requests.append(request)
+            sha = path.split("/")[5]
+            name = request.url.params.get("check_name")
+            runs = [
+                r for r in self.check_runs.values() if r["head_sha"] == sha and r["name"] == name
+            ]
+            return httpx.Response(200, json={"total_count": len(runs), "check_runs": runs})
+        if path == "/repos/acme/shop/check-runs" and request.method == "POST":
+            self.requests.append(request)
+            run = {"id": len(self.check_runs) + 1, **json.loads(request.content)}
+            self.check_runs[run["id"]] = run
+            return httpx.Response(201, json=run)
+        if path.startswith("/repos/acme/shop/check-runs/") and request.method == "PATCH":
+            self.requests.append(request)
+            run_id = int(path.rsplit("/", 1)[1])
+            self.check_runs[run_id] = {**self.check_runs[run_id], **json.loads(request.content)}
+            return httpx.Response(200, json=self.check_runs[run_id])
+        return super()._handle(request)
+
+
+def rsa_private_key_pem() -> str:
+    """A throwaway RSA key generated for the test run (no key material is committed)."""
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import rsa
+
+    key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    return key.private_bytes(
+        serialization.Encoding.PEM,
+        serialization.PrivateFormat.PKCS8,
+        serialization.NoEncryption(),
+    ).decode()
+
+
+WEBHOOK_DIR = Path(__file__).parent.parent / "fixtures" / "github" / "webhooks"
+
+
+def load_webhook(name: str) -> bytes:
+    return (WEBHOOK_DIR / name).read_bytes()

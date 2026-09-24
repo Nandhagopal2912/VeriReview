@@ -1,6 +1,7 @@
 """Application settings, loaded from environment variables (prefix ``VERIREVIEW_``) and ``.env``."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Literal
 
 from pydantic import SecretStr, field_validator
@@ -35,10 +36,43 @@ class Settings(BaseSettings):
     policy_mode: Literal["observe", "advisory", "human_review", "enforcement"] = "advisory"
     policy_allow_block: bool = False
 
-    @field_validator("github_token", mode="before")
+    # GitHub App (Phase 11, advisory mode). The private key is PEM text, or a file path in
+    # `github_app_private_key_path`; the webhook secret signs every delivery. None of them is
+    # ever logged or stored in the database.
+    github_app_id: int | None = None
+    github_app_private_key: SecretStr | None = None
+    github_app_private_key_path: Path | None = None
+    github_webhook_secret: SecretStr | None = None
+    advisory_check_name: str = "VeriReview"
+    worker_poll_interval_s: float = 2.0
+    worker_max_attempts: int = 3
+
+    @field_validator(
+        "github_token", "github_app_private_key", "github_webhook_secret", mode="before"
+    )
     @classmethod
-    def _blank_token_is_none(cls, value: object) -> object:
+    def _blank_secret_is_none(cls, value: object) -> object:
         return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("github_app_id", "github_app_private_key_path", mode="before")
+    @classmethod
+    def _blank_is_none(cls, value: object) -> object:
+        return None if isinstance(value, str) and not value.strip() else value
+
+    def app_private_key(self) -> SecretStr | None:
+        """The App's PEM key: inline (``\\n`` escapes allowed, for .env files) or from a file."""
+        if self.github_app_private_key is not None:
+            pem = self.github_app_private_key.get_secret_value().replace("\\n", "\n")
+            return SecretStr(pem)
+        if self.github_app_private_key_path is not None:
+            return SecretStr(self.github_app_private_key_path.read_text(encoding="utf-8"))
+        return None
+
+    @property
+    def github_app_configured(self) -> bool:
+        return self.github_app_id is not None and (
+            self.github_app_private_key is not None or self.github_app_private_key_path is not None
+        )
 
 
 @lru_cache

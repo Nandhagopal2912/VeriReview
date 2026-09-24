@@ -1,0 +1,32 @@
+{
+  "action": "rerequested",
+  "check_run": {
+    "id": 9,
+    "name": "VeriReview",
+    "head_sha": "4444444444444444444444444444444444444444",
+    "pull_requests": [
+      {
+        "number": 7,
+        "head": {
+          "sha": "4444444444444444444444444444444444444444"
+        }
+      }
+    ]
+  },
+  "repository": {
+    "id": 100,
+    "name": "shop",
+    "full_name": "acme/shop",
+    "private": true,
+    "owner": {
+      "login": "acme"
+    }
+  },
+  "installation": {
+    "id": 4242
+  },
+  "sender": {
+    "login": "dev-alice",
+    "type": "User"
+  }
+}

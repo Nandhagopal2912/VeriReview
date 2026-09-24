@@ -11,6 +11,7 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "pydantic>=2.9",
     "pydantic-settings>=2.6",
+    "pyjwt[crypto]>=2.10",
     "sqlalchemy>=2.0.36",
     # Pinned: the py-tree-sitter API and grammar node types change between minor versions.
     "tree-sitter~=0.26.0",

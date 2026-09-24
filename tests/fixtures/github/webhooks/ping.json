@@ -1,0 +1,13 @@
+{
+  "zen": "Keep it logically awesome.",
+  "hook_id": 1,
+  "repository": {
+    "id": 100,
+    "name": "shop",
+    "full_name": "acme/shop",
+    "private": true,
+    "owner": {
+      "login": "acme"
+    }
+  }
+}

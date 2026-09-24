@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-testing-03-asserts-on-mock",
+  "category": "testing",
+  "file_path": "net/port.py",
+  "target_symbol": "parse_port",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The test replaces parse_port with a mock and asserts the mock was called; the real function never runs.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that an out-of-range port raises ValueError",
+      "target": "parse_port",
+      "condition": "port >= 65536",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

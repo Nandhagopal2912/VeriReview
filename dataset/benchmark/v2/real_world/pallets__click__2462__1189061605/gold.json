@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pallets__click__2462__1189061605",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "A question ('Is there a specific reason not to use os.environ ...?') with no reply and no change; per guide §3 a question is not a requirement."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

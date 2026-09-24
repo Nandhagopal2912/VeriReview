@@ -1,0 +1,1 @@
+Make sure every opened file is closed, even if one of them fails to open.

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-12-more-restful",
+  "category": "api_behavior",
+  "file_path": "web/users.py",
+  "target_symbol": "delete_user",
+  "comment_line": 7,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "'More RESTful' names no concrete change; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Make the endpoint more RESTful",
+      "target": "delete_user",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

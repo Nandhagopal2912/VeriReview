@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13537__3674583864",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Encode both secret values with 'utf-8', errors='surrogatepass' before compare_digest (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/types.py:1892-1895: the suggested call, verbatim",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

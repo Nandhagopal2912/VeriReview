@@ -1,0 +1,1 @@
+`open()` raises `FileNotFoundError` when the file is missing; handle that.

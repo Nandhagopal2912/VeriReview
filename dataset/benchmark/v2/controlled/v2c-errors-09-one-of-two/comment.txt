@@ -1,0 +1,1 @@
+Handle `KeyError` and `IndexError` here.

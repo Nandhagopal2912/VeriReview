@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-04-204-on-delete",
+  "category": "api_behavior",
+  "file_path": "web/tasks.py",
+  "target_symbol": "delete_task",
+  "comment_line": 10,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The delete now returns an empty body with status 204.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 204 with no body on delete",
+      "target": "delete_task",
+      "condition": null,
+      "expected_behavior": "HTTP 204, empty body"
+    }
+  ]
+}

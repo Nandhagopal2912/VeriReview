@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3039619973",
+    "include": true,
+    "requirements": [
+      {
+        "category": "error_handling",
+        "description": "Keep only the statements that can raise inside the try block",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "config_flow.py:111-119: only the executor call is inside try; the assignment moved after the except",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

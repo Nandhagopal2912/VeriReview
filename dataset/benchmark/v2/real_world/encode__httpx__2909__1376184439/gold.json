@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2909__1376184439",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Generate the boundary with os.urandom(16).hex() (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_multipart.py:202: boundary = os.urandom(16).hex().encode(\"ascii\")",
+    "confidence": "medium",
+    "notes": "Adds .encode('ascii') to the suggestion because boundary must be bytes (it is .decode()d below); the intent is met."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

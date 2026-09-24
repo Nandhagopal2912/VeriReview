@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-testing-09-leap-not-common",
+  "category": "testing",
+  "file_path": "dates/leap.py",
+  "target_symbol": "is_leap",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Only a leap-year test was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for a leap year",
+      "target": "is_leap",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for a non-leap year",
+      "target": "is_leap",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

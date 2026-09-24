@@ -1,0 +1,1 @@
+Rename the `ts` parameter to `timestamp` (callers pass it by keyword).

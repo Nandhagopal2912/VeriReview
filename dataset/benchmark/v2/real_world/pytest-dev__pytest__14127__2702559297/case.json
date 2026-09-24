@@ -1,0 +1,2166 @@
+{
+  "schema_version": "3",
+  "case_id": "pytest-dev/pytest#14127/2702559297",
+  "repository": "pytest-dev/pytest",
+  "pull_number": 14127,
+  "pull_title": "fix: validate marker names in -m expression with --strict-markers",
+  "base_sha": "006884bac1cff49d2e2908c20fbbb0f0bc8e671b",
+  "head_sha": "3c474975def98688c5fca620a827ddeb9b92238b",
+  "thread": {
+    "root_comment_id": 2702559297,
+    "path": "src/_pytest/mark/__init__.py",
+    "line": null,
+    "original_line": 297,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -270,6 +274,36 @@ def deselect_by_mark(items: list[Item], config: Config) -> None:\n         items[:] = remaining\n \n \n+def _validate_marker_names(expr: Expression, config: Config) -> None:\n+    \"\"\"Validate that all marker names in the expression are registered.\n+\n+    Only validates when strict_markers is enabled.\n+    \"\"\"\n+    strict_markers = config.getini(\"strict_markers\")\n+    if strict_markers is None:\n+        strict_markers = config.getini(\"strict\")\n+    if not strict_markers:\n+        return\n+\n+    # Get registered markers from the ini configuration.\n+    registered_markers: set[str] = set()\n+    for line in config.getini(\"markers\"):\n+        # example lines: \"skipif(condition): skip the given test if...\"\n+        # or \"hypothesis: tests which use Hypothesis\", so to get the\n+        # marker name we split on both `:` and `(`.\n+        marker = line.split(\":\")[0].split(\"(\")[0].strip()\n+        registered_markers.add(marker)\n+\n+    # Check each identifier in the expression.",
+    "original_commit_sha": "20e1063341f60f167860b893916db3881f147869",
+    "commit_sha": "20e1063341f60f167860b893916db3881f147869",
+    "comments": [
+      {
+        "id": 2702559297,
+        "author": "reviewer",
+        "body": "Personally I don't find this comment adds much, but OK if it helps.",
+        "created_at": "2026-01-18T16:45:24Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "20e1063341f60f167860b893916db3881f147869",
+    "end_commit_sha": "3c474975def98688c5fca620a827ddeb9b92238b",
+    "subsequent_commits": [
+      {
+        "sha": "4b5048b7a4ecb58fee453fa3a65dac3f173e3ff0",
+        "message": "refactor: centralize marker registration parsing in Config\n\nExtract marker line parsing into a single _iter_registered_markers()\nmethod on Config class, replacing duplicate parsing logic in three\nlocations:\n- MarkGenerator._markers cache population\n- _validate_marker_names() for strict marker checking\n- pytest_cmdline_main() for --markers display\n\nIntroduces RegisteredMarker NamedTuple with name, signature, and\ndescription fields for cleaner API.\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Opus 4.5 <<email>>",
+        "authored_at": "2026-01-21T16:24:51Z",
+        "committed_at": "2026-08-09T13:40:29Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "3c474975def98688c5fca620a827ddeb9b92238b",
+        "message": "refactor: reuse Config._iter_registered_markers in -m validation\n\n_validate_marker_names re-implemented the \"markers\" ini parsing inline,\nduplicating the split logic and its comment verbatim from\nConfig._iter_registered_markers. Use the helper instead, matching the\nother two call sites in mark/__init__.py and mark/structures.py.\n\nThis also exercises FakeConfig._iter_registered_markers in the tests,\nwhich was previously dead code and the sole patch-coverage miss.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>",
+        "authored_at": "2026-08-10T06:22:22Z",
+        "committed_at": "2026-08-10T06:22:22Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [
+      {
+        "sha": "a8cc3f122b9b61b11930a33a62aa7a4481382100",
+        "message": "fix: validate marker names in -m expression with --strict-markers\n\nCloses #2781\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Opus 4.5 <<email>>",
+        "authored_at": "2026-01-18T11:03:24Z",
+        "committed_at": "2026-08-09T13:40:29Z",
+        "author_login": "author"
+      }
+    ],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "original_commit_not_in_pr",
+      "history_rewritten",
+      "ordered_by_timestamp",
+      "ambiguous_rewritten_commits",
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "src/_pytest/mark/__init__.py",
+  "before_code": "\"\"\"Generic mechanism for marking and selecting python functions.\"\"\"\n\nfrom __future__ import annotations\n\nimport collections\nfrom collections.abc import Collection\nfrom collections.abc import Iterable\nfrom collections.abc import Set as AbstractSet\nimport dataclasses\nfrom typing import TYPE_CHECKING\n\nfrom .expression import Expression\nfrom .structures import _HiddenParam\nfrom .structures import EMPTY_PARAMETERSET_OPTION\nfrom .structures import get_empty_parameterset_mark\nfrom .structures import HIDDEN_PARAM\nfrom .structures import Mark\nfrom .structures import MARK_GEN\nfrom .structures import MarkDecorator\nfrom .structures import MarkGenerator\nfrom .structures import ParameterSet\nfrom _pytest.compat import NOTSET\nfrom _pytest.config import Config\nfrom _pytest.config import ExitCode\nfrom _pytest.config import hookimpl\nfrom _pytest.config import UsageError\nfrom _pytest.config.argparsing import Parser\nfrom _pytest.stash import StashKey\n\n\nif TYPE_CHECKING:\n    from _pytest.nodes import Item\n\n\n__all__ = [\n    \"HIDDEN_PARAM\",\n    \"MARK_GEN\",\n    \"Mark\",\n    \"MarkDecorator\",\n    \"MarkGenerator\",\n    \"ParameterSet\",\n    \"get_empty_parameterset_mark\",\n]\n\n\nold_mark_config_key = StashKey[Config | None]()\n\n\ndef param(\n    *values: object,\n    marks: MarkDecorator | Collection[MarkDecorator | Mark] = (),\n    id: str | _HiddenParam | None = None,\n) -> ParameterSet:\n    \"\"\"Specify a parameter in `pytest.mark.parametrize`_ calls or\n    :ref:`parametrized fixtures <fixture-parametrize-marks>`.\n\n    .. code-block:: python\n\n        @pytest.mark.parametrize(\n            \"test_input,expected\",\n            [\n                (\"3+5\", 8),\n                pytest.param(\"6*9\", 42, marks=pytest.mark.xfail),\n            ],\n        )\n        def test_eval(test_input, expected):\n            assert eval(test_input) == expected\n\n    :param values: Variable args of the values of the parameter set, in order.\n\n    :param marks:\n        A single mark or a list of marks to be applied to this parameter set.\n\n        :ref:`pytest.mark.usefixtures <pytest.mark.usefixtures ref>` cannot be added via this parameter.\n\n    :type id: str | Literal[pytest.HIDDEN_PARAM] | None\n    :param id:\n        The id to attribute to this parameter set.\n\n        .. versionadded:: 8.4\n            :ref:`hidden-param` means to hide the parameter set\n            from the test name. Can only be used at most 1 time, as\n            test names need to be unique.\n    \"\"\"\n    return ParameterSet.param(*values, marks=marks, id=id)\n\n\ndef pytest_addoption(parser: Parser) -> None:\n    group = parser.getgroup(\"general\")\n    group._addoption(  # private to use reserved lower-case short option\n        \"-k\",\n        action=\"store\",\n        dest=\"keyword\",\n        default=\"\",\n        metavar=\"EXPRESSION\",\n        help=\"Only run tests which match the given substring expression. \"\n        \"An expression is a Python evaluable expression \"\n        \"where all names are substring-matched against test names \"\n        \"and their parent classes. Example: -k 'test_method or test_\"\n        \"other' matches all test functions and classes whose name \"\n        \"contains 'test_method' or 'test_other', while -k 'not test_method' \"\n        \"matches those that don't contain 'test_method' in their names. \"\n        \"-k 'not test_method and not test_other' will eliminate the matches. \"\n        \"Additionally keywords are matched to classes and functions \"\n        \"containing extra names in their 'extra_keyword_matches' set, \"\n        \"as well as functions which have names assigned directly to them. \"\n        \"The matching is case-insensitive.\",\n    )\n\n    group._addoption(  # private to use reserved lower-case short option\n        \"-m\",\n        action=\"store\",\n        dest=\"markexpr\",\n        default=\"\",\n        metavar=\"MARKEXPR\",\n        help=\"Only run tests matching given mark expression. \"\n        \"For example: -m 'mark1 and not mark2'.\",\n    )\n\n    group.addoption(\n        \"--markers\",\n        action=\"store_true\",\n        help=\"show markers (builtin, plugin and per-project ones).\",\n    )\n\n    parser.addini(\"markers\", \"Register new markers for test functions\", \"linelist\")\n    parser.addini(EMPTY_PARAMETERSET_OPTION, \"Default marker for empty parametersets\")\n\n\n@hookimpl(tryfirst=True)\ndef pytest_cmdline_main(config: Config) -> int | ExitCode | None:\n    import _pytest.config\n\n    if config.option.markers:\n        config._do_configure()\n        tw = _pytest.config.create_terminal_writer(config)\n        for line in config.getini(\"markers\"):\n            parts = line.split(\":\", 1)\n            name = parts[0]\n            rest = parts[1] if len(parts) == 2 else \"\"\n            tw.write(f\"@pytest.mark.{name}:\", bold=True)\n            tw.line(rest)\n            tw.line()\n        config._ensure_unconfigure()\n        return 0\n\n    return None\n\n\n@dataclasses.dataclass\nclass KeywordMatcher:\n    \"\"\"A matcher for keywords.\n\n    Given a list of names, matches any substring of one of these names. The\n    string inclusion check is case-insensitive.\n\n    Will match on the name of colitem, including the names of its parents.\n    Only matches names of items which are either a :class:`Class` or a\n    :class:`Function`.\n\n    Additionally, matches on names in the 'extra_keyword_matches' set of\n    any item, as well as names directly assigned to test functions.\n    \"\"\"\n\n    __slots__ = (\"_names\",)\n\n    _names: AbstractSet[str]\n\n    @classmethod\n    def from_item(cls, item: Item) -> KeywordMatcher:\n        mapped_names = set()\n\n        # Add the names of the current item and any parent items,\n        # except the Session and root Directory's which are not\n        # interesting for matching.\n        import pytest\n\n        for node in item.listchain():\n            if isinstance(node, pytest.Session):\n                continue\n            if isinstance(node, pytest.Directory) and isinstance(\n                node.parent, pytest.Session\n            ):\n                continue\n            mapped_names.add(node.name)\n\n        # Add the names added as extra keywords to current or parent items.\n        mapped_names.update(item.listextrakeywords())\n\n        # Add the names attached to the current function through direct assignment.\n        function_obj = getattr(item, \"function\", None)\n        if function_obj:\n            mapped_names.update(function_obj.__dict__)\n\n        # Add the markers to the keywords as we no longer handle them correctly.\n        mapped_names.update(mark.name for mark in item.iter_markers())\n\n        return cls(mapped_names)\n\n    def __call__(self, subname: str, /, **kwargs: str | int | bool | None) -> bool:\n        if kwargs:\n            raise UsageError(\"Keyword expressions do not support call parameters.\")\n        subname = subname.lower()\n        return any(subname in name.lower() for name in self._names)\n\n\ndef deselect_by_keyword(items: list[Item], config: Config) -> None:\n    keywordexpr = config.option.keyword.lstrip()\n    if not keywordexpr:\n        return\n\n    expr = _parse_expression(keywordexpr, \"Wrong expression passed to '-k'\")\n\n    remaining = []\n    deselected = []\n    for colitem in items:\n        if not expr.evaluate(KeywordMatcher.from_item(colitem)):\n            deselected.append(colitem)\n        else:\n            remaining.append(colitem)\n\n    if deselected:\n        config.hook.pytest_deselected(items=deselected)\n        items[:] = remaining\n\n\n@dataclasses.dataclass\nclass MarkMatcher:\n    \"\"\"A matcher for markers which are present.\n\n    Tries to match on any marker names, attached to the given colitem.\n    \"\"\"\n\n    __slots__ = (\"own_mark_name_mapping\",)\n\n    own_mark_name_mapping: dict[str, list[Mark]]\n\n    @classmethod\n    def from_markers(cls, markers: Iterable[Mark]) -> MarkMatcher:\n        mark_name_mapping = collections.defaultdict(list)\n        for mark in markers:\n            mark_name_mapping[mark.name].append(mark)\n        return cls(mark_name_mapping)\n\n    def __call__(self, name: str, /, **kwargs: str | int | bool | None) -> bool:\n        if not (matches := self.own_mark_name_mapping.get(name, [])):\n            return False\n\n        for mark in matches:  # pylint: disable=consider-using-any-or-all\n            if all(mark.kwargs.get(k, NOTSET) == v for k, v in kwargs.items()):\n                return True\n        return False\n\n\ndef deselect_by_mark(items: list[Item], config: Config) -> None:\n    matchexpr = config.option.markexpr\n    if not matchexpr:\n        return\n\n    expr = _parse_expression(matchexpr, \"Wrong expression passed to '-m'\")\n\n    # Validate marker names in the expression if strict_markers is enabled.\n    _validate_marker_names(expr, config)\n\n    remaining: list[Item] = []\n    deselected: list[Item] = []\n    for item in items:\n        if expr.evaluate(MarkMatcher.from_markers(item.iter_markers())):\n            remaining.append(item)\n        else:\n            deselected.append(item)\n    if deselected:\n        config.hook.pytest_deselected(items=deselected)\n        items[:] = remaining\n\n\ndef _validate_marker_names(expr: Expression, config: Config) -> None:\n    \"\"\"Validate that all marker names in the expression are registered.\n\n    Only validates when strict_markers is enabled.\n    \"\"\"\n    strict_markers = config.getini(\"strict_markers\")\n    if strict_markers is None:\n        strict_markers = config.getini(\"strict\")\n    if not strict_markers:\n        return\n\n    # Get registered markers from the ini configuration.\n    registered_markers: set[str] = set()\n    for line in config.getini(\"markers\"):\n        # example lines: \"skipif(condition): skip the given test if...\"\n        # or \"hypothesis: tests which use Hypothesis\", so to get the\n        # marker name we split on both `:` and `(`.\n        marker = line.split(\":\")[0].split(\"(\")[0].strip()\n        registered_markers.add(marker)\n\n    # Check each identifier in the expression.\n    unknown_markers = expr.idents() - registered_markers\n    if unknown_markers:\n        unknown_str = \", \".join(sorted(unknown_markers))\n        raise UsageError(\n            f\"Unknown marker(s) in '-m' expression: {unknown_str}. \"\n            \"Use 'pytest --markers' to see available markers.\"\n        )\n\n\ndef _parse_expression(expr: str, exc_message: str) -> Expression:\n    try:\n        return Expression.compile(expr)\n    except SyntaxError as e:\n        raise UsageError(\n            f\"{exc_message}: {e.text}: at column {e.offset}: {e.msg}\"\n        ) from None\n\n\ndef pytest_collection_modifyitems(items: list[Item], config: Config) -> None:\n    deselect_by_keyword(items, config)\n    deselect_by_mark(items, config)\n\n\ndef pytest_configure(config: Config) -> None:\n    config.stash[old_mark_config_key] = MARK_GEN._config\n    MARK_GEN._config = config\n\n    empty_parameterset = config.getini(EMPTY_PARAMETERSET_OPTION)\n\n    if empty_parameterset not in (\"skip\", \"xfail\", \"fail_at_collect\", None, \"\"):\n        raise UsageError(\n            f\"{EMPTY_PARAMETERSET_OPTION!s} must be one of skip, xfail or fail_at_collect\"\n            f\" but it is {empty_parameterset!r}\"\n        )\n\n\ndef pytest_unconfigure(config: Config) -> None:\n    MARK_GEN._config = config.stash.get(old_mark_config_key, None)\n",
+  "anchor_line": 297,
+  "after_code": "\"\"\"Generic mechanism for marking and selecting python functions.\"\"\"\n\nfrom __future__ import annotations\n\nimport collections\nfrom collections.abc import Collection\nfrom collections.abc import Iterable\nfrom collections.abc import Set as AbstractSet\nimport dataclasses\nfrom typing import TYPE_CHECKING\n\nfrom .expression import Expression\nfrom .structures import _EmptyParameterSetMark\nfrom .structures import _HiddenParam\nfrom .structures import EMPTY_PARAMETERSET_OPTION\nfrom .structures import get_empty_parameterset_mark\nfrom .structures import HIDDEN_PARAM\nfrom .structures import Mark\nfrom .structures import MARK_GEN\nfrom .structures import MarkDecorator\nfrom .structures import MarkGenerator\nfrom .structures import ParameterSet\nfrom _pytest.compat import NOTSET\nfrom _pytest.config import Config\nfrom _pytest.config import ExitCode\nfrom _pytest.config import hookimpl\nfrom _pytest.config import UsageError\nfrom _pytest.config.argparsing import Parser\nfrom _pytest.stash import StashKey\n\n\nif TYPE_CHECKING:\n    from _pytest.nodes import Item\n\n\n__all__ = [\n    \"HIDDEN_PARAM\",\n    \"MARK_GEN\",\n    \"Mark\",\n    \"MarkDecorator\",\n    \"MarkGenerator\",\n    \"ParameterSet\",\n    \"get_empty_parameterset_mark\",\n]\n\n\nold_mark_config_key = StashKey[Config | None]()\n\n\ndef param(\n    *values: object,\n    marks: MarkDecorator | Collection[MarkDecorator | Mark] = (),\n    id: str | _HiddenParam | None = None,\n) -> ParameterSet:\n    \"\"\"Specify a parameter in `pytest.mark.parametrize`_ calls or\n    :ref:`parametrized fixtures <fixture-parametrize-marks>`.\n\n    .. code-block:: python\n\n        @pytest.mark.parametrize(\n            \"test_input,expected\",\n            [\n                (\"3+5\", 8),\n                pytest.param(\"6*9\", 42, marks=pytest.mark.xfail),\n            ],\n        )\n        def test_eval(test_input, expected):\n            assert eval(test_input) == expected\n\n    :param values: Variable args of the values of the parameter set, in order.\n\n    :param marks:\n        A single mark or a list of marks to be applied to this parameter set.\n\n        :ref:`pytest.mark.usefixtures <pytest.mark.usefixtures ref>` cannot be added via this parameter.\n\n    :type id: str | Literal[pytest.HIDDEN_PARAM] | None\n    :param id:\n        The id to attribute to this parameter set.\n\n        .. versionadded:: 8.4\n            :ref:`hidden-param` means to hide the parameter set\n            from the test name. Can only be used at most 1 time, as\n            test names need to be unique.\n    \"\"\"\n    return ParameterSet.param(*values, marks=marks, id=id)\n\n\ndef pytest_addoption(parser: Parser) -> None:\n    group = parser.getgroup(\"general\")\n    group._addoption(  # private to use reserved lower-case short option\n        \"-k\",\n        action=\"store\",\n        dest=\"keyword\",\n        default=\"\",\n        metavar=\"EXPRESSION\",\n        help=\"Only run tests which match the given substring expression. \"\n        \"An expression is a Python evaluable expression \"\n        \"where all names are substring-matched against test names \"\n        \"and their parent classes. Example: -k 'test_method or test_\"\n        \"other' matches all test functions and classes whose name \"\n        \"contains 'test_method' or 'test_other', while -k 'not test_method' \"\n        \"matches those that don't contain 'test_method' in their names. \"\n        \"-k 'not test_method and not test_other' will eliminate the matches. \"\n        \"Additionally keywords are matched to classes and functions \"\n        \"containing extra names in their 'extra_keyword_matches' set, \"\n        \"as well as functions which have names assigned directly to them. \"\n        \"The matching is case-insensitive.\",\n    )\n\n    group._addoption(  # private to use reserved lower-case short option\n        \"-m\",\n        action=\"store\",\n        dest=\"markexpr\",\n        default=\"\",\n        metavar=\"MARKEXPR\",\n        help=\"Only run tests matching given mark expression. \"\n        \"For example: -m 'mark1 and not mark2'.\",\n    )\n\n    group.addoption(\n        \"--markers\",\n        action=\"store_true\",\n        help=\"show markers (builtin, plugin and per-project ones).\",\n    )\n\n    parser.addini(\"markers\", \"Register new markers for test functions\", \"linelist\")\n    parser.addini(\n        EMPTY_PARAMETERSET_OPTION,\n        \"Default marker for empty parametersets\",\n        type=_EmptyParameterSetMark,\n        default=\"skip\",\n    )\n\n\n@hookimpl(tryfirst=True)\ndef pytest_cmdline_main(config: Config) -> int | ExitCode | None:\n    import _pytest.config\n\n    if config.option.markers:\n        config._do_configure()\n        tw = _pytest.config.create_terminal_writer(config)\n        for marker in config._iter_registered_markers():\n            tw.write(f\"@pytest.mark.{marker.signature}:\", bold=True)\n            tw.line(f\" {marker.description}\" if marker.description else \"\")\n            tw.line()\n        config._ensure_unconfigure()\n        return 0\n\n    return None\n\n\n@dataclasses.dataclass\nclass KeywordMatcher:\n    \"\"\"A matcher for keywords.\n\n    Given a list of names, matches any substring of one of these names. The\n    string inclusion check is case-insensitive.\n\n    Will match on the name of colitem, including the names of its parents.\n    Only matches names of items which are either a :class:`Class` or a\n    :class:`Function`.\n\n    Additionally, matches on names in the 'extra_keyword_matches' set of\n    any item, as well as names directly assigned to test functions.\n    \"\"\"\n\n    __slots__ = (\"_names\",)\n\n    _names: AbstractSet[str]\n\n    @classmethod\n    def from_item(cls, item: Item) -> KeywordMatcher:\n        mapped_names = set()\n\n        # Add the names of the current item and any parent items,\n        # except the Session and root Directory's which are not\n        # interesting for matching.\n        import pytest\n\n        for node in item.listchain():\n            if isinstance(node, pytest.Session):\n                continue\n            if isinstance(node, pytest.Directory) and isinstance(\n                node.parent, pytest.Session\n            ):\n                continue\n            mapped_names.add(node.name)\n\n        # Add the names added as extra keywords to current or parent items.\n        mapped_names.update(item.listextrakeywords())\n\n        # Add the names attached to the current function through direct assignment.\n        function_obj = getattr(item, \"function\", None)\n        if function_obj:\n            mapped_names.update(function_obj.__dict__)\n\n        # Add the markers to the keywords as we no longer handle them correctly.\n        mapped_names.update(mark.name for mark in item.iter_markers())\n\n        return cls(mapped_names)\n\n    def __call__(self, subname: str, /, **kwargs: str | int | bool | None) -> bool:\n        if kwargs:\n            raise UsageError(\"Keyword expressions do not support call parameters.\")\n        subname = subname.lower()\n        return any(subname in name.lower() for name in self._names)\n\n\ndef deselect_by_keyword(items: list[Item], config: Config) -> None:\n    keywordexpr = config.option.keyword.lstrip()\n    if not keywordexpr:\n        return\n\n    expr = _parse_expression(keywordexpr, \"Wrong expression passed to '-k'\")\n\n    remaining = []\n    deselected = []\n    for colitem in items:\n        if not expr.evaluate(KeywordMatcher.from_item(colitem)):\n            deselected.append(colitem)\n        else:\n            remaining.append(colitem)\n\n    if deselected:\n        config.hook.pytest_deselected(items=deselected)\n        items[:] = remaining\n\n\n@dataclasses.dataclass\nclass MarkMatcher:\n    \"\"\"A matcher for markers which are present.\n\n    Tries to match on any marker names, attached to the given colitem.\n    \"\"\"\n\n    __slots__ = (\"own_mark_name_mapping\",)\n\n    own_mark_name_mapping: dict[str, list[Mark]]\n\n    @classmethod\n    def from_markers(cls, markers: Iterable[Mark]) -> MarkMatcher:\n        mark_name_mapping = collections.defaultdict(list)\n        for mark in markers:\n            mark_name_mapping[mark.name].append(mark)\n        return cls(mark_name_mapping)\n\n    def __call__(self, name: str, /, **kwargs: str | int | bool | None) -> bool:\n        if not (matches := self.own_mark_name_mapping.get(name, [])):\n            return False\n\n        for mark in matches:  # pylint: disable=consider-using-any-or-all\n            if all(mark.kwargs.get(k, NOTSET) == v for k, v in kwargs.items()):\n                return True\n        return False\n\n\ndef deselect_by_mark(items: list[Item], config: Config) -> None:\n    matchexpr = config.option.markexpr\n    if not matchexpr:\n        return\n\n    expr = _parse_expression(matchexpr, \"Wrong expression passed to '-m'\")\n    _validate_marker_names(expr, config)\n\n    remaining: list[Item] = []\n    deselected: list[Item] = []\n    for item in items:\n        if expr.evaluate(MarkMatcher.from_markers(item.iter_markers())):\n            remaining.append(item)\n        else:\n            deselected.append(item)\n    if deselected:\n        config.hook.pytest_deselected(items=deselected)\n        items[:] = remaining\n\n\ndef _validate_marker_names(expr: Expression, config: Config) -> None:\n    \"\"\"Validate that all marker names in the expression are registered.\n\n    Only validates when strict_markers is enabled.\n    \"\"\"\n    strict_markers = config.getini(\"strict_markers\")\n    if strict_markers is None:\n        strict_markers = config.getini(\"strict\")\n    if not strict_markers:\n        return\n\n    registered_markers = {m.name for m in config._iter_registered_markers()}\n\n    unknown_markers = expr.idents() - registered_markers\n    if unknown_markers:\n        unknown_str = \", \".join(sorted(unknown_markers))\n        raise UsageError(\n            f\"Unknown marker(s) in '-m' expression: {unknown_str}. \"\n            \"Use 'pytest --markers' to see available markers.\"\n        )\n\n\ndef _parse_expression(expr: str, exc_message: str) -> Expression:\n    try:\n        return Expression.compile(expr)\n    except SyntaxError as e:\n        raise UsageError(\n            f\"{exc_message}: {e.text}: at column {e.offset}: {e.msg}\"\n        ) from None\n\n\ndef pytest_collection_modifyitems(items: list[Item], config: Config) -> None:\n    deselect_by_keyword(items, config)\n    deselect_by_mark(items, config)\n\n\ndef pytest_configure(config: Config) -> None:\n    config.stash[old_mark_config_key] = MARK_GEN._config\n    MARK_GEN._config = config\n\n    # Eagerly validate the value; it is only read lazily during collection.\n    config.getini(EMPTY_PARAMETERSET_OPTION)\n\n\ndef pytest_unconfigure(config: Config) -> None:\n    MARK_GEN._config = config.stash.get(old_mark_config_key, None)\n",
+  "unified_diff": "--- a/src/_pytest/mark/__init__.py\n+++ b/src/_pytest/mark/__init__.py\n@@ -10,6 +10,7 @@\n from typing import TYPE_CHECKING\n \n from .expression import Expression\n+from .structures import _EmptyParameterSetMark\n from .structures import _HiddenParam\n from .structures import EMPTY_PARAMETERSET_OPTION\n from .structures import get_empty_parameterset_mark\n@@ -124,7 +125,12 @@\n     )\n \n     parser.addini(\"markers\", \"Register new markers for test functions\", \"linelist\")\n-    parser.addini(EMPTY_PARAMETERSET_OPTION, \"Default marker for empty parametersets\")\n+    parser.addini(\n+        EMPTY_PARAMETERSET_OPTION,\n+        \"Default marker for empty parametersets\",\n+        type=_EmptyParameterSetMark,\n+        default=\"skip\",\n+    )\n \n \n @hookimpl(tryfirst=True)\n@@ -134,12 +140,9 @@\n     if config.option.markers:\n         config._do_configure()\n         tw = _pytest.config.create_terminal_writer(config)\n-        for line in config.getini(\"markers\"):\n-            parts = line.split(\":\", 1)\n-            name = parts[0]\n-            rest = parts[1] if len(parts) == 2 else \"\"\n-            tw.write(f\"@pytest.mark.{name}:\", bold=True)\n-            tw.line(rest)\n+        for marker in config._iter_registered_markers():\n+            tw.write(f\"@pytest.mark.{marker.signature}:\", bold=True)\n+            tw.line(f\" {marker.description}\" if marker.description else \"\")\n             tw.line()\n         config._ensure_unconfigure()\n         return 0\n@@ -258,8 +261,6 @@\n         return\n \n     expr = _parse_expression(matchexpr, \"Wrong expression passed to '-m'\")\n-\n-    # Validate marker names in the expression if strict_markers is enabled.\n     _validate_marker_names(expr, config)\n \n     remaining: list[Item] = []\n@@ -285,16 +286,8 @@\n     if not strict_markers:\n         return\n \n-    # Get registered markers from the ini configuration.\n-    registered_markers: set[str] = set()\n-    for line in config.getini(\"markers\"):\n-        # example lines: \"skipif(condition): skip the given test if...\"\n-        # or \"hypothesis: tests which use Hypothesis\", so to get the\n-        # marker name we split on both `:` and `(`.\n-        marker = line.split(\":\")[0].split(\"(\")[0].strip()\n-        registered_markers.add(marker)\n-\n-    # Check each identifier in the expression.\n+    registered_markers = {m.name for m in config._iter_registered_markers()}\n+\n     unknown_markers = expr.idents() - registered_markers\n     if unknown_markers:\n         unknown_str = \", \".join(sorted(unknown_markers))\n@@ -322,13 +315,8 @@\n     config.stash[old_mark_config_key] = MARK_GEN._config\n     MARK_GEN._config = config\n \n-    empty_parameterset = config.getini(EMPTY_PARAMETERSET_OPTION)\n-\n-    if empty_parameterset not in (\"skip\", \"xfail\", \"fail_at_collect\", None, \"\"):\n-        raise UsageError(\n-            f\"{EMPTY_PARAMETERSET_OPTION!s} must be one of skip, xfail or fail_at_collect\"\n-            f\" but it is {empty_parameterset!r}\"\n-        )\n+    # Eagerly validate the value; it is only read lazily during collection.\n+    config.getini(EMPTY_PARAMETERSET_OPTION)\n \n \n def pytest_unconfigure(config: Config) -> None:\n",
+  "changed_files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/3_security_vulnerability.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/setup-tox/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/deploy.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/doc-check-links.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/prepare-release-pr.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/update-plugin-list.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".mailmap",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".readthedocs.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AUTHORS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CITATION",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CONTRIBUTING.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "README.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "RELEASING.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "SECURITY.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/10128.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/10721.doc.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/1139.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11502.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11933.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12307.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12624.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12697.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12824.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12857.doc.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12860.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13388.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13409.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13564.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13634.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13731.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13734.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13884.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13917.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13946.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13963.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14023.feature.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14026.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14088.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14164.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14523.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14586.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14635.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14637.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14638.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14675.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14683.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14700.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14705.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14716.breaking.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14724.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14742.deprecation.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14743.feature.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14751.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14754.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14791.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/2781.feature.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "changelog/6881.feature.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/7940.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/8593.breaking.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/8914.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/README.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.8.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.8.3.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.8.4.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.8.6.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.9.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.9.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-2.9.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.3.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.4.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.0.7.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.1.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.1.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.2.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.2.4.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.3.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.3.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.3.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.4.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.4.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.4.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-3.5.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.0.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.1.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.2.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.2.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.2.3.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-5.3.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-6.0.0rc1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-6.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-6.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-6.2.4.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-6.2.5.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.0.0rc1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.3.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.4.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-7.4.1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.0.0rc1.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.2.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.3.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.3.3.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.3.4.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.3.5.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.4.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-8.4.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.0.2.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.0.3.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.1.0.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.1.1.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/backwards-compatibility.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/builtin.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/changelog.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/conf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/contact.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/deprecations.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/.ruff.toml",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/attic.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/customdirectory.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/markers.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/nonpython.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/parametrize.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/pythoncollection.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/reportingdemo.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/simple.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/explanation/ci.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/explanation/fixtures.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/explanation/flaky.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/explanation/goodpractices.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/explanation/pythonpath.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/funcarg_compare.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/getting-started.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/historical-notes.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/assert.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/cache.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/capture-stdout-stderr.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/capture-warnings.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/doctest.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/fixtures.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/logging.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/monkeypatch.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/output.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/plugins.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/skipping.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/subtests.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/usage.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/writing_hook_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/writing_plugins.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/customize.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/exit-codes.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/fixtures.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/plugin_list.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/reference.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "doc/en/requirements.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/sponsor.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/talks.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pyproject.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_code/code.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_code/source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_io/pprint.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_io/saferepr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_py/path.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/approx.py",
+      "status": "renamed",
+      "previous_path": "src/_pytest/python_api.py",
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_any.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_mapping.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_sequence.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_set.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_guards.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_typing.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/compare_text.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/highlight.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/rewrite.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/truncate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/cacheprovider.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/capture.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "src/_pytest/config/argparsing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/compat.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/findpaths.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/deprecated.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/doctest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/fixtures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/helpconfig.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/hookspec.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/junitxml.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/legacypath.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/logging.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/mark/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "src/_pytest/mark/expression.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "src/_pytest/mark/structures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "src/_pytest/monkeypatch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/nodes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/outcomes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/pastebin.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/pathlib.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/pytester.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/pytester_assertions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/python.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/raises.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/recwarn.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/reports.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/runner.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/scope.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/skipping.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/subtests.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/terminal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/timing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/tmpdir.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/unittest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/unraisableexception.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/warning_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/warnings.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/pytest/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/pytest/__main__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/_py/test_local.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/code/test_code.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/code/test_excinfo.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/code/test_source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/deprecated_test.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/example_scripts/README.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/example_scripts/fixtures/test_getfixturevalue_dynamic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/example_scripts/issue_519.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/freeze/tox_run.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/io/test_pprint.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/io/test_saferepr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/logging/test_fixture.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/logging/test_formatter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/logging/test_reporting.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/plugins_integration/README.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/plugins_integration/pytest.ini",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/plugins_integration/requirements.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/approx.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/collect.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/fixtures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/metafunc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/raises.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/raises_group.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/show_fixtures_per_test.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_assertion.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_assertrewrite.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_cacheprovider.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_capture.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_collection.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_debugging.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_doctest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_error_diffs.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_findpaths.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_helpconfig.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_junitxml.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_legacypath.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_mark.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "testing/test_mark_expression.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "testing/test_monkeypatch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_nodes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_parseopt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_pastebin.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_pathlib.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_pluginmanager.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_pytester.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_recwarn.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_reports.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_runner.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_session.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_setuponly.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_skipping.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_subtests.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_terminal.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_tmpdir.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_unittest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_unraisableexception.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_warnings.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/typing_checks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tox.ini",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "uv.lock",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "testing/test_mark.py": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nfrom collections.abc import Iterator\nimport os\nimport sys\nfrom typing import cast\nfrom unittest import mock\n\nfrom _pytest.config import Config\nfrom _pytest.config import ExitCode\nfrom _pytest.config import RegisteredMarker\nfrom _pytest.config import UsageError\nfrom _pytest.mark import _validate_marker_names\nfrom _pytest.mark import MarkGenerator\nfrom _pytest.mark.expression import Expression\nfrom _pytest.mark.structures import _EmptyParameterSetMark\nfrom _pytest.mark.structures import EMPTY_PARAMETERSET_OPTION\nfrom _pytest.nodes import Collector\nfrom _pytest.nodes import Node\nfrom _pytest.pytester import Pytester\nimport pytest\n\n\nclass TestMark:\n    @pytest.mark.parametrize(\"attr\", [\"mark\", \"param\"])\n    def test_pytest_exists_in_namespace_all(self, attr: str) -> None:\n        module = sys.modules[\"pytest\"]\n        assert attr in module.__all__\n\n    def test_pytest_mark_notcallable(self) -> None:\n        mark = MarkGenerator(_ispytest=True)\n        with pytest.raises(TypeError):\n            mark()  # type: ignore[operator]\n\n    def test_mark_with_param(self):\n        def some_function(abc):\n            pass\n\n        class SomeClass:\n            pass\n\n        assert pytest.mark.foo(some_function) is some_function\n        marked_with_args = pytest.mark.foo.with_args(some_function)\n        assert marked_with_args is not some_function\n\n        assert pytest.mark.foo(SomeClass) is SomeClass\n        assert pytest.mark.foo.with_args(SomeClass) is not SomeClass  # type: ignore[comparison-overlap]\n\n    def test_pytest_mark_name_starts_with_underscore(self) -> None:\n        mark = MarkGenerator(_ispytest=True)\n        with pytest.raises(AttributeError):\n            _ = mark._some_name\n\n\ndef test_marked_class_run_twice(pytester: Pytester) -> None:\n    \"\"\"Test fails file is run twice that contains marked class.\n    See issue#683.\n    \"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n    import pytest\n    @pytest.mark.parametrize('abc', [1, 2, 3])\n    class Test1(object):\n        def test_1(self, abc):\n            assert abc in [1, 2, 3]\n    \"\"\"\n    )\n    file_name = os.path.basename(py_file)\n    rec = pytester.inline_run(\"--keep-duplicates\", file_name, file_name)\n    rec.assertoutcome(passed=6)\n\n\ndef test_ini_markers(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1: this is a webtest marker\n            a2: this is a smoke marker\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        def test_markers(pytestconfig):\n            markers = pytestconfig.getini(\"markers\")\n            print(markers)\n            assert len(markers) >= 2\n            assert markers[0].startswith(\"a1:\")\n            assert markers[1].startswith(\"a2:\")\n    \"\"\"\n    )\n    rec = pytester.inline_run()\n    rec.assertoutcome(passed=1)\n\n\ndef test_markers_option(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1: this is a webtest marker\n            a1some: another marker\n            nodescription\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--markers\")\n    result.stdout.fnmatch_lines(\n        [\"*a1*this is a webtest*\", \"*a1some*another marker\", \"*nodescription*\"]\n    )\n\n\ndef test_ini_markers_whitespace(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1 : this is a whitespace marker\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.a1\n        def test_markers():\n            assert True\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"--strict-markers\", \"-m\", \"a1\")\n    rec.assertoutcome(passed=1)\n\n\ndef test_marker_without_description(pytester: Pytester) -> None:\n    pytester.makefile(\n        \".cfg\",\n        setup=\"\"\"\n        [tool:pytest]\n        markers=slow\n    \"\"\",\n    )\n    pytester.makeconftest(\n        \"\"\"\n        import pytest\n        pytest.mark.xfail('FAIL')\n    \"\"\"\n    )\n    ftdir = pytester.mkdir(\"ft1_dummy\")\n    pytester.path.joinpath(\"conftest.py\").replace(ftdir.joinpath(\"conftest.py\"))\n    rec = pytester.runpytest(\"--strict-markers\")\n    rec.assert_outcomes()\n\n\ndef test_markers_option_with_plugin_in_current_dir(pytester: Pytester) -> None:\n    pytester.makeconftest('pytest_plugins = \"flip_flop\"')\n    pytester.makepyfile(\n        flip_flop=\"\"\"\\\n        def pytest_configure(config):\n            config.addinivalue_line(\"markers\", \"flip:flop\")\n\n        def pytest_generate_tests(metafunc):\n            try:\n                mark = metafunc.function.flipper\n            except AttributeError:\n                return\n            metafunc.parametrize(\"x\", (10, 20))\"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\\\n        import pytest\n        @pytest.mark.flipper\n        def test_example(x):\n            assert x\"\"\"\n    )\n\n    result = pytester.runpytest(\"--markers\")\n    result.stdout.fnmatch_lines([\"*flip*flop*\"])\n\n\ndef test_mark_on_pseudo_function(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.r(lambda x: 0/0)\n        def test_hello():\n            pass\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.parametrize(\n    \"option\",\n    [\n        \"--strict-markers\",\n        \"--strict\",\n        \"strict_markers = true\",\n        \"strict = true\",\n        \"addopts = --strict-markers\",\n    ],\n)\ndef test_strict_prohibits_unregistered_markers(pytester: Pytester, option: str) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.unregisteredmark\n        def test_hello():\n            pass\n    \"\"\"\n    )\n    if option.startswith(\"-\"):\n        result = pytester.runpytest(option)\n    else:\n        pytester.makeini(\n            f\"\"\"\n            [pytest]\n            {option}\n            \"\"\"\n        )\n        result = pytester.runpytest()\n    assert result.ret != 0\n    result.stdout.fnmatch_lines(\n        [\"'unregisteredmark' not found in `markers` configuration option\"]\n    )\n\n\nclass TestValidateMarkerNames:\n    \"\"\"Tests for _validate_marker_names (issue #2781).\"\"\"\n\n    class FakeConfig:\n        def __init__(\n            self,\n            markers: list[str],\n            strict_markers: bool | None = None,\n            strict: bool = False,\n        ) -> None:\n            self._ini: dict[str, list[str] | bool | None] = {\n                \"markers\": markers,\n                \"strict_markers\": strict_markers,\n                \"strict\": strict,\n            }\n\n        def getini(self, name: str) -> list[str] | bool | None:\n            return self._ini[name]\n\n        def _iter_registered_markers(self) -> Iterator[RegisteredMarker]:\n            yield from Config._iter_registered_markers(cast(Config, self))\n\n    def _make_config(\n        self,\n        strict_markers: bool | None = None,\n        strict: bool = False,\n    ) -> Config:\n        return cast(\n            Config,\n            self.FakeConfig(\n                markers=[\"registered: a registered marker\"],\n                strict_markers=strict_markers,\n                strict=strict,\n            ),\n        )\n\n    def test_unknown_marker_with_strict_markers(self) -> None:\n        expr = Expression.compile(\"unknown_marker\")\n\n        with pytest.raises(UsageError, match=r\"Unknown marker.*unknown_marker\"):\n            _validate_marker_names(expr, self._make_config(strict_markers=True))\n\n    def test_unknown_marker_with_strict(self) -> None:\n        expr = Expression.compile(\"unknown_marker\")\n\n        with pytest.raises(UsageError, match=r\"Unknown marker.*unknown_marker\"):\n            _validate_marker_names(expr, self._make_config(strict=True))\n\n    def test_registered_marker_passes(self) -> None:\n        expr = Expression.compile(\"registered\")\n\n        _validate_marker_names(expr, self._make_config(strict_markers=True))\n\n    def test_no_validation_without_strict(self) -> None:\n        expr = Expression.compile(\"any_marker\")\n\n        _validate_marker_names(expr, self._make_config())\n\n\n@pytest.fixture\ndef markexpr_pytester(pytester: Pytester) -> Pytester:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            registered: a registered marker\n        \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.registered\n        def test_registered():\n            pass\n\n        def test_plain():\n            pass\n        \"\"\"\n    )\n    return pytester\n\n\n@pytest.mark.parametrize(\"option\", [\"--strict-markers\", \"--strict\"])\ndef test_strict_prohibits_unregistered_markers_in_markexpr(\n    markexpr_pytester: Pytester, option: str\n) -> None:\n    result = markexpr_pytester.runpytest(option, \"-m\", \"registered or unregisteredmark\")\n    assert result.ret == ExitCode.USAGE_ERROR\n    result.stderr.fnmatch_lines(\n        [\"*Unknown marker(s) in '-m' expression: unregisteredmark*\"]\n    )\n\n\ndef test_strict_allows_registered_markers_in_markexpr(\n    markexpr_pytester: Pytester,\n) -> None:\n    result = markexpr_pytester.runpytest(\"--strict-markers\", \"-m\", \"registered\")\n    result.assert_outcomes(passed=1, deselected=1)\n\n\ndef test_unregistered_markers_in_markexpr_allowed_without_strict(\n    markexpr_pytester: Pytester,\n) -> None:\n    result = markexpr_pytester.runpytest(\"-m\", \"unregisteredmark\")\n    result.assert_outcomes(deselected=2)\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"xyz\", [\"test_one\"]),\n        (\"(((  xyz))  )\", [\"test_one\"]),\n        (\"not not xyz\", [\"test_one\"]),\n        (\"xyz and xyz2\", []),\n        (\"xyz2\", [\"test_two\"]),\n        (\"xyz or xyz2\", [\"test_one\", \"test_two\"]),\n    ],\n)\ndef test_mark_option(\n    expr: str, expected_passed: list[str | None], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.xyz\n        def test_one():\n            pass\n        @pytest.mark.xyz2\n        def test_two():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"car(color='red')\", [\"test_one\"]),\n        (\"car(color='red') or car(color='blue')\", [\"test_one\", \"test_two\"]),\n        (\"car and not car(temp=5)\", [\"test_one\", \"test_three\"]),\n        (\"car(temp=4)\", [\"test_one\"]),\n        (\"car(temp=4) or car(temp=5)\", [\"test_one\", \"test_two\"]),\n        (\"car(temp=4) and car(temp=5)\", []),\n        (\"car(temp=-5)\", [\"test_three\"]),\n        (\"car(ac=True)\", [\"test_one\"]),\n        (\"car(ac=False)\", [\"test_two\"]),\n        (\"car(ac=None)\", [\"test_three\"]),  # test NOT_NONE_SENTINEL\n    ],\n    ids=str,\n)\ndef test_mark_option_with_kwargs(\n    expr: str, expected_passed: list[str | None], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.car\n        @pytest.mark.car(ac=True)\n        @pytest.mark.car(temp=4)\n        @pytest.mark.car(color=\"red\")\n        def test_one():\n            pass\n        @pytest.mark.car\n        @pytest.mark.car(ac=False)\n        @pytest.mark.car(temp=5)\n        @pytest.mark.car(color=\"blue\")\n        def test_two():\n            pass\n        @pytest.mark.car\n        @pytest.mark.car(ac=None)\n        @pytest.mark.car(temp=-5)\n        def test_three():\n            pass\n\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [(\"interface\", [\"test_interface\"]), (\"not interface\", [\"test_nointer\"])],\n)\ndef test_mark_option_custom(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makeconftest(\n        \"\"\"\n        import pytest\n        def pytest_collection_modifyitems(items):\n            for item in items:\n                if \"interface\" in item.nodeid:\n                    item.add_marker(pytest.mark.interface)\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        def test_interface():\n            pass\n        def test_nointer():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"interface\", [\"test_interface\"]),\n        (\"not interface\", [\"test_nointer\", \"test_pass\", \"test_1\", \"test_2\"]),\n        (\"pass\", [\"test_pass\"]),\n        (\"not pass\", [\"test_interface\", \"test_nointer\", \"test_1\", \"test_2\"]),\n        (\"not not not (pass)\", [\"test_interface\", \"test_nointer\", \"test_1\", \"test_2\"]),\n        (\"1 or 2\", [\"test_1\", \"test_2\"]),\n        (\"not (1 or 2)\", [\"test_interface\", \"test_nointer\", \"test_pass\"]),\n    ],\n)\ndef test_keyword_option_custom(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        def test_interface():\n            pass\n        def test_nointer():\n            pass\n        def test_pass():\n            pass\n        def test_1():\n            pass\n        def test_2():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-k\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\ndef test_keyword_option_considers_mark(pytester: Pytester) -> None:\n    pytester.copy_example(\"marks/marks_considered_keywords\")\n    rec = pytester.inline_run(\"-k\", \"foo\")\n    passed = rec.listoutcomes()[0]\n    assert len(passed) == 1\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"None\", [\"test_func[None]\"]),\n        (\"[1.3]\", [\"test_func[1.3]\"]),\n        (\"2-3\", [\"test_func[2-3]\"]),\n    ],\n)\ndef test_keyword_option_parametrize(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [None, 1.3, \"2-3\"])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-k\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\ndef test_parametrize_with_module(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [pytest,])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run()\n    passed, _skipped, _fail = rec.listoutcomes()\n    expected_id = \"test_func[\" + pytest.__name__ + \"]\"\n    assert passed[0].nodeid.split(\"::\")[-1] == expected_id\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_error\"),\n    [\n        (\n            \"foo or\",\n            \"at column 7: expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"foo or or\",\n            \"at column 8: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"(foo\",\n            \"at column 5: expected right parenthesis; got end of input\",\n        ),\n        (\n            \"foo bar\",\n            \"at column 5: expected end of input; got identifier\",\n        ),\n        (\n            \"or or\",\n            \"at column 1: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"not or\",\n            \"at column 5: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"nonexistent_mark(non_supported='kwarg')\",\n            \"Keyword expressions do not support call parameters\",\n        ),\n    ],\n)\ndef test_keyword_option_wrong_arguments(\n    expr: str, expected_error: str, pytester: Pytester, capsys\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n            def test_func(arg):\n                pass\n        \"\"\"\n    )\n    pytester.inline_run(\"-k\", expr)\n    err = capsys.readouterr().err\n    assert expected_error in err\n\n\ndef test_parametrized_collected_from_command_line(pytester: Pytester) -> None:\n    \"\"\"Parametrized test not collected if test named specified in command\n    line issue#649.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [None, 1.3, \"2-3\"])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    file_name = os.path.basename(py_file)\n    rec = pytester.inline_run(file_name + \"::\" + \"test_func\")\n    rec.assertoutcome(passed=3)\n\n\ndef test_parametrized_collect_with_wrong_args(pytester: Pytester) -> None:\n    \"\"\"Test collect parametrized func with wrong number of args.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.parametrize('foo, bar', [(1, 2, 3)])\n        def test_func(foo, bar):\n            pass\n    \"\"\"\n    )\n\n    result = pytester.runpytest(py_file)\n    result.stdout.fnmatch_lines(\n        [\n            'test_parametrized_collect_with_wrong_args.py::test_func: in \"parametrize\" the number of names (2):',\n            \"  ['foo', 'bar']\",\n            \"must be equal to the number of values (3):\",\n            \"  (1, 2, 3)\",\n        ]\n    )\n\n\ndef test_parametrized_with_kwargs(pytester: Pytester) -> None:\n    \"\"\"Test collect parametrized func with wrong number of args.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.fixture(params=[1,2])\n        def a(request):\n            return request.param\n\n        @pytest.mark.parametrize(argnames='b', argvalues=[1, 2])\n        def test_func(a, b):\n            pass\n    \"\"\"\n    )\n\n    result = pytester.runpytest(py_file)\n    assert result.ret == 0\n\n\ndef test_parametrize_iterator(pytester: Pytester) -> None:\n    \"\"\"`parametrize` should work with generators (#5354).\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\\\n        import pytest\n\n        def gen():\n            yield 1\n            yield 2\n            yield 3\n\n        @pytest.mark.parametrize('a', gen())\n        def test(a):\n            assert a >= 1\n        \"\"\"\n    )\n    result = pytester.runpytest(py_file)\n    assert result.ret == 0\n    # should not skip any tests\n    result.stdout.fnmatch_lines([\"*3 passed*\"])\n\n\nclass TestFunctional:\n    def test_merging_markers_deep(self, pytester: Pytester) -> None:\n        # issue 199 - propagate markers into nested classes\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n            class TestA(object):\n                pytestmark = pytest.mark.a\n                def test_b(self):\n                    assert True\n                class TestC(object):\n                    # this one didn't get marked\n                    def test_d(self):\n                        assert True\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        for item in items:\n            print(item, item.keywords)\n            assert [x for x in item.iter_markers() if x.name == \"a\"]\n\n    def test_mark_decorator_subclass_does_not_propagate_to_base(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.a\n            class Base(object): pass\n\n            @pytest.mark.b\n            class Test1(Base):\n                def test_foo(self): pass\n\n            class Test2(Base):\n                def test_bar(self): pass\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        self.assert_markers(items, test_foo=(\"a\", \"b\"), test_bar=(\"a\",))\n\n    def test_mark_should_not_pass_to_siebling_class(self, pytester: Pytester) -> None:\n        \"\"\"#568\"\"\"\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            class TestBase(object):\n                def test_foo(self):\n                    pass\n\n            @pytest.mark.b\n            class TestSub(TestBase):\n                pass\n\n\n            class TestOtherSub(TestBase):\n                pass\n\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        base_item, sub_item, sub_item_other = items\n        print(items, [x.nodeid for x in items])\n        # new api segregates\n        assert not list(base_item.iter_markers(name=\"b\"))\n        assert not list(sub_item_other.iter_markers(name=\"b\"))\n        assert list(sub_item.iter_markers(name=\"b\"))\n\n    def test_mark_decorator_baseclasses_merged(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.a\n            class Base(object): pass\n\n            @pytest.mark.b\n            class Base2(Base): pass\n\n            @pytest.mark.c\n            class Test1(Base2):\n                def test_foo(self): pass\n\n            class Test2(Base2):\n                @pytest.mark.d\n                def test_bar(self): pass\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        self.assert_markers(items, test_foo=(\"a\", \"b\", \"c\"), test_bar=(\"a\", \"b\", \"d\"))\n\n    def test_mark_closest(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.c(location=\"class\")\n            class Test:\n                @pytest.mark.c(location=\"function\")\n                def test_has_own(self):\n                    pass\n\n                def test_has_inherited(self):\n                    pass\n\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        has_own, has_inherited = items\n        has_own_marker = has_own.get_closest_marker(\"c\")\n        has_inherited_marker = has_inherited.get_closest_marker(\"c\")\n        assert has_own_marker is not None\n        assert has_inherited_marker is not None\n        assert has_own_marker.kwargs == {\"location\": \"function\"}\n        assert has_inherited_marker.kwargs == {\"location\": \"class\"}\n        assert has_own.get_closest_marker(\"missing\") is None\n\n    def test_mark_with_wrong_marker(self, pytester: Pytester) -> None:\n        reprec = pytester.inline_runsource(\n            \"\"\"\n                import pytest\n                class pytestmark(object):\n                    pass\n                def test_func():\n                    pass\n        \"\"\"\n        )\n        values = reprec.getfailedcollections()\n        assert len(values) == 1\n        assert \"TypeError\" in str(values[0].longrepr)\n\n    def test_mark_dynamically_in_funcarg(self, pytester: Pytester) -> None:\n        pytester.makeconftest(\n            \"\"\"\n            import pytest\n            @pytest.fixture\n            def arg(request):\n                request.applymarker(pytest.mark.hello)\n            def pytest_terminal_summary(terminalreporter):\n                values = terminalreporter.stats['passed']\n                terminalreporter._tw.line(\"keyword: %s\" % values[0].keywords)\n        \"\"\"\n        )\n        pytester.makepyfile(\n            \"\"\"\n            def test_func(arg):\n                pass\n        \"\"\"\n        )\n        result = pytester.runpytest()\n        result.stdout.fnmatch_lines([\"keyword: *hello*\"])\n\n    def test_no_marker_match_on_unmarked_names(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n            @pytest.mark.shouldmatch\n            def test_marked():\n                assert 1\n\n            def test_unmarked():\n                assert 1\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-m\", \"test_unmarked\", p)\n        passed, skipped, failed = reprec.listoutcomes()\n        assert len(passed) + len(skipped) + len(failed) == 0\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        deselected_tests = dlist[0].items\n        assert len(deselected_tests) == 2\n\n    def test_keywords_at_node_level(self, pytester: Pytester) -> None:\n        pytester.makepyfile(\n            \"\"\"\n            import pytest\n            @pytest.fixture(scope=\"session\", autouse=True)\n            def some(request):\n                request.keywords[\"hello\"] = 42\n                assert \"world\" not in request.keywords\n\n            @pytest.fixture(scope=\"function\", autouse=True)\n            def funcsetup(request):\n                assert \"world\" in request.keywords\n                assert \"hello\" in  request.keywords\n\n            @pytest.mark.world\n            def test_function():\n                pass\n        \"\"\"\n        )\n        reprec = pytester.inline_run()\n        reprec.assertoutcome(passed=1)\n\n    def test_keyword_added_for_session(self, pytester: Pytester) -> None:\n        pytester.makeconftest(\n            \"\"\"\n            import pytest\n            def pytest_collection_modifyitems(session):\n                session.add_marker(\"mark1\")\n                session.add_marker(pytest.mark.mark2)\n                session.add_marker(pytest.mark.mark3)\n                with pytest.raises(ValueError):\n                    session.add_marker(10)\n        \"\"\"\n        )\n        pytester.makepyfile(\n            \"\"\"\n            def test_some(request):\n                assert \"mark1\" in request.keywords\n                assert \"mark2\" in request.keywords\n                assert \"mark3\" in request.keywords\n                assert 10 not in request.keywords\n                marker = request.node.get_closest_marker(\"mark1\")\n                assert marker.name == \"mark1\"\n                assert marker.args == ()\n                assert marker.kwargs == {}\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-m\", \"mark1\")\n        reprec.assertoutcome(passed=1)\n\n    def assert_markers(self, items, **expected) -> None:\n        \"\"\"Assert that given items have expected marker names applied to them.\n        expected should be a dict of (item name -> seq of expected marker names).\n\n        Note: this could be moved to ``pytester`` if proven to be useful\n        to other modules.\n        \"\"\"\n        items = {x.name: x for x in items}\n        for name, expected_markers in expected.items():\n            markers = {m.name for m in items[name].iter_markers()}\n            assert markers == set(expected_markers)\n\n    @pytest.mark.filterwarnings(\"ignore\")\n    def test_mark_from_parameters(self, pytester: Pytester) -> None:\n        \"\"\"#1540\"\"\"\n        pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            pytestmark = pytest.mark.skipif(True, reason='skip all')\n\n            # skipifs inside fixture params\n            params = [pytest.mark.skipif(False, reason='dont skip')('parameter')]\n\n\n            @pytest.fixture(params=params)\n            def parameter(request):\n                return request.param\n\n\n            def test_1(parameter):\n                assert True\n        \"\"\"\n        )\n        reprec = pytester.inline_run()\n        reprec.assertoutcome(skipped=1)\n\n    def test_reevaluate_dynamic_expr(self, pytester: Pytester) -> None:\n        \"\"\"#7360\"\"\"\n        py_file1 = pytester.makepyfile(\n            test_reevaluate_dynamic_expr1=\"\"\"\n            import pytest\n\n            skip = True\n\n            @pytest.mark.skipif(\"skip\")\n            def test_should_skip():\n                assert True\n        \"\"\"\n        )\n        py_file2 = pytester.makepyfile(\n            test_reevaluate_dynamic_expr2=\"\"\"\n            import pytest\n\n            skip = False\n\n            @pytest.mark.skipif(\"skip\")\n            def test_should_not_skip():\n                assert True\n        \"\"\"\n        )\n\n        file_name1 = os.path.basename(py_file1)\n        file_name2 = os.path.basename(py_file2)\n        reprec = pytester.inline_run(file_name1, file_name2)\n        reprec.assertoutcome(passed=1, skipped=1)\n\n\nclass TestKeywordSelection:\n    def test_select_simple(self, pytester: Pytester) -> None:\n        file_test = pytester.makepyfile(\n            \"\"\"\n            def test_one():\n                assert 0\n            class TestClass(object):\n                def test_method_one(self):\n                    assert 42 == 43\n        \"\"\"\n        )\n\n        def check(keyword, name):\n            reprec = pytester.inline_run(\"-s\", \"-k\", keyword, file_test)\n            _passed, _skipped, failed = reprec.listoutcomes()\n            assert len(failed) == 1\n            assert failed[0].nodeid.split(\"::\")[-1] == name\n            assert len(reprec.getcalls(\"pytest_deselected\")) == 1\n\n        for keyword in [\"test_one\", \"est_on\"]:\n            check(keyword, \"test_one\")\n        check(\"TestClass and test\", \"test_method_one\")\n\n    @pytest.mark.parametrize(\n        \"keyword\",\n        [\n            \"xxx\",\n            \"xxx and test_2\",\n            \"TestClass\",\n            \"xxx and not test_1\",\n            \"TestClass and test_2\",\n            \"xxx and TestClass and test_2\",\n        ],\n    )\n    def test_select_extra_keywords(self, pytester: Pytester, keyword) -> None:\n        p = pytester.makepyfile(\n            test_select=\"\"\"\n            def test_1():\n                pass\n            class TestClass(object):\n                def test_2(self):\n                    pass\n        \"\"\"\n        )\n        pytester.makepyfile(\n            conftest=\"\"\"\n            import pytest\n            @pytest.hookimpl(wrapper=True)\n            def pytest_pycollect_makeitem(name):\n                item = yield\n                if name == \"TestClass\":\n                    item.extra_keyword_matches.add(\"xxx\")\n                return item\n        \"\"\"\n        )\n        reprec = pytester.inline_run(p.parent, \"-s\", \"-k\", keyword)\n        print(\"keyword\", repr(keyword))\n        passed, _skipped, _failed = reprec.listoutcomes()\n        assert len(passed) == 1\n        assert passed[0].nodeid.endswith(\"test_2\")\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        assert len(dlist) == 1\n        assert dlist[0].items[0].name == \"test_1\"\n\n    def test_keyword_extra(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n           def test_one():\n               assert 0\n           test_one.mykeyword = True\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-k\", \"mykeyword\", p)\n        _passed, _skipped, failed = reprec.countoutcomes()\n        assert failed == 1\n\n    @pytest.mark.xfail\n    def test_keyword_extra_dash(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n           def test_one():\n               assert 0\n           test_one.mykeyword = True\n        \"\"\"\n        )\n        # with argparse the argument to an option cannot\n        # start with '-'\n        reprec = pytester.inline_run(\"-k\", \"-mykeyword\", p)\n        passed, skipped, failed = reprec.countoutcomes()\n        assert passed + skipped + failed == 0\n\n    @pytest.mark.parametrize(\n        \"keyword\",\n        [\"__\", \"+\", \"..\"],\n    )\n    def test_no_magic_values(self, pytester: Pytester, keyword: str) -> None:\n        \"\"\"Make sure the tests do not match on magic values,\n        no double underscored values, like '__dict__' and '+'.\n        \"\"\"\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_one(): assert 1\n        \"\"\"\n        )\n\n        reprec = pytester.inline_run(\"-k\", keyword, p)\n        passed, skipped, failed = reprec.countoutcomes()\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        assert passed + skipped + failed == 0\n        deselected_tests = dlist[0].items\n        assert len(deselected_tests) == 1\n\n    def test_no_match_directories_outside_the_suite(\n        self,\n        pytester: Pytester,\n        monkeypatch: pytest.MonkeyPatch,\n    ) -> None:\n        \"\"\"`-k` should not match against directories containing the test suite (#7040).\"\"\"\n        pytester.makefile(\n            **{\n                \"suite/pytest\": \"\"\"[pytest]\"\"\",\n            },\n            ext=\".ini\",\n        )\n        pytester.makepyfile(\n            **{\n                \"suite/ddd/tests/__init__.py\": \"\",\n                \"suite/ddd/tests/test_foo.py\": \"\"\"\n                def test_aaa(): pass\n                def test_ddd(): pass\n            \"\"\",\n            }\n        )\n        monkeypatch.chdir(pytester.path / \"suite\")\n\n        def get_collected_names(*args: str) -> list[str]:\n            _, rec = pytester.inline_genitems(*args)\n            calls = rec.getcalls(\"pytest_collection_finish\")\n            assert len(calls) == 1\n            return [x.name for x in calls[0].session.items]\n\n        # sanity check: collect both tests in normal runs\n        assert get_collected_names() == [\"test_aaa\", \"test_ddd\"]\n\n        # do not collect anything based on names outside the collection tree\n        assert get_collected_names(\"-k\", pytester._name) == []\n\n\nclass TestMarkDecorator:\n    @pytest.mark.parametrize(\n        \"lhs, rhs, expected\",\n        [\n            (pytest.mark.foo(), pytest.mark.foo(), True),\n            (pytest.mark.foo(), pytest.mark.bar(), False),\n            (pytest.mark.foo(), \"bar\", False),\n            (\"foo\", pytest.mark.bar(), False),\n        ],\n    )\n    def test__eq__(self, lhs, rhs, expected) -> None:\n        assert (lhs == rhs) == expected\n\n    def test_aliases(self) -> None:\n        md = pytest.mark.foo(1, \"2\", three=3)\n        assert md.name == \"foo\"\n        assert md.args == (1, \"2\")\n        assert md.kwargs == {\"three\": 3}\n\n\n@pytest.mark.parametrize(\"mark\", [None, \"skip\", \"xfail\"])\ndef test_parameterset_for_parametrize_marks(\n    pytester: Pytester, mark: _EmptyParameterSetMark | None\n) -> None:\n    if mark is not None:\n        pytester.makeini(\n            f\"\"\"\n        [pytest]\n        {EMPTY_PARAMETERSET_OPTION}={mark}\n        \"\"\"\n        )\n\n    config = pytester.parseconfig()\n    from _pytest.mark import get_empty_parameterset_mark\n    from _pytest.mark import pytest_configure\n\n    pytest_configure(config)\n    result_mark = get_empty_parameterset_mark(config, [\"a\"], all)\n    if mark is None:\n        # normalize to the default\n        mark = \"skip\"\n    assert result_mark.name == mark\n    assert result_mark.kwargs[\"reason\"].startswith(\"got empty parameter set \")\n    if mark == \"xfail\":\n        assert result_mark.kwargs.get(\"run\") is False\n\n\ndef test_parameterset_for_parametrize_marks_invalid(pytester: Pytester) -> None:\n    pytester.makeini(\n        f\"\"\"\n        [pytest]\n        {EMPTY_PARAMETERSET_OPTION}=dontcare\n        \"\"\"\n    )\n    result = pytester.runpytest()\n    assert result.ret == pytest.ExitCode.USAGE_ERROR\n    result.stderr.fnmatch_lines(\n        [\n            f\"*ERROR: *: config option '{EMPTY_PARAMETERSET_OPTION}' expects one of \"\n            \"'skip' | 'xfail' | 'fail_at_collect', got 'dontcare'\"\n        ]\n    )\n\n\ndef test_parameterset_for_fail_at_collect(pytester: Pytester) -> None:\n    pytester.makeini(\n        f\"\"\"\n    [pytest]\n    {EMPTY_PARAMETERSET_OPTION}=fail_at_collect\n    \"\"\"\n    )\n\n    config = pytester.parseconfig()\n    from _pytest.mark import get_empty_parameterset_mark\n    from _pytest.mark import pytest_configure\n\n    pytest_configure(config)\n\n    with pytest.raises(\n        Collector.CollectError,\n        match=r\"Empty parameter set in 'pytest_configure' at line \\d\\d+\",\n    ):\n        get_empty_parameterset_mark(config, [\"a\"], pytest_configure)\n\n    p1 = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.parametrize(\"empty\", [])\n        def test():\n            pass\n        \"\"\"\n    )\n    result = pytester.runpytest(str(p1))\n    result.stdout.fnmatch_lines(\n        [\n            \"collected 0 items / 1 error\",\n            \"* ERROR collecting test_parameterset_for_fail_at_collect.py *\",\n            \"Empty parameter set in 'test' at line 3\",\n            \"*= 1 error in *\",\n        ]\n    )\n    assert result.ret == ExitCode.INTERRUPTED\n\n\ndef test_paramset_empty_no_idfunc(\n    pytester: Pytester, monkeypatch: pytest.MonkeyPatch\n) -> None:\n    \"\"\"An empty parameter set should not call the user provided id function (#13031).\"\"\"\n    p1 = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        def idfunc(value):\n            raise ValueError()\n        @pytest.mark.parametrize(\"param\", [], ids=idfunc)\n        def test(param):\n            pass\n        \"\"\"\n    )\n    result = pytester.runpytest(p1, \"-v\", \"-rs\")\n    result.stdout.fnmatch_lines(\n        [\n            \"* collected 1 item\",\n            \"test_paramset_empty_no_idfunc* SKIPPED *\",\n            \"SKIPPED [1] test_paramset_empty_no_idfunc.py:5: got empty parameter set for (param)\",\n            \"*= 1 skipped in *\",\n        ]\n    )\n\n\ndef test_mark_expressions_no_smear(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        class BaseTests(object):\n            def test_something(self):\n                pass\n\n        @pytest.mark.FOO\n        class TestFooClass(BaseTests):\n            pass\n\n        @pytest.mark.BAR\n        class TestBarClass(BaseTests):\n            pass\n    \"\"\"\n    )\n\n    reprec = pytester.inline_run(\"-m\", \"FOO\")\n    passed, skipped, failed = reprec.countoutcomes()\n    dlist = reprec.getcalls(\"pytest_deselected\")\n    assert passed == 1\n    assert skipped == failed == 0\n    deselected_tests = dlist[0].items\n    assert len(deselected_tests) == 1\n\n    # todo: fixed\n    # keywords smear - expected behaviour\n    # reprec_keywords = pytester.inline_run(\"-k\", \"FOO\")\n    # passed_k, skipped_k, failed_k = reprec_keywords.countoutcomes()\n    # assert passed_k == 2\n    # assert skipped_k == failed_k == 0\n\n\ndef test_addmarker_order(pytester) -> None:\n    session = mock.Mock()\n    session.own_markers = []\n    session.parent = None\n    session.nodeid = \"\"\n    session.path = pytester.path\n    node = Node.from_parent(session, name=\"Test\")\n    node.add_marker(\"foo\")\n    node.add_marker(\"bar\")\n    node.add_marker(\"baz\", append=False)\n    extracted = [x.name for x in node.iter_markers()]\n    assert extracted == [\"baz\", \"foo\", \"bar\"]\n\n\n@pytest.mark.filterwarnings(\"ignore\")\ndef test_markers_from_parametrize(pytester: Pytester) -> None:\n    \"\"\"#3605\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        first_custom_mark = pytest.mark.custom_marker\n        custom_mark = pytest.mark.custom_mark\n        @pytest.fixture(autouse=True)\n        def trigger(request):\n            custom_mark = list(request.node.iter_markers('custom_mark'))\n            print(\"Custom mark %s\" % custom_mark)\n\n        @custom_mark(\"custom mark non parametrized\")\n        def test_custom_mark_non_parametrized():\n            print(\"Hey from test\")\n\n        @pytest.mark.parametrize(\n            \"obj_type\",\n            [\n                first_custom_mark(\"first custom mark\")(\"template\"),\n                pytest.param( # Think this should be recommended way?\n                    \"disk\",\n                    marks=custom_mark('custom mark1')\n                ),\n                custom_mark(\"custom mark2\")(\"vm\"),  # Tried also this\n            ]\n        )\n        def test_custom_mark_parametrized(obj_type):\n            print(\"obj_type is:\", obj_type)\n    \"\"\"\n    )\n\n    result = pytester.runpytest()\n    result.assert_outcomes(passed=4)\n\n\ndef test_pytest_param_id_requires_string() -> None:\n    with pytest.raises(TypeError) as excinfo:\n        pytest.param(id=True)  # type: ignore[arg-type]\n    (msg,) = excinfo.value.args\n    expected = (\n        \"Expected id to be a string or a `pytest.HIDDEN_PARAM` sentinel, \"\n        \"got <class 'bool'>: True\"\n    )\n    assert msg == expected\n\n\n@pytest.mark.parametrize(\"s\", (None, \"hello world\"))\ndef test_pytest_param_id_allows_none_or_string(s) -> None:\n    assert pytest.param(id=s)\n\n\n@pytest.mark.parametrize(\"expr\", (\"NOT internal_err\", \"NOT (internal_err)\", \"bogus=\"))\ndef test_marker_expr_eval_failure_handling(pytester: Pytester, expr) -> None:\n    foo = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.internal_err\n        def test_foo():\n            pass\n        \"\"\"\n    )\n    expected = f\"ERROR: Wrong expression passed to '-m': {expr}: *\"\n    result = pytester.runpytest(foo, \"-m\", expr)\n    result.stderr.fnmatch_lines([expected])\n    assert result.ret == ExitCode.USAGE_ERROR\n\n\ndef test_mark_mro() -> None:\n    xfail = pytest.mark.xfail\n\n    @xfail(\"a\")\n    class A:\n        pass\n\n    @xfail(\"b\")\n    class B:\n        pass\n\n    @xfail(\"c\")\n    class C(A, B):\n        pass\n\n    from _pytest.mark.structures import get_unpacked_marks\n\n    all_marks = get_unpacked_marks(C)\n\n    assert all_marks == [xfail(\"b\").mark, xfail(\"a\").mark, xfail(\"c\").mark]\n\n    assert get_unpacked_marks(C, consider_mro=False) == [xfail(\"c\").mark]\n\n\n# @pytest.mark.issue(\"https://github.com/pytest-dev/pytest/issues/10447\")\ndef test_mark_fixture_order_mro(pytester: Pytester):\n    \"\"\"This ensures we walk marks of the mro starting with the base classes\n    the action at a distance fixtures are taken as minimal example from a real project\n\n    \"\"\"\n    foo = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.fixture\n        def add_attr1(request):\n            request.instance.attr1 = object()\n\n\n        @pytest.fixture\n        def add_attr2(request):\n            request.instance.attr2 = request.instance.attr1\n\n\n        @pytest.mark.usefixtures('add_attr1')\n        class Parent:\n            pass\n\n\n        @pytest.mark.usefixtures('add_attr2')\n        class TestThings(Parent):\n            def test_attrs(self):\n                assert self.attr1 == self.attr2\n        \"\"\"\n    )\n    result = pytester.runpytest(foo)\n    result.assert_outcomes(passed=1)\n\n\ndef test_mark_parametrize_over_staticmethod(pytester: Pytester) -> None:\n    \"\"\"Check that applying marks works as intended on classmethods and staticmethods.\n\n    Regression test for #12863.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        class TestClass:\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            @classmethod\n            def test_classmethod_wrapper(cls, value: int):\n                assert value in [1, 2]\n\n            @classmethod\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            def test_classmethod_wrapper_on_top(cls, value: int):\n                assert value in [1, 2]\n\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            @staticmethod\n            def test_staticmethod_wrapper(value: int):\n                assert value in [1, 2]\n\n            @staticmethod\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            def test_staticmethod_wrapper_on_top(value: int):\n                assert value in [1, 2]\n        \"\"\"\n    )\n    result = pytester.runpytest()\n    result.assert_outcomes(passed=8)\n\n\ndef test_fixture_disallow_on_marked_functions() -> None:\n    \"\"\"Test that applying @pytest.fixture to a marked function errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.fixture\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.mark.usefixtures(\"tmp_path\")\n        def foo():\n            raise NotImplementedError()\n\n\ndef test_fixture_disallow_marks_on_fixtures() -> None:\n    \"\"\"Test that applying a mark to a fixture errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.mark.usefixtures(\"tmp_path\")\n        @pytest.fixture\n        def foo():\n            raise NotImplementedError()\n\n\ndef test_fixture_disallowed_between_marks() -> None:\n    \"\"\"Test that applying a mark to a fixture errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.fixture\n        @pytest.mark.usefixtures(\"tmp_path\")\n        def foo():\n            raise NotImplementedError()\n\n\ndef test_module_getattr_without_attributeerror(pytester: Pytester) -> None:\n    \"\"\"\n    Test that a helpful warning is emitted when a module-level\n    __getattr__ returns None instead of raising AttributeError.\n\n    Regression test for https://github.com/pytest-dev/pytest/issues/8265\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        def __getattr__(key):\n            # Bug: should raise AttributeError, but returns None\n            return None\n\n        def test_something():\n            assert True\n        \"\"\"\n    )\n    result = pytester.runpytest(\"-W\", \"always::pytest.PytestCollectionWarning\")\n    result.stdout.fnmatch_lines(\n        [\n            \"*PytestCollectionWarning*__getattr__*returns None*AttributeError*\",\n        ]\n    )\n    # The module is buggy (__getattr__ returns None for all attributes),\n    # so no tests are collected, but pytest should NOT crash with a TypeError.\n    assert result.ret != ExitCode.INTERNAL_ERROR\n",
+    "testing/test_mark_expression.py": "from __future__ import annotations\n\nfrom _pytest.mark import MarkMatcher\nfrom _pytest.mark.expression import Expression\nfrom _pytest.mark.expression import ExpressionMatcher\nimport pytest\n\n\ndef evaluate(input: str, matcher: ExpressionMatcher) -> bool:\n    return Expression.compile(input).evaluate(matcher)\n\n\ndef test_empty_is_false() -> None:\n    assert not evaluate(\"\", lambda ident, /, **kwargs: False)\n    assert not evaluate(\"\", lambda ident, /, **kwargs: True)\n    assert not evaluate(\"   \", lambda ident, /, **kwargs: False)\n    assert not evaluate(\"\\t\", lambda ident, /, **kwargs: False)\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected\"),\n    (\n        (\"true\", True),\n        (\"false\", False),\n        (\"not true\", False),\n        (\"not false\", True),\n        (\"not not true\", True),\n        (\"not not false\", False),\n        (\"true and true\", True),\n        (\"true and false\", False),\n        (\"false and true\", False),\n        (\"true and true and true\", True),\n        (\"true and true and false\", False),\n        (\"true and true and not true\", False),\n        (\"false or false\", False),\n        (\"false or true\", True),\n        (\"true or true\", True),\n        (\"true or true or false\", True),\n        (\"true and true or false\", True),\n        (\"not true or true\", True),\n        (\"(not true) or true\", True),\n        (\"not (true or true)\", False),\n        (\"true and true or false and false\", True),\n        (\"true and (true or false) and false\", False),\n        (\"true and (true or (not (not false))) and false\", False),\n    ),\n)\ndef test_basic(expr: str, expected: bool) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {\"true\": True, \"false\": False}[name]\n\n    assert evaluate(expr, matcher) is expected\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected\"),\n    (\n        (\"               true           \", True),\n        (\"               ((((((true))))))           \", True),\n        (\"     (         ((\\t  (((true)))))  \\t   \\t)\", True),\n        (\"(     true     and   (((false))))\", False),\n        (\"not not not not true\", True),\n        (\"not not not not not true\", False),\n    ),\n)\ndef test_syntax_oddities(expr: str, expected: bool) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {\"true\": True, \"false\": False}[name]\n\n    assert evaluate(expr, matcher) is expected\n\n\ndef test_backslash_not_treated_specially() -> None:\n    r\"\"\"When generating nodeids, if the source name contains special characters\n    like a newline, they are escaped into two characters like \\n. Therefore, a\n    user will never need to insert a literal newline, only \\n (two chars). So\n    mark expressions themselves do not support escaping, instead they treat\n    backslashes as regular identifier characters.\"\"\"\n\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {r\"\\nfoo\\n\"}.__contains__(name)\n\n    assert evaluate(r\"\\nfoo\\n\", matcher)\n    assert not evaluate(r\"foo\", matcher)\n    with pytest.raises(SyntaxError):\n        evaluate(\"\\nfoo\\n\", matcher)\n\n\ndef test_backslash_in_identifier_with_string_literal() -> None:\n    r\"\"\"Backslashes in identifiers should not cause false rejections when the\n    expression also contains string literals. Regression test for a bug where\n    the scanner searched the entire input for backslashes instead of only the\n    current string literal value.\"\"\"\n\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {r\"\\nfoo\\n\", r\"test\\case\", \"mark\"}.__contains__(name)\n\n    assert evaluate(r'\\nfoo\\n and mark(x=\"y\")', matcher)\n    assert evaluate(r'mark(x=\"y\") and \\nfoo\\n', matcher)\n    assert evaluate(r'test\\case and mark(x=\"y\")', matcher)\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"column\", \"message\"),\n    (\n        (\"(\", 2, \"expected not OR left parenthesis OR identifier; got end of input\"),\n        (\n            \" (\",\n            3,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \")\",\n            1,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\n            \") \",\n            1,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\n            \"not\",\n            4,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"not not\",\n            8,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"(not)\",\n            5,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\"and\", 1, \"expected not OR left parenthesis OR identifier; got and\"),\n        (\n            \"ident and\",\n            10,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"ident and or\",\n            11,\n            \"expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\"ident ident\", 7, \"expected end of input; got identifier\"),\n    ),\n)\ndef test_syntax_errors(expr: str, column: int, message: str) -> None:\n    with pytest.raises(SyntaxError) as excinfo:\n        evaluate(expr, lambda ident, /, **kwargs: True)\n    assert excinfo.value.offset == column\n    assert excinfo.value.msg == message\n\n\n@pytest.mark.parametrize(\n    \"ident\",\n    (\n        \".\",\n        \"...\",\n        \":::\",\n        \"a:::c\",\n        \"a+-b\",\n        r\"\\nhe\\\\l\\lo\\n\\t\\rbye\",\n        \"a/b\",\n        \"אבגד\",\n        \"aaאבגדcc\",\n        \"a[bcd]\",\n        \"1234\",\n        \"1234abcd\",\n        \"1234and\",\n        \"1234or\",\n        \"1234not\",\n        \"notandor\",\n        \"not_and_or\",\n        \"not[and]or\",\n        \"1234+5678\",\n        \"123.232\",\n        \"True\",\n        \"False\",\n        \"None\",\n        \"if\",\n        \"else\",\n        \"while\",\n    ),\n)\ndef test_valid_idents(ident: str) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return name == ident\n\n    assert evaluate(ident, matcher)\n\n\n@pytest.mark.parametrize(\n    \"ident\",\n    (\n        \"^\",\n        \"*\",\n        \"=\",\n        \"&\",\n        \"%\",\n        \"$\",\n        \"#\",\n        \"@\",\n        \"!\",\n        \"~\",\n        \"{\",\n        \"}\",\n        '\"',\n        \"'\",\n        \"|\",\n        \";\",\n        \"←\",\n    ),\n)\ndef test_invalid_idents(ident: str) -> None:\n    with pytest.raises(SyntaxError):\n        evaluate(ident, lambda ident, /, **kwargs: True)\n\n\n@pytest.mark.parametrize(\n    \"expr, expected_error_msg\",\n    (\n        (\"mark()\", \"expected identifier; got right parenthesis\"),\n        (\"mark(True=False)\", \"unexpected reserved python keyword `True`\"),\n        (\"mark(def=False)\", \"unexpected reserved python keyword `def`\"),\n        (\"mark(class=False)\", \"unexpected reserved python keyword `class`\"),\n        (\"mark(if=False)\", \"unexpected reserved python keyword `if`\"),\n        (\"mark(else=False)\", \"unexpected reserved python keyword `else`\"),\n        (\"mark(valid=False, def=1)\", \"unexpected reserved python keyword `def`\"),\n        (\"mark(1)\", \"not a valid python identifier 1\"),\n        (\"mark(var:=False\", \"not a valid python identifier var:\"),\n        (\"mark(1=2)\", \"not a valid python identifier 1\"),\n        (\"mark(/=2)\", \"not a valid python identifier /\"),\n        (\"mark(var==\", \"expected identifier; got =\"),\n        (\"mark(var)\", \"expected =; got right parenthesis\"),\n        (\"mark(var=none)\", 'unexpected character/s \"none\"'),\n        (\"mark(var=1.1)\", 'unexpected character/s \"1.1\"'),\n        (\"mark(var=')\", \"\"\"closing quote \"'\" is missing\"\"\"),\n        ('mark(var=\")', 'closing quote \"\"\" is missing'),\n        (\"\"\"mark(var=\"')\"\"\", 'closing quote \"\"\" is missing'),\n        (\"\"\"mark(var='\")\"\"\", \"\"\"closing quote \"'\" is missing\"\"\"),\n        (\n            r\"mark(var='\\hugo')\",\n            r'escaping with \"\\\\\" not supported in marker expression',\n        ),\n        (\"mark(empty_list=[])\", r'unexpected character/s \"\\[\\]\"'),\n        (\"'str'\", \"expected not OR left parenthesis OR identifier; got string literal\"),\n    ),\n)\ndef test_invalid_kwarg_name_or_value(\n    expr: str, expected_error_msg: str, mark_matcher: MarkMatcher\n) -> None:\n    with pytest.raises(SyntaxError, match=expected_error_msg):\n        assert evaluate(expr, mark_matcher)\n\n\n@pytest.fixture(scope=\"session\")\ndef mark_matcher() -> MarkMatcher:\n    markers = [\n        pytest.mark.number_mark(a=1, b=2, c=3, d=999_999).mark,\n        pytest.mark.builtin_matchers_mark(x=True, y=False, z=None).mark,\n        pytest.mark.str_mark(  # pylint: disable-next=non-ascii-name\n            m=\"M\", space=\"with space\", empty=\"\", aaאבגדcc=\"aaאבגדcc\", אבגד=\"אבגד\"\n        ).mark,\n    ]\n\n    return MarkMatcher.from_markers(markers)\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        # happy cases\n        (\"number_mark(a=1)\", True),\n        (\"number_mark(b=2)\", True),\n        (\"number_mark(a=1,b=2)\", True),\n        (\"number_mark(a=1,     b=2)\", True),\n        (\"number_mark(d=999999)\", True),\n        (\"number_mark(a   =   1,b= 2,     c = 3)\", True),\n        # sad cases\n        (\"number_mark(a=6)\", False),\n        (\"number_mark(b=6)\", False),\n        (\"number_mark(a=1,b=6)\", False),\n        (\"number_mark(a=6,b=2)\", False),\n        (\"number_mark(a   =   1,b= 2,     c = 6)\", False),\n        (\"number_mark(a='1')\", False),\n    ),\n)\ndef test_keyword_expressions_with_numbers(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        (\"builtin_matchers_mark(x=True)\", True),\n        (\"builtin_matchers_mark(x=False)\", False),\n        (\"builtin_matchers_mark(y=True)\", False),\n        (\"builtin_matchers_mark(y=False)\", True),\n        (\"builtin_matchers_mark(z=None)\", True),\n        (\"builtin_matchers_mark(z=False)\", False),\n        (\"builtin_matchers_mark(z=True)\", False),\n        (\"builtin_matchers_mark(z=0)\", False),\n        (\"builtin_matchers_mark(z=1)\", False),\n    ),\n)\ndef test_builtin_matchers_keyword_expressions(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        (\"str_mark(m='M')\", True),\n        ('str_mark(m=\"M\")', True),\n        (\"str_mark(aaאבגדcc='aaאבגדcc')\", True),\n        (\"str_mark(אבגד='אבגד')\", True),\n        (\"str_mark(space='with space')\", True),\n        (\"str_mark(empty='')\", True),\n        ('str_mark(empty=\"\")', True),\n        (\"str_mark(m='wrong')\", False),\n        (\"str_mark(aaאבגדcc='wrong')\", False),\n        (\"str_mark(אבגד='wrong')\", False),\n        (\"str_mark(m='')\", False),\n        ('str_mark(m=\"\")', False),\n    ),\n)\ndef test_str_keyword_expressions(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_idents\"),\n    (\n        (\"\", frozenset()),\n        (\"foo\", frozenset([\"foo\"])),\n        (\"foo and bar\", frozenset([\"foo\", \"bar\"])),\n        (\"foo or bar\", frozenset([\"foo\", \"bar\"])),\n        (\"not foo\", frozenset([\"foo\"])),\n        (\"(foo and bar) or baz\", frozenset([\"foo\", \"bar\", \"baz\"])),\n        (\"foo and foo\", frozenset([\"foo\"])),  # Duplicates are deduplicated.\n        (\"mark(a=1)\", frozenset([\"mark\"])),  # Only marker name, not kwargs.\n    ),\n)\ndef test_expression_idents(expr: str, expected_idents: frozenset[str]) -> None:\n    \"\"\"Test that Expression.idents() returns the identifiers in the expression.\"\"\"\n    assert Expression.compile(expr).idents() == expected_idents\n"
+  },
+  "test_files_before": {
+    "testing/test_mark.py": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nimport os\nimport sys\nfrom typing import cast\nfrom unittest import mock\n\nfrom _pytest.config import ExitCode\nfrom _pytest.config import UsageError\nfrom _pytest.mark import _validate_marker_names\nfrom _pytest.mark import MarkGenerator\nfrom _pytest.mark.expression import Expression\nfrom _pytest.mark.structures import EMPTY_PARAMETERSET_OPTION\nfrom _pytest.nodes import Collector\nfrom _pytest.nodes import Node\nfrom _pytest.pytester import Pytester\nimport pytest\n\n\nclass TestMark:\n    @pytest.mark.parametrize(\"attr\", [\"mark\", \"param\"])\n    def test_pytest_exists_in_namespace_all(self, attr: str) -> None:\n        module = sys.modules[\"pytest\"]\n        assert attr in module.__all__\n\n    def test_pytest_mark_notcallable(self) -> None:\n        mark = MarkGenerator(_ispytest=True)\n        with pytest.raises(TypeError):\n            mark()  # type: ignore[operator]\n\n    def test_mark_with_param(self):\n        def some_function(abc):\n            pass\n\n        class SomeClass:\n            pass\n\n        assert pytest.mark.foo(some_function) is some_function\n        marked_with_args = pytest.mark.foo.with_args(some_function)\n        assert marked_with_args is not some_function\n\n        assert pytest.mark.foo(SomeClass) is SomeClass\n        assert pytest.mark.foo.with_args(SomeClass) is not SomeClass  # type: ignore[comparison-overlap]\n\n    def test_pytest_mark_name_starts_with_underscore(self) -> None:\n        mark = MarkGenerator(_ispytest=True)\n        with pytest.raises(AttributeError):\n            _ = mark._some_name\n\n\ndef test_marked_class_run_twice(pytester: Pytester) -> None:\n    \"\"\"Test fails file is run twice that contains marked class.\n    See issue#683.\n    \"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n    import pytest\n    @pytest.mark.parametrize('abc', [1, 2, 3])\n    class Test1(object):\n        def test_1(self, abc):\n            assert abc in [1, 2, 3]\n    \"\"\"\n    )\n    file_name = os.path.basename(py_file)\n    rec = pytester.inline_run(\"--keep-duplicates\", file_name, file_name)\n    rec.assertoutcome(passed=6)\n\n\ndef test_ini_markers(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1: this is a webtest marker\n            a2: this is a smoke marker\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        def test_markers(pytestconfig):\n            markers = pytestconfig.getini(\"markers\")\n            print(markers)\n            assert len(markers) >= 2\n            assert markers[0].startswith(\"a1:\")\n            assert markers[1].startswith(\"a2:\")\n    \"\"\"\n    )\n    rec = pytester.inline_run()\n    rec.assertoutcome(passed=1)\n\n\ndef test_markers_option(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1: this is a webtest marker\n            a1some: another marker\n            nodescription\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--markers\")\n    result.stdout.fnmatch_lines(\n        [\"*a1*this is a webtest*\", \"*a1some*another marker\", \"*nodescription*\"]\n    )\n\n\ndef test_ini_markers_whitespace(pytester: Pytester) -> None:\n    pytester.makeini(\n        \"\"\"\n        [pytest]\n        markers =\n            a1 : this is a whitespace marker\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.a1\n        def test_markers():\n            assert True\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"--strict-markers\", \"-m\", \"a1\")\n    rec.assertoutcome(passed=1)\n\n\ndef test_marker_without_description(pytester: Pytester) -> None:\n    pytester.makefile(\n        \".cfg\",\n        setup=\"\"\"\n        [tool:pytest]\n        markers=slow\n    \"\"\",\n    )\n    pytester.makeconftest(\n        \"\"\"\n        import pytest\n        pytest.mark.xfail('FAIL')\n    \"\"\"\n    )\n    ftdir = pytester.mkdir(\"ft1_dummy\")\n    pytester.path.joinpath(\"conftest.py\").replace(ftdir.joinpath(\"conftest.py\"))\n    rec = pytester.runpytest(\"--strict-markers\")\n    rec.assert_outcomes()\n\n\ndef test_markers_option_with_plugin_in_current_dir(pytester: Pytester) -> None:\n    pytester.makeconftest('pytest_plugins = \"flip_flop\"')\n    pytester.makepyfile(\n        flip_flop=\"\"\"\\\n        def pytest_configure(config):\n            config.addinivalue_line(\"markers\", \"flip:flop\")\n\n        def pytest_generate_tests(metafunc):\n            try:\n                mark = metafunc.function.flipper\n            except AttributeError:\n                return\n            metafunc.parametrize(\"x\", (10, 20))\"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\\\n        import pytest\n        @pytest.mark.flipper\n        def test_example(x):\n            assert x\"\"\"\n    )\n\n    result = pytester.runpytest(\"--markers\")\n    result.stdout.fnmatch_lines([\"*flip*flop*\"])\n\n\ndef test_mark_on_pseudo_function(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.r(lambda x: 0/0)\n        def test_hello():\n            pass\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.parametrize(\n    \"option_name\", [\"--strict-markers\", \"--strict\", \"strict_markers\", \"strict\"]\n)\ndef test_strict_prohibits_unregistered_markers(\n    pytester: Pytester, option_name: str\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.unregisteredmark\n        def test_hello():\n            pass\n    \"\"\"\n    )\n    if option_name in (\"strict_markers\", \"strict\"):\n        pytester.makeini(\n            f\"\"\"\n            [pytest]\n            {option_name} = true\n            \"\"\"\n        )\n        result = pytester.runpytest()\n    else:\n        result = pytester.runpytest(option_name)\n    assert result.ret != 0\n    result.stdout.fnmatch_lines(\n        [\"'unregisteredmark' not found in `markers` configuration option\"]\n    )\n\n\nclass TestValidateMarkerNames:\n    \"\"\"Tests for _validate_marker_names (issue #2781).\"\"\"\n\n    class FakeConfig:\n        def __init__(\n            self,\n            markers: list[str],\n            strict_markers: bool | None = None,\n            strict: bool = False,\n        ) -> None:\n            self._ini: dict[str, list[str] | bool | None] = {\n                \"markers\": markers,\n                \"strict_markers\": strict_markers,\n                \"strict\": strict,\n            }\n\n        def getini(self, name: str) -> list[str] | bool | None:\n            return self._ini[name]\n\n    def _make_config(\n        self,\n        strict_markers: bool | None = None,\n        strict: bool = False,\n    ) -> pytest.Config:\n        return cast(\n            pytest.Config,\n            self.FakeConfig(\n                markers=[\"registered: a registered marker\"],\n                strict_markers=strict_markers,\n                strict=strict,\n            ),\n        )\n\n    def test_unknown_marker_with_strict_markers(self) -> None:\n        expr = Expression.compile(\"unknown_marker\")\n\n        with pytest.raises(UsageError, match=r\"Unknown marker.*unknown_marker\"):\n            _validate_marker_names(expr, self._make_config(strict_markers=True))\n\n    def test_unknown_marker_with_strict(self) -> None:\n        expr = Expression.compile(\"unknown_marker\")\n\n        with pytest.raises(UsageError, match=r\"Unknown marker.*unknown_marker\"):\n            _validate_marker_names(expr, self._make_config(strict=True))\n\n    def test_registered_marker_passes(self) -> None:\n        expr = Expression.compile(\"registered\")\n\n        _validate_marker_names(expr, self._make_config(strict_markers=True))\n\n    def test_no_validation_without_strict(self) -> None:\n        expr = Expression.compile(\"any_marker\")\n\n        _validate_marker_names(expr, self._make_config())\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"xyz\", [\"test_one\"]),\n        (\"(((  xyz))  )\", [\"test_one\"]),\n        (\"not not xyz\", [\"test_one\"]),\n        (\"xyz and xyz2\", []),\n        (\"xyz2\", [\"test_two\"]),\n        (\"xyz or xyz2\", [\"test_one\", \"test_two\"]),\n    ],\n)\ndef test_mark_option(\n    expr: str, expected_passed: list[str | None], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.xyz\n        def test_one():\n            pass\n        @pytest.mark.xyz2\n        def test_two():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"car(color='red')\", [\"test_one\"]),\n        (\"car(color='red') or car(color='blue')\", [\"test_one\", \"test_two\"]),\n        (\"car and not car(temp=5)\", [\"test_one\", \"test_three\"]),\n        (\"car(temp=4)\", [\"test_one\"]),\n        (\"car(temp=4) or car(temp=5)\", [\"test_one\", \"test_two\"]),\n        (\"car(temp=4) and car(temp=5)\", []),\n        (\"car(temp=-5)\", [\"test_three\"]),\n        (\"car(ac=True)\", [\"test_one\"]),\n        (\"car(ac=False)\", [\"test_two\"]),\n        (\"car(ac=None)\", [\"test_three\"]),  # test NOT_NONE_SENTINEL\n    ],\n    ids=str,\n)\ndef test_mark_option_with_kwargs(\n    expr: str, expected_passed: list[str | None], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.car\n        @pytest.mark.car(ac=True)\n        @pytest.mark.car(temp=4)\n        @pytest.mark.car(color=\"red\")\n        def test_one():\n            pass\n        @pytest.mark.car\n        @pytest.mark.car(ac=False)\n        @pytest.mark.car(temp=5)\n        @pytest.mark.car(color=\"blue\")\n        def test_two():\n            pass\n        @pytest.mark.car\n        @pytest.mark.car(ac=None)\n        @pytest.mark.car(temp=-5)\n        def test_three():\n            pass\n\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [(\"interface\", [\"test_interface\"]), (\"not interface\", [\"test_nointer\"])],\n)\ndef test_mark_option_custom(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makeconftest(\n        \"\"\"\n        import pytest\n        def pytest_collection_modifyitems(items):\n            for item in items:\n                if \"interface\" in item.nodeid:\n                    item.add_marker(pytest.mark.interface)\n    \"\"\"\n    )\n    pytester.makepyfile(\n        \"\"\"\n        def test_interface():\n            pass\n        def test_nointer():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-m\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"interface\", [\"test_interface\"]),\n        (\"not interface\", [\"test_nointer\", \"test_pass\", \"test_1\", \"test_2\"]),\n        (\"pass\", [\"test_pass\"]),\n        (\"not pass\", [\"test_interface\", \"test_nointer\", \"test_1\", \"test_2\"]),\n        (\"not not not (pass)\", [\"test_interface\", \"test_nointer\", \"test_1\", \"test_2\"]),\n        (\"1 or 2\", [\"test_1\", \"test_2\"]),\n        (\"not (1 or 2)\", [\"test_interface\", \"test_nointer\", \"test_pass\"]),\n    ],\n)\ndef test_keyword_option_custom(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        def test_interface():\n            pass\n        def test_nointer():\n            pass\n        def test_pass():\n            pass\n        def test_1():\n            pass\n        def test_2():\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-k\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\ndef test_keyword_option_considers_mark(pytester: Pytester) -> None:\n    pytester.copy_example(\"marks/marks_considered_keywords\")\n    rec = pytester.inline_run(\"-k\", \"foo\")\n    passed = rec.listoutcomes()[0]\n    assert len(passed) == 1\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_passed\"),\n    [\n        (\"None\", [\"test_func[None]\"]),\n        (\"[1.3]\", [\"test_func[1.3]\"]),\n        (\"2-3\", [\"test_func[2-3]\"]),\n    ],\n)\ndef test_keyword_option_parametrize(\n    expr: str, expected_passed: list[str], pytester: Pytester\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [None, 1.3, \"2-3\"])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run(\"-k\", expr)\n    passed, _skipped, _fail = rec.listoutcomes()\n    passed_str = [x.nodeid.split(\"::\")[-1] for x in passed]\n    assert passed_str == expected_passed\n\n\ndef test_parametrize_with_module(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [pytest,])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    rec = pytester.inline_run()\n    passed, _skipped, _fail = rec.listoutcomes()\n    expected_id = \"test_func[\" + pytest.__name__ + \"]\"\n    assert passed[0].nodeid.split(\"::\")[-1] == expected_id\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_error\"),\n    [\n        (\n            \"foo or\",\n            \"at column 7: expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"foo or or\",\n            \"at column 8: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"(foo\",\n            \"at column 5: expected right parenthesis; got end of input\",\n        ),\n        (\n            \"foo bar\",\n            \"at column 5: expected end of input; got identifier\",\n        ),\n        (\n            \"or or\",\n            \"at column 1: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"not or\",\n            \"at column 5: expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\n            \"nonexistent_mark(non_supported='kwarg')\",\n            \"Keyword expressions do not support call parameters\",\n        ),\n    ],\n)\ndef test_keyword_option_wrong_arguments(\n    expr: str, expected_error: str, pytester: Pytester, capsys\n) -> None:\n    pytester.makepyfile(\n        \"\"\"\n            def test_func(arg):\n                pass\n        \"\"\"\n    )\n    pytester.inline_run(\"-k\", expr)\n    err = capsys.readouterr().err\n    assert expected_error in err\n\n\ndef test_parametrized_collected_from_command_line(pytester: Pytester) -> None:\n    \"\"\"Parametrized test not collected if test named specified in command\n    line issue#649.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [None, 1.3, \"2-3\"])\n        def test_func(arg):\n            pass\n    \"\"\"\n    )\n    file_name = os.path.basename(py_file)\n    rec = pytester.inline_run(file_name + \"::\" + \"test_func\")\n    rec.assertoutcome(passed=3)\n\n\ndef test_parametrized_collect_with_wrong_args(pytester: Pytester) -> None:\n    \"\"\"Test collect parametrized func with wrong number of args.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.parametrize('foo, bar', [(1, 2, 3)])\n        def test_func(foo, bar):\n            pass\n    \"\"\"\n    )\n\n    result = pytester.runpytest(py_file)\n    result.stdout.fnmatch_lines(\n        [\n            'test_parametrized_collect_with_wrong_args.py::test_func: in \"parametrize\" the number of names (2):',\n            \"  ['foo', 'bar']\",\n            \"must be equal to the number of values (3):\",\n            \"  (1, 2, 3)\",\n        ]\n    )\n\n\ndef test_parametrized_with_kwargs(pytester: Pytester) -> None:\n    \"\"\"Test collect parametrized func with wrong number of args.\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.fixture(params=[1,2])\n        def a(request):\n            return request.param\n\n        @pytest.mark.parametrize(argnames='b', argvalues=[1, 2])\n        def test_func(a, b):\n            pass\n    \"\"\"\n    )\n\n    result = pytester.runpytest(py_file)\n    assert result.ret == 0\n\n\ndef test_parametrize_iterator(pytester: Pytester) -> None:\n    \"\"\"`parametrize` should work with generators (#5354).\"\"\"\n    py_file = pytester.makepyfile(\n        \"\"\"\\\n        import pytest\n\n        def gen():\n            yield 1\n            yield 2\n            yield 3\n\n        @pytest.mark.parametrize('a', gen())\n        def test(a):\n            assert a >= 1\n        \"\"\"\n    )\n    result = pytester.runpytest(py_file)\n    assert result.ret == 0\n    # should not skip any tests\n    result.stdout.fnmatch_lines([\"*3 passed*\"])\n\n\nclass TestFunctional:\n    def test_merging_markers_deep(self, pytester: Pytester) -> None:\n        # issue 199 - propagate markers into nested classes\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n            class TestA(object):\n                pytestmark = pytest.mark.a\n                def test_b(self):\n                    assert True\n                class TestC(object):\n                    # this one didn't get marked\n                    def test_d(self):\n                        assert True\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        for item in items:\n            print(item, item.keywords)\n            assert [x for x in item.iter_markers() if x.name == \"a\"]\n\n    def test_mark_decorator_subclass_does_not_propagate_to_base(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.a\n            class Base(object): pass\n\n            @pytest.mark.b\n            class Test1(Base):\n                def test_foo(self): pass\n\n            class Test2(Base):\n                def test_bar(self): pass\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        self.assert_markers(items, test_foo=(\"a\", \"b\"), test_bar=(\"a\",))\n\n    def test_mark_should_not_pass_to_siebling_class(self, pytester: Pytester) -> None:\n        \"\"\"#568\"\"\"\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            class TestBase(object):\n                def test_foo(self):\n                    pass\n\n            @pytest.mark.b\n            class TestSub(TestBase):\n                pass\n\n\n            class TestOtherSub(TestBase):\n                pass\n\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        base_item, sub_item, sub_item_other = items\n        print(items, [x.nodeid for x in items])\n        # new api segregates\n        assert not list(base_item.iter_markers(name=\"b\"))\n        assert not list(sub_item_other.iter_markers(name=\"b\"))\n        assert list(sub_item.iter_markers(name=\"b\"))\n\n    def test_mark_decorator_baseclasses_merged(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.a\n            class Base(object): pass\n\n            @pytest.mark.b\n            class Base2(Base): pass\n\n            @pytest.mark.c\n            class Test1(Base2):\n                def test_foo(self): pass\n\n            class Test2(Base2):\n                @pytest.mark.d\n                def test_bar(self): pass\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        self.assert_markers(items, test_foo=(\"a\", \"b\", \"c\"), test_bar=(\"a\", \"b\", \"d\"))\n\n    def test_mark_closest(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.mark.c(location=\"class\")\n            class Test:\n                @pytest.mark.c(location=\"function\")\n                def test_has_own(self):\n                    pass\n\n                def test_has_inherited(self):\n                    pass\n\n        \"\"\"\n        )\n        items, _rec = pytester.inline_genitems(p)\n        has_own, has_inherited = items\n        has_own_marker = has_own.get_closest_marker(\"c\")\n        has_inherited_marker = has_inherited.get_closest_marker(\"c\")\n        assert has_own_marker is not None\n        assert has_inherited_marker is not None\n        assert has_own_marker.kwargs == {\"location\": \"function\"}\n        assert has_inherited_marker.kwargs == {\"location\": \"class\"}\n        assert has_own.get_closest_marker(\"missing\") is None\n\n    def test_mark_with_wrong_marker(self, pytester: Pytester) -> None:\n        reprec = pytester.inline_runsource(\n            \"\"\"\n                import pytest\n                class pytestmark(object):\n                    pass\n                def test_func():\n                    pass\n        \"\"\"\n        )\n        values = reprec.getfailedcollections()\n        assert len(values) == 1\n        assert \"TypeError\" in str(values[0].longrepr)\n\n    def test_mark_dynamically_in_funcarg(self, pytester: Pytester) -> None:\n        pytester.makeconftest(\n            \"\"\"\n            import pytest\n            @pytest.fixture\n            def arg(request):\n                request.applymarker(pytest.mark.hello)\n            def pytest_terminal_summary(terminalreporter):\n                values = terminalreporter.stats['passed']\n                terminalreporter._tw.line(\"keyword: %s\" % values[0].keywords)\n        \"\"\"\n        )\n        pytester.makepyfile(\n            \"\"\"\n            def test_func(arg):\n                pass\n        \"\"\"\n        )\n        result = pytester.runpytest()\n        result.stdout.fnmatch_lines([\"keyword: *hello*\"])\n\n    def test_no_marker_match_on_unmarked_names(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n            @pytest.mark.shouldmatch\n            def test_marked():\n                assert 1\n\n            def test_unmarked():\n                assert 1\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-m\", \"test_unmarked\", p)\n        passed, skipped, failed = reprec.listoutcomes()\n        assert len(passed) + len(skipped) + len(failed) == 0\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        deselected_tests = dlist[0].items\n        assert len(deselected_tests) == 2\n\n    def test_keywords_at_node_level(self, pytester: Pytester) -> None:\n        pytester.makepyfile(\n            \"\"\"\n            import pytest\n            @pytest.fixture(scope=\"session\", autouse=True)\n            def some(request):\n                request.keywords[\"hello\"] = 42\n                assert \"world\" not in request.keywords\n\n            @pytest.fixture(scope=\"function\", autouse=True)\n            def funcsetup(request):\n                assert \"world\" in request.keywords\n                assert \"hello\" in  request.keywords\n\n            @pytest.mark.world\n            def test_function():\n                pass\n        \"\"\"\n        )\n        reprec = pytester.inline_run()\n        reprec.assertoutcome(passed=1)\n\n    def test_keyword_added_for_session(self, pytester: Pytester) -> None:\n        pytester.makeconftest(\n            \"\"\"\n            import pytest\n            def pytest_collection_modifyitems(session):\n                session.add_marker(\"mark1\")\n                session.add_marker(pytest.mark.mark2)\n                session.add_marker(pytest.mark.mark3)\n                pytest.raises(ValueError, lambda:\n                        session.add_marker(10))\n        \"\"\"\n        )\n        pytester.makepyfile(\n            \"\"\"\n            def test_some(request):\n                assert \"mark1\" in request.keywords\n                assert \"mark2\" in request.keywords\n                assert \"mark3\" in request.keywords\n                assert 10 not in request.keywords\n                marker = request.node.get_closest_marker(\"mark1\")\n                assert marker.name == \"mark1\"\n                assert marker.args == ()\n                assert marker.kwargs == {}\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-m\", \"mark1\")\n        reprec.assertoutcome(passed=1)\n\n    def assert_markers(self, items, **expected) -> None:\n        \"\"\"Assert that given items have expected marker names applied to them.\n        expected should be a dict of (item name -> seq of expected marker names).\n\n        Note: this could be moved to ``pytester`` if proven to be useful\n        to other modules.\n        \"\"\"\n        items = {x.name: x for x in items}\n        for name, expected_markers in expected.items():\n            markers = {m.name for m in items[name].iter_markers()}\n            assert markers == set(expected_markers)\n\n    @pytest.mark.filterwarnings(\"ignore\")\n    def test_mark_from_parameters(self, pytester: Pytester) -> None:\n        \"\"\"#1540\"\"\"\n        pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            pytestmark = pytest.mark.skipif(True, reason='skip all')\n\n            # skipifs inside fixture params\n            params = [pytest.mark.skipif(False, reason='dont skip')('parameter')]\n\n\n            @pytest.fixture(params=params)\n            def parameter(request):\n                return request.param\n\n\n            def test_1(parameter):\n                assert True\n        \"\"\"\n        )\n        reprec = pytester.inline_run()\n        reprec.assertoutcome(skipped=1)\n\n    def test_reevaluate_dynamic_expr(self, pytester: Pytester) -> None:\n        \"\"\"#7360\"\"\"\n        py_file1 = pytester.makepyfile(\n            test_reevaluate_dynamic_expr1=\"\"\"\n            import pytest\n\n            skip = True\n\n            @pytest.mark.skipif(\"skip\")\n            def test_should_skip():\n                assert True\n        \"\"\"\n        )\n        py_file2 = pytester.makepyfile(\n            test_reevaluate_dynamic_expr2=\"\"\"\n            import pytest\n\n            skip = False\n\n            @pytest.mark.skipif(\"skip\")\n            def test_should_not_skip():\n                assert True\n        \"\"\"\n        )\n\n        file_name1 = os.path.basename(py_file1)\n        file_name2 = os.path.basename(py_file2)\n        reprec = pytester.inline_run(file_name1, file_name2)\n        reprec.assertoutcome(passed=1, skipped=1)\n\n\nclass TestKeywordSelection:\n    def test_select_simple(self, pytester: Pytester) -> None:\n        file_test = pytester.makepyfile(\n            \"\"\"\n            def test_one():\n                assert 0\n            class TestClass(object):\n                def test_method_one(self):\n                    assert 42 == 43\n        \"\"\"\n        )\n\n        def check(keyword, name):\n            reprec = pytester.inline_run(\"-s\", \"-k\", keyword, file_test)\n            _passed, _skipped, failed = reprec.listoutcomes()\n            assert len(failed) == 1\n            assert failed[0].nodeid.split(\"::\")[-1] == name\n            assert len(reprec.getcalls(\"pytest_deselected\")) == 1\n\n        for keyword in [\"test_one\", \"est_on\"]:\n            check(keyword, \"test_one\")\n        check(\"TestClass and test\", \"test_method_one\")\n\n    @pytest.mark.parametrize(\n        \"keyword\",\n        [\n            \"xxx\",\n            \"xxx and test_2\",\n            \"TestClass\",\n            \"xxx and not test_1\",\n            \"TestClass and test_2\",\n            \"xxx and TestClass and test_2\",\n        ],\n    )\n    def test_select_extra_keywords(self, pytester: Pytester, keyword) -> None:\n        p = pytester.makepyfile(\n            test_select=\"\"\"\n            def test_1():\n                pass\n            class TestClass(object):\n                def test_2(self):\n                    pass\n        \"\"\"\n        )\n        pytester.makepyfile(\n            conftest=\"\"\"\n            import pytest\n            @pytest.hookimpl(wrapper=True)\n            def pytest_pycollect_makeitem(name):\n                item = yield\n                if name == \"TestClass\":\n                    item.extra_keyword_matches.add(\"xxx\")\n                return item\n        \"\"\"\n        )\n        reprec = pytester.inline_run(p.parent, \"-s\", \"-k\", keyword)\n        print(\"keyword\", repr(keyword))\n        passed, _skipped, _failed = reprec.listoutcomes()\n        assert len(passed) == 1\n        assert passed[0].nodeid.endswith(\"test_2\")\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        assert len(dlist) == 1\n        assert dlist[0].items[0].name == \"test_1\"\n\n    def test_keyword_extra(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n           def test_one():\n               assert 0\n           test_one.mykeyword = True\n        \"\"\"\n        )\n        reprec = pytester.inline_run(\"-k\", \"mykeyword\", p)\n        _passed, _skipped, failed = reprec.countoutcomes()\n        assert failed == 1\n\n    @pytest.mark.xfail\n    def test_keyword_extra_dash(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n           def test_one():\n               assert 0\n           test_one.mykeyword = True\n        \"\"\"\n        )\n        # with argparse the argument to an option cannot\n        # start with '-'\n        reprec = pytester.inline_run(\"-k\", \"-mykeyword\", p)\n        passed, skipped, failed = reprec.countoutcomes()\n        assert passed + skipped + failed == 0\n\n    @pytest.mark.parametrize(\n        \"keyword\",\n        [\"__\", \"+\", \"..\"],\n    )\n    def test_no_magic_values(self, pytester: Pytester, keyword: str) -> None:\n        \"\"\"Make sure the tests do not match on magic values,\n        no double underscored values, like '__dict__' and '+'.\n        \"\"\"\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_one(): assert 1\n        \"\"\"\n        )\n\n        reprec = pytester.inline_run(\"-k\", keyword, p)\n        passed, skipped, failed = reprec.countoutcomes()\n        dlist = reprec.getcalls(\"pytest_deselected\")\n        assert passed + skipped + failed == 0\n        deselected_tests = dlist[0].items\n        assert len(deselected_tests) == 1\n\n    def test_no_match_directories_outside_the_suite(\n        self,\n        pytester: Pytester,\n        monkeypatch: pytest.MonkeyPatch,\n    ) -> None:\n        \"\"\"`-k` should not match against directories containing the test suite (#7040).\"\"\"\n        pytester.makefile(\n            **{\n                \"suite/pytest\": \"\"\"[pytest]\"\"\",\n            },\n            ext=\".ini\",\n        )\n        pytester.makepyfile(\n            **{\n                \"suite/ddd/tests/__init__.py\": \"\",\n                \"suite/ddd/tests/test_foo.py\": \"\"\"\n                def test_aaa(): pass\n                def test_ddd(): pass\n            \"\"\",\n            }\n        )\n        monkeypatch.chdir(pytester.path / \"suite\")\n\n        def get_collected_names(*args: str) -> list[str]:\n            _, rec = pytester.inline_genitems(*args)\n            calls = rec.getcalls(\"pytest_collection_finish\")\n            assert len(calls) == 1\n            return [x.name for x in calls[0].session.items]\n\n        # sanity check: collect both tests in normal runs\n        assert get_collected_names() == [\"test_aaa\", \"test_ddd\"]\n\n        # do not collect anything based on names outside the collection tree\n        assert get_collected_names(\"-k\", pytester._name) == []\n\n\nclass TestMarkDecorator:\n    @pytest.mark.parametrize(\n        \"lhs, rhs, expected\",\n        [\n            (pytest.mark.foo(), pytest.mark.foo(), True),\n            (pytest.mark.foo(), pytest.mark.bar(), False),\n            (pytest.mark.foo(), \"bar\", False),\n            (\"foo\", pytest.mark.bar(), False),\n        ],\n    )\n    def test__eq__(self, lhs, rhs, expected) -> None:\n        assert (lhs == rhs) == expected\n\n    def test_aliases(self) -> None:\n        md = pytest.mark.foo(1, \"2\", three=3)\n        assert md.name == \"foo\"\n        assert md.args == (1, \"2\")\n        assert md.kwargs == {\"three\": 3}\n\n\n@pytest.mark.parametrize(\"mark\", [None, \"\", \"skip\", \"xfail\"])\ndef test_parameterset_for_parametrize_marks(\n    pytester: Pytester, mark: str | None\n) -> None:\n    if mark is not None:\n        pytester.makeini(\n            f\"\"\"\n        [pytest]\n        {EMPTY_PARAMETERSET_OPTION}={mark}\n        \"\"\"\n        )\n\n    config = pytester.parseconfig()\n    from _pytest.mark import get_empty_parameterset_mark\n    from _pytest.mark import pytest_configure\n\n    pytest_configure(config)\n    result_mark = get_empty_parameterset_mark(config, [\"a\"], all)\n    if mark in (None, \"\"):\n        # normalize to the requested name\n        mark = \"skip\"\n    assert result_mark.name == mark\n    assert result_mark.kwargs[\"reason\"].startswith(\"got empty parameter set \")\n    if mark == \"xfail\":\n        assert result_mark.kwargs.get(\"run\") is False\n\n\ndef test_parameterset_for_fail_at_collect(pytester: Pytester) -> None:\n    pytester.makeini(\n        f\"\"\"\n    [pytest]\n    {EMPTY_PARAMETERSET_OPTION}=fail_at_collect\n    \"\"\"\n    )\n\n    config = pytester.parseconfig()\n    from _pytest.mark import get_empty_parameterset_mark\n    from _pytest.mark import pytest_configure\n\n    pytest_configure(config)\n\n    with pytest.raises(\n        Collector.CollectError,\n        match=r\"Empty parameter set in 'pytest_configure' at line \\d\\d+\",\n    ):\n        get_empty_parameterset_mark(config, [\"a\"], pytest_configure)\n\n    p1 = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.parametrize(\"empty\", [])\n        def test():\n            pass\n        \"\"\"\n    )\n    result = pytester.runpytest(str(p1))\n    result.stdout.fnmatch_lines(\n        [\n            \"collected 0 items / 1 error\",\n            \"* ERROR collecting test_parameterset_for_fail_at_collect.py *\",\n            \"Empty parameter set in 'test' at line 3\",\n            \"*= 1 error in *\",\n        ]\n    )\n    assert result.ret == ExitCode.INTERRUPTED\n\n\ndef test_paramset_empty_no_idfunc(\n    pytester: Pytester, monkeypatch: pytest.MonkeyPatch\n) -> None:\n    \"\"\"An empty parameter set should not call the user provided id function (#13031).\"\"\"\n    p1 = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        def idfunc(value):\n            raise ValueError()\n        @pytest.mark.parametrize(\"param\", [], ids=idfunc)\n        def test(param):\n            pass\n        \"\"\"\n    )\n    result = pytester.runpytest(p1, \"-v\", \"-rs\")\n    result.stdout.fnmatch_lines(\n        [\n            \"* collected 1 item\",\n            \"test_paramset_empty_no_idfunc* SKIPPED *\",\n            \"SKIPPED [1] test_paramset_empty_no_idfunc.py:5: got empty parameter set for (param)\",\n            \"*= 1 skipped in *\",\n        ]\n    )\n\n\ndef test_parameterset_for_parametrize_bad_markname(pytester: Pytester) -> None:\n    with pytest.raises(pytest.UsageError):\n        test_parameterset_for_parametrize_marks(pytester, \"bad\")\n\n\ndef test_mark_expressions_no_smear(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        class BaseTests(object):\n            def test_something(self):\n                pass\n\n        @pytest.mark.FOO\n        class TestFooClass(BaseTests):\n            pass\n\n        @pytest.mark.BAR\n        class TestBarClass(BaseTests):\n            pass\n    \"\"\"\n    )\n\n    reprec = pytester.inline_run(\"-m\", \"FOO\")\n    passed, skipped, failed = reprec.countoutcomes()\n    dlist = reprec.getcalls(\"pytest_deselected\")\n    assert passed == 1\n    assert skipped == failed == 0\n    deselected_tests = dlist[0].items\n    assert len(deselected_tests) == 1\n\n    # todo: fixed\n    # keywords smear - expected behaviour\n    # reprec_keywords = pytester.inline_run(\"-k\", \"FOO\")\n    # passed_k, skipped_k, failed_k = reprec_keywords.countoutcomes()\n    # assert passed_k == 2\n    # assert skipped_k == failed_k == 0\n\n\ndef test_addmarker_order(pytester) -> None:\n    session = mock.Mock()\n    session.own_markers = []\n    session.parent = None\n    session.nodeid = \"\"\n    session.path = pytester.path\n    node = Node.from_parent(session, name=\"Test\")\n    node.add_marker(\"foo\")\n    node.add_marker(\"bar\")\n    node.add_marker(\"baz\", append=False)\n    extracted = [x.name for x in node.iter_markers()]\n    assert extracted == [\"baz\", \"foo\", \"bar\"]\n\n\n@pytest.mark.filterwarnings(\"ignore\")\ndef test_markers_from_parametrize(pytester: Pytester) -> None:\n    \"\"\"#3605\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        first_custom_mark = pytest.mark.custom_marker\n        custom_mark = pytest.mark.custom_mark\n        @pytest.fixture(autouse=True)\n        def trigger(request):\n            custom_mark = list(request.node.iter_markers('custom_mark'))\n            print(\"Custom mark %s\" % custom_mark)\n\n        @custom_mark(\"custom mark non parametrized\")\n        def test_custom_mark_non_parametrized():\n            print(\"Hey from test\")\n\n        @pytest.mark.parametrize(\n            \"obj_type\",\n            [\n                first_custom_mark(\"first custom mark\")(\"template\"),\n                pytest.param( # Think this should be recommended way?\n                    \"disk\",\n                    marks=custom_mark('custom mark1')\n                ),\n                custom_mark(\"custom mark2\")(\"vm\"),  # Tried also this\n            ]\n        )\n        def test_custom_mark_parametrized(obj_type):\n            print(\"obj_type is:\", obj_type)\n    \"\"\"\n    )\n\n    result = pytester.runpytest()\n    result.assert_outcomes(passed=4)\n\n\ndef test_pytest_param_id_requires_string() -> None:\n    with pytest.raises(TypeError) as excinfo:\n        pytest.param(id=True)  # type: ignore[arg-type]\n    (msg,) = excinfo.value.args\n    expected = (\n        \"Expected id to be a string or a `pytest.HIDDEN_PARAM` sentinel, \"\n        \"got <class 'bool'>: True\"\n    )\n    assert msg == expected\n\n\n@pytest.mark.parametrize(\"s\", (None, \"hello world\"))\ndef test_pytest_param_id_allows_none_or_string(s) -> None:\n    assert pytest.param(id=s)\n\n\n@pytest.mark.parametrize(\"expr\", (\"NOT internal_err\", \"NOT (internal_err)\", \"bogus=\"))\ndef test_marker_expr_eval_failure_handling(pytester: Pytester, expr) -> None:\n    foo = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.mark.internal_err\n        def test_foo():\n            pass\n        \"\"\"\n    )\n    expected = f\"ERROR: Wrong expression passed to '-m': {expr}: *\"\n    result = pytester.runpytest(foo, \"-m\", expr)\n    result.stderr.fnmatch_lines([expected])\n    assert result.ret == ExitCode.USAGE_ERROR\n\n\ndef test_mark_mro() -> None:\n    xfail = pytest.mark.xfail\n\n    @xfail(\"a\")\n    class A:\n        pass\n\n    @xfail(\"b\")\n    class B:\n        pass\n\n    @xfail(\"c\")\n    class C(A, B):\n        pass\n\n    from _pytest.mark.structures import get_unpacked_marks\n\n    all_marks = get_unpacked_marks(C)\n\n    assert all_marks == [xfail(\"b\").mark, xfail(\"a\").mark, xfail(\"c\").mark]\n\n    assert get_unpacked_marks(C, consider_mro=False) == [xfail(\"c\").mark]\n\n\n# @pytest.mark.issue(\"https://github.com/pytest-dev/pytest/issues/10447\")\ndef test_mark_fixture_order_mro(pytester: Pytester):\n    \"\"\"This ensures we walk marks of the mro starting with the base classes\n    the action at a distance fixtures are taken as minimal example from a real project\n\n    \"\"\"\n    foo = pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        @pytest.fixture\n        def add_attr1(request):\n            request.instance.attr1 = object()\n\n\n        @pytest.fixture\n        def add_attr2(request):\n            request.instance.attr2 = request.instance.attr1\n\n\n        @pytest.mark.usefixtures('add_attr1')\n        class Parent:\n            pass\n\n\n        @pytest.mark.usefixtures('add_attr2')\n        class TestThings(Parent):\n            def test_attrs(self):\n                assert self.attr1 == self.attr2\n        \"\"\"\n    )\n    result = pytester.runpytest(foo)\n    result.assert_outcomes(passed=1)\n\n\ndef test_mark_parametrize_over_staticmethod(pytester: Pytester) -> None:\n    \"\"\"Check that applying marks works as intended on classmethods and staticmethods.\n\n    Regression test for #12863.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n\n        class TestClass:\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            @classmethod\n            def test_classmethod_wrapper(cls, value: int):\n                assert value in [1, 2]\n\n            @classmethod\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            def test_classmethod_wrapper_on_top(cls, value: int):\n                assert value in [1, 2]\n\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            @staticmethod\n            def test_staticmethod_wrapper(value: int):\n                assert value in [1, 2]\n\n            @staticmethod\n            @pytest.mark.parametrize(\"value\", [1, 2])\n            def test_staticmethod_wrapper_on_top(value: int):\n                assert value in [1, 2]\n        \"\"\"\n    )\n    result = pytester.runpytest()\n    result.assert_outcomes(passed=8)\n\n\ndef test_fixture_disallow_on_marked_functions() -> None:\n    \"\"\"Test that applying @pytest.fixture to a marked function errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.fixture\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.mark.usefixtures(\"tmp_path\")\n        def foo():\n            raise NotImplementedError()\n\n\ndef test_fixture_disallow_marks_on_fixtures() -> None:\n    \"\"\"Test that applying a mark to a fixture errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.mark.usefixtures(\"tmp_path\")\n        @pytest.fixture\n        def foo():\n            raise NotImplementedError()\n\n\ndef test_fixture_disallowed_between_marks() -> None:\n    \"\"\"Test that applying a mark to a fixture errors (#3364).\"\"\"\n    with pytest.raises(\n        pytest.fail.Exception,\n        match=r\"Marks cannot be applied to fixtures\",\n    ):\n\n        @pytest.mark.parametrize(\"example\", [\"hello\"])\n        @pytest.fixture\n        @pytest.mark.usefixtures(\"tmp_path\")\n        def foo():\n            raise NotImplementedError()\n",
+    "testing/test_mark_expression.py": "from __future__ import annotations\n\nfrom _pytest.mark import MarkMatcher\nfrom _pytest.mark.expression import Expression\nfrom _pytest.mark.expression import ExpressionMatcher\nimport pytest\n\n\ndef evaluate(input: str, matcher: ExpressionMatcher) -> bool:\n    return Expression.compile(input).evaluate(matcher)\n\n\ndef test_empty_is_false() -> None:\n    assert not evaluate(\"\", lambda ident, /, **kwargs: False)\n    assert not evaluate(\"\", lambda ident, /, **kwargs: True)\n    assert not evaluate(\"   \", lambda ident, /, **kwargs: False)\n    assert not evaluate(\"\\t\", lambda ident, /, **kwargs: False)\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected\"),\n    (\n        (\"true\", True),\n        (\"false\", False),\n        (\"not true\", False),\n        (\"not false\", True),\n        (\"not not true\", True),\n        (\"not not false\", False),\n        (\"true and true\", True),\n        (\"true and false\", False),\n        (\"false and true\", False),\n        (\"true and true and true\", True),\n        (\"true and true and false\", False),\n        (\"true and true and not true\", False),\n        (\"false or false\", False),\n        (\"false or true\", True),\n        (\"true or true\", True),\n        (\"true or true or false\", True),\n        (\"true and true or false\", True),\n        (\"not true or true\", True),\n        (\"(not true) or true\", True),\n        (\"not (true or true)\", False),\n        (\"true and true or false and false\", True),\n        (\"true and (true or false) and false\", False),\n        (\"true and (true or (not (not false))) and false\", False),\n    ),\n)\ndef test_basic(expr: str, expected: bool) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {\"true\": True, \"false\": False}[name]\n\n    assert evaluate(expr, matcher) is expected\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected\"),\n    (\n        (\"               true           \", True),\n        (\"               ((((((true))))))           \", True),\n        (\"     (         ((\\t  (((true)))))  \\t   \\t)\", True),\n        (\"(     true     and   (((false))))\", False),\n        (\"not not not not true\", True),\n        (\"not not not not not true\", False),\n    ),\n)\ndef test_syntax_oddities(expr: str, expected: bool) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {\"true\": True, \"false\": False}[name]\n\n    assert evaluate(expr, matcher) is expected\n\n\ndef test_backslash_not_treated_specially() -> None:\n    r\"\"\"When generating nodeids, if the source name contains special characters\n    like a newline, they are escaped into two characters like \\n. Therefore, a\n    user will never need to insert a literal newline, only \\n (two chars). So\n    mark expressions themselves do not support escaping, instead they treat\n    backslashes as regular identifier characters.\"\"\"\n\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return {r\"\\nfoo\\n\"}.__contains__(name)\n\n    assert evaluate(r\"\\nfoo\\n\", matcher)\n    assert not evaluate(r\"foo\", matcher)\n    with pytest.raises(SyntaxError):\n        evaluate(\"\\nfoo\\n\", matcher)\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"column\", \"message\"),\n    (\n        (\"(\", 2, \"expected not OR left parenthesis OR identifier; got end of input\"),\n        (\n            \" (\",\n            3,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \")\",\n            1,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\n            \") \",\n            1,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\n            \"not\",\n            4,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"not not\",\n            8,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"(not)\",\n            5,\n            \"expected not OR left parenthesis OR identifier; got right parenthesis\",\n        ),\n        (\"and\", 1, \"expected not OR left parenthesis OR identifier; got and\"),\n        (\n            \"ident and\",\n            10,\n            \"expected not OR left parenthesis OR identifier; got end of input\",\n        ),\n        (\n            \"ident and or\",\n            11,\n            \"expected not OR left parenthesis OR identifier; got or\",\n        ),\n        (\"ident ident\", 7, \"expected end of input; got identifier\"),\n    ),\n)\ndef test_syntax_errors(expr: str, column: int, message: str) -> None:\n    with pytest.raises(SyntaxError) as excinfo:\n        evaluate(expr, lambda ident, /, **kwargs: True)\n    assert excinfo.value.offset == column\n    assert excinfo.value.msg == message\n\n\n@pytest.mark.parametrize(\n    \"ident\",\n    (\n        \".\",\n        \"...\",\n        \":::\",\n        \"a:::c\",\n        \"a+-b\",\n        r\"\\nhe\\\\l\\lo\\n\\t\\rbye\",\n        \"a/b\",\n        \"אבגד\",\n        \"aaאבגדcc\",\n        \"a[bcd]\",\n        \"1234\",\n        \"1234abcd\",\n        \"1234and\",\n        \"1234or\",\n        \"1234not\",\n        \"notandor\",\n        \"not_and_or\",\n        \"not[and]or\",\n        \"1234+5678\",\n        \"123.232\",\n        \"True\",\n        \"False\",\n        \"None\",\n        \"if\",\n        \"else\",\n        \"while\",\n    ),\n)\ndef test_valid_idents(ident: str) -> None:\n    def matcher(name: str, /, **kwargs: str | int | bool | None) -> bool:\n        return name == ident\n\n    assert evaluate(ident, matcher)\n\n\n@pytest.mark.parametrize(\n    \"ident\",\n    (\n        \"^\",\n        \"*\",\n        \"=\",\n        \"&\",\n        \"%\",\n        \"$\",\n        \"#\",\n        \"@\",\n        \"!\",\n        \"~\",\n        \"{\",\n        \"}\",\n        '\"',\n        \"'\",\n        \"|\",\n        \";\",\n        \"←\",\n    ),\n)\ndef test_invalid_idents(ident: str) -> None:\n    with pytest.raises(SyntaxError):\n        evaluate(ident, lambda ident, /, **kwargs: True)\n\n\n@pytest.mark.parametrize(\n    \"expr, expected_error_msg\",\n    (\n        (\"mark()\", \"expected identifier; got right parenthesis\"),\n        (\"mark(True=False)\", \"unexpected reserved python keyword `True`\"),\n        (\"mark(def=False)\", \"unexpected reserved python keyword `def`\"),\n        (\"mark(class=False)\", \"unexpected reserved python keyword `class`\"),\n        (\"mark(if=False)\", \"unexpected reserved python keyword `if`\"),\n        (\"mark(else=False)\", \"unexpected reserved python keyword `else`\"),\n        (\"mark(valid=False, def=1)\", \"unexpected reserved python keyword `def`\"),\n        (\"mark(1)\", \"not a valid python identifier 1\"),\n        (\"mark(var:=False\", \"not a valid python identifier var:\"),\n        (\"mark(1=2)\", \"not a valid python identifier 1\"),\n        (\"mark(/=2)\", \"not a valid python identifier /\"),\n        (\"mark(var==\", \"expected identifier; got =\"),\n        (\"mark(var)\", \"expected =; got right parenthesis\"),\n        (\"mark(var=none)\", 'unexpected character/s \"none\"'),\n        (\"mark(var=1.1)\", 'unexpected character/s \"1.1\"'),\n        (\"mark(var=')\", \"\"\"closing quote \"'\" is missing\"\"\"),\n        ('mark(var=\")', 'closing quote \"\"\" is missing'),\n        (\"\"\"mark(var=\"')\"\"\", 'closing quote \"\"\" is missing'),\n        (\"\"\"mark(var='\")\"\"\", \"\"\"closing quote \"'\" is missing\"\"\"),\n        (\n            r\"mark(var='\\hugo')\",\n            r'escaping with \"\\\\\" not supported in marker expression',\n        ),\n        (\"mark(empty_list=[])\", r'unexpected character/s \"\\[\\]\"'),\n        (\"'str'\", \"expected not OR left parenthesis OR identifier; got string literal\"),\n    ),\n)\ndef test_invalid_kwarg_name_or_value(\n    expr: str, expected_error_msg: str, mark_matcher: MarkMatcher\n) -> None:\n    with pytest.raises(SyntaxError, match=expected_error_msg):\n        assert evaluate(expr, mark_matcher)\n\n\n@pytest.fixture(scope=\"session\")\ndef mark_matcher() -> MarkMatcher:\n    markers = [\n        pytest.mark.number_mark(a=1, b=2, c=3, d=999_999).mark,\n        pytest.mark.builtin_matchers_mark(x=True, y=False, z=None).mark,\n        pytest.mark.str_mark(  # pylint: disable-next=non-ascii-name\n            m=\"M\", space=\"with space\", empty=\"\", aaאבגדcc=\"aaאבגדcc\", אבגד=\"אבגד\"\n        ).mark,\n    ]\n\n    return MarkMatcher.from_markers(markers)\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        # happy cases\n        (\"number_mark(a=1)\", True),\n        (\"number_mark(b=2)\", True),\n        (\"number_mark(a=1,b=2)\", True),\n        (\"number_mark(a=1,     b=2)\", True),\n        (\"number_mark(d=999999)\", True),\n        (\"number_mark(a   =   1,b= 2,     c = 3)\", True),\n        # sad cases\n        (\"number_mark(a=6)\", False),\n        (\"number_mark(b=6)\", False),\n        (\"number_mark(a=1,b=6)\", False),\n        (\"number_mark(a=6,b=2)\", False),\n        (\"number_mark(a   =   1,b= 2,     c = 6)\", False),\n        (\"number_mark(a='1')\", False),\n    ),\n)\ndef test_keyword_expressions_with_numbers(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        (\"builtin_matchers_mark(x=True)\", True),\n        (\"builtin_matchers_mark(x=False)\", False),\n        (\"builtin_matchers_mark(y=True)\", False),\n        (\"builtin_matchers_mark(y=False)\", True),\n        (\"builtin_matchers_mark(z=None)\", True),\n        (\"builtin_matchers_mark(z=False)\", False),\n        (\"builtin_matchers_mark(z=True)\", False),\n        (\"builtin_matchers_mark(z=0)\", False),\n        (\"builtin_matchers_mark(z=1)\", False),\n    ),\n)\ndef test_builtin_matchers_keyword_expressions(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    \"expr, expected\",\n    (\n        (\"str_mark(m='M')\", True),\n        ('str_mark(m=\"M\")', True),\n        (\"str_mark(aaאבגדcc='aaאבגדcc')\", True),\n        (\"str_mark(אבגד='אבגד')\", True),\n        (\"str_mark(space='with space')\", True),\n        (\"str_mark(empty='')\", True),\n        ('str_mark(empty=\"\")', True),\n        (\"str_mark(m='wrong')\", False),\n        (\"str_mark(aaאבגדcc='wrong')\", False),\n        (\"str_mark(אבגד='wrong')\", False),\n        (\"str_mark(m='')\", False),\n        ('str_mark(m=\"\")', False),\n    ),\n)\ndef test_str_keyword_expressions(\n    expr: str, expected: bool, mark_matcher: MarkMatcher\n) -> None:\n    assert evaluate(expr, mark_matcher) is expected\n\n\n@pytest.mark.parametrize(\n    (\"expr\", \"expected_idents\"),\n    (\n        (\"\", frozenset()),\n        (\"foo\", frozenset([\"foo\"])),\n        (\"foo and bar\", frozenset([\"foo\", \"bar\"])),\n        (\"foo or bar\", frozenset([\"foo\", \"bar\"])),\n        (\"not foo\", frozenset([\"foo\"])),\n        (\"(foo and bar) or baz\", frozenset([\"foo\", \"bar\", \"baz\"])),\n        (\"foo and foo\", frozenset([\"foo\"])),  # Duplicates are deduplicated.\n        (\"mark(a=1)\", frozenset([\"mark\"])),  # Only marker name, not kwargs.\n    ),\n)\ndef test_expression_idents(expr: str, expected_idents: frozenset[str]) -> None:\n    \"\"\"Test that Expression.idents() returns the identifiers in the expression.\"\"\"\n    assert Expression.compile(expr).idents() == expected_idents\n"
+  },
+  "ingested_at": "2026-09-24T07:24:17.111861Z"
+}

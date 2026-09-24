@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-01-fastapi-404",
+  "category": "api_behavior",
+  "file_path": "api/items.py",
+  "target_symbol": "read_item",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A missing item raises HTTPException(404).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the item does not exist",
+      "target": "read_item",
+      "condition": "item missing",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

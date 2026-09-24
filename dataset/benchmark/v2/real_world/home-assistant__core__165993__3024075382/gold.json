@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3024075382",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the `await hass.async_block_till_done()` line (empty suggestion block = delete)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/threema/test_config_flow.py test_user_flow_existing_gateway: the line is gone",
+    "confidence": "medium",
+    "notes": "Empty suggestion block means delete the commented line; the test was rewritten, the call is absent."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

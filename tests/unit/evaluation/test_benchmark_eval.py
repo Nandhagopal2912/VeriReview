@@ -91,9 +91,40 @@ def test_the_test_split_needs_an_explicit_flag(capsys: pytest.CaptureFixture[str
 def test_dev_run_writes_a_report(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
     out = tmp_path / "dev.json"
     args = ["eval-benchmark", "--split", "dev", "--systems", "A,F", "--resamples", "20"]
+    args += ["--benchmark-version", "v1"]
 
     assert cli.main([*args, "--dataset", str(DATASET), "--out", str(out)]) == 0
 
     printed = capsys.readouterr().out
     assert "split dev: 83 cases" in printed and "vs A" in printed
     assert '"split": "dev"' in out.read_text(encoding="utf-8")
+
+
+def test_compare_reports_pairs_cases_and_refuses_mismatches(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    import json
+
+    report = tmp_path / "a.json"
+    args = ["eval-benchmark", "--split", "dev", "--systems", "F", "--resamples", "0"]
+    args += ["--benchmark-version", "v1", "--no-models", "--dataset", str(DATASET)]
+    assert cli.main([*args, "--out", str(report)]) == 0
+
+    out = tmp_path / "diff.json"
+    assert cli.main(["compare-reports", str(report), str(report), "--out", str(out)]) == 0
+    assert "acc +0.000" in capsys.readouterr().out
+    assert json.loads(out.read_text(encoding="utf-8"))["pooled"]["accuracy"]["estimate"] == 0.0
+
+    data = json.loads(report.read_text(encoding="utf-8"))
+    data["systems"][0]["cases"] = data["systems"][0]["cases"][1:]
+    fewer = tmp_path / "fewer.json"
+    fewer.write_text(json.dumps(data), encoding="utf-8")
+    assert cli.main(["compare-reports", str(report), str(fewer)]) == 2
+
+    data = json.loads(report.read_text(encoding="utf-8"))
+    case = data["systems"][0]["cases"][0]
+    case["expected"] = "UNCERTAIN" if case["expected"] != "UNCERTAIN" else "SATISFIED"
+    relabelled = tmp_path / "relabelled.json"
+    relabelled.write_text(json.dumps(data), encoding="utf-8")
+    assert cli.main(["compare-reports", str(report), str(relabelled)]) == 2
+    assert "gold labels differ" in capsys.readouterr().err

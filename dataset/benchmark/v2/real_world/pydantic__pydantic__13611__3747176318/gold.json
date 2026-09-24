@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13611__3747176318",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Remove the Cyrillic homoglyph assertion from the test (empty suggestion on that line)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_pipeline.py:35-36: the `with pytest.raises(...)` block for 'аdmin' is removed (both lines)",
+    "confidence": "medium",
+    "notes": "The suggestion deletes the call line; the author removed its now-empty `with` line too, which the intent requires."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

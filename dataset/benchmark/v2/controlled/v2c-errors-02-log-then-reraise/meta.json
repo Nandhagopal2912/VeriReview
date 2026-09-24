@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-02-log-then-reraise",
+  "category": "error_handling",
+  "file_path": "sync/pull.py",
+  "target_symbol": "pull",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The handler logs with logger.exception and then re-raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the error before re-raising",
+      "target": "remote.fetch",
+      "condition": "OSError",
+      "expected_behavior": "logged then re-raised"
+    }
+  ]
+}

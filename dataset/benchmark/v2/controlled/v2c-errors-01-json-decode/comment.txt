@@ -1,0 +1,1 @@
+Catch `json.JSONDecodeError` and return an empty dict.

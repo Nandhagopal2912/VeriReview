@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-errors-06-wrong-exception",
+  "category": "error_handling",
+  "file_path": "net/client.py",
+  "target_symbol": "send",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "TimeoutError is caught; ConnectionResetError still propagates.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Return None on ConnectionResetError",
+      "target": "sock.sendall",
+      "condition": "ConnectionResetError",
+      "expected_behavior": "returns None"
+    }
+  ]
+}

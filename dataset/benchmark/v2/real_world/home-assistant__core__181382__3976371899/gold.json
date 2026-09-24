@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__181382__3976371899",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the token persistence logic out of the integration layer into the API library",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "cookidoo/coordinator.py: persist_auth_data decorator and _AuthDataHolder removed; the library's on_auth_data_update callback is used",
+    "confidence": "medium",
+    "notes": "Phrased as a question; the long thread ends with the author doing it upstream. Storage stays in HA by design (config entry), which the reviewer's point allows."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

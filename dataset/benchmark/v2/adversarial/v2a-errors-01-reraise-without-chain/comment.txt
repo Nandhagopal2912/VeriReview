@@ -1,0 +1,1 @@
+Wrap `json.JSONDecodeError` in `SettingsError` and chain the original exception.

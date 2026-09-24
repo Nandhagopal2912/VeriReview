@@ -1,0 +1,1 @@
+Retry once on `ConnectionError`, and log the failure.

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3005136419",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Handle the datetimetz type through the plottable ExtensionDtype mechanism (plottable_ea_dtypes) instead of listing it here",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": true,
+    "verdict": "UNCERTAIN",
+    "evidence": "pandas/plotting/_matplotlib/converter.py plottable_types: 'datetimetz' is gone and EA pairs are added from plottable_ea_pairs(), but Timestamp is still listed explicitly",
+    "confidence": "low",
+    "notes": "An observation more than a request, resolved in an offline discussion ('as we discussed last week'); whether the final code is what the reviewer meant cannot be told from the case."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

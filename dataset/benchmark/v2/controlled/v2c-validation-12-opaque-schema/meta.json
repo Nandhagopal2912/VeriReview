@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-12-opaque-schema",
+  "category": "validation",
+  "file_path": "api/import_.py",
+  "target_symbol": "import_payload",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "schemas.check is defined elsewhere; whether it validates and rejects bad payloads cannot be seen.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the payload before importing",
+      "target": "payload",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

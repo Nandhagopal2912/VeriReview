@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-04-keyword-parameter",
+  "category": "naming",
+  "file_path": "audit/log.py",
+  "target_symbol": "record",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The parameter, its use and the keyword call site are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename parameter ts to timestamp",
+      "target": "ts",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

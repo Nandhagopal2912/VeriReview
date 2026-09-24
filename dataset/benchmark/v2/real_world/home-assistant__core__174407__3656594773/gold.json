@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__174407__3656594773",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Use the grouped mock fixture and set .side_effect on it instead of patch(...)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/theben_conexa/test_config_flow.py:85-86: mock_conexa_smgw.create.side_effect = side_effect, no patch",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14865__3789364254",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Write the check as `s1.st_ino == 0 or s2.st_ino == 0` (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/pathlib.py:1104: if s1.st_ino == 0 or s2.st_ino == 0:",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

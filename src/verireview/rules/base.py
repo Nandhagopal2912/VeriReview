@@ -112,9 +112,19 @@ def requested_identifiers(requirement: Requirement, ctx: RuleContext) -> list[st
     seen: list[str] = []
     for name in candidates:
         root = name.split(".")[0]
+        if root not in known:
+            root = _singular(root, known)
         if root in known and root not in seen and root not in _CONSTANTS:
             seen.append(root)
     return seen
+
+
+def _singular(word: str, known: frozenset[str]) -> str:
+    """ "ages" → `age`, "entries" → `entry` when only the singular is in the code."""
+    for singular in (word[:-3] + "y" if word.endswith("ies") else "", word[:-1]):
+        if word.endswith("s") and singular and singular in known:
+            return singular
+    return word
 
 
 def related_identifiers(names: list[str], scope: Scope) -> set[str]:

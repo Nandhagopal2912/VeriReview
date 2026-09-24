@@ -32,6 +32,7 @@ def run_rule(
     comment: str | None = None,
     tests_before: dict[str, str] | None = None,
     tests_after: dict[str, str] | None = None,
+    siblings: list[Requirement] | None = None,
 ) -> RuleOutcome:
     case = make_case(dedent(before).lstrip("\n"), dedent(after).lstrip("\n"), anchor)
     case = case.model_copy(
@@ -52,7 +53,13 @@ def run_rule(
         }
     )
     requirement_set = ReviewRequirement(
-        case_id="c", target_file="m.py", requirements=[requirement], source="manual"
+        case_id="c",
+        target_file="m.py",
+        requirements=[
+            requirement,
+            *(s.model_copy(update={"id": f"S{i}"}) for i, s in enumerate(siblings or [], 1)),
+        ],
+        source="manual",
     )
     ctx = RuleContext.build(case, requirement_set)
     assert ctx is not None

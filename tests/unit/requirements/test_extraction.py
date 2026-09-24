@@ -175,3 +175,61 @@ def test_extraction_is_deterministic() -> None:
     comment = "Catch `requests.Timeout`, retry once, and raise `FetchError` if it still fails."
 
     assert extract_requirements(comment) == extract_requirements(comment)
+
+
+# ---------------------------------------------------------------- Phase 10.1 (dev errors)
+
+
+@pytest.mark.parametrize(
+    ("comment", "expected"),
+    [
+        ("Log a warning when the cache misses.", [C.ERROR_HANDLING]),
+        ("Please make sure the file gets closed even if parsing fails.", [C.ERROR_HANDLING]),
+        ("Ignore a missing cache file instead of crashing.", [C.ERROR_HANDLING]),
+        ("`bb` isn't a great name; call it `bounding_box`.", [C.NAMING]),
+        ("`tmp` says nothing. Something like `normalized_email` would be better.", [C.NAMING]),
+        ("We need a test for restocking an empty shelf.", [C.TESTING]),
+        ("Please cover the boundary: a discount of 0.", [C.TESTING]),
+        ("Make sure `amount` is actually a number.", [C.VALIDATION]),
+        ("`name` can be empty here; reject it.", [C.VALIDATION]),
+        ("Return an empty list instead of None when nothing matches.", [C.API_BEHAVIOR]),
+        ("docstring please.", [C.OTHER]),
+    ],
+)
+def test_phase10_1_categories(comment: str, expected: list[C]) -> None:
+    assert categories(extract_requirements(comment)) == expected
+
+
+def test_each_clause_keeps_its_own_category() -> None:
+    req = extract_requirements("Add a test for the timeout case, and log the timeout.")
+    assert categories(req) == [C.TESTING, C.ERROR_HANDLING]
+
+    req = extract_requirements("Rename `proc` to `process` and add a docstring.")
+    assert categories(req) == [C.NAMING, C.OTHER]
+
+
+def test_and_that_clause_is_its_own_requirement() -> None:
+    req = extract_requirements("Check that `start` is not None, and that `start <= end`.")
+
+    assert len(req.requirements) == 2
+    assert "start <= end" in req.requirements[1].description
+
+
+def test_two_statuses_for_two_situations() -> None:
+    req = extract_requirements("Return 400 for a missing `name` and 422 for an invalid `age`.")
+
+    assert [r.description for r in req.requirements] == [
+        "Return 400 for a missing `name`",
+        "Return 422 for an invalid `age`",
+    ]
+
+
+def test_catch_and_return_is_one_requirement_but_log_and_reraise_are_two() -> None:
+    assert len(extract_requirements("Catch `Timeout` and return an empty dict.").requirements) == 1
+    assert len(extract_requirements("Log the error and re-raise it.").requirements) == 2
+
+
+def test_handle_header_before_colon_is_not_a_requirement() -> None:
+    req = extract_requirements("Handle the `ConnectionError` properly: log it and re-raise.")
+
+    assert len(req.requirements) == 2

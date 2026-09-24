@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-validation-03-validator-never-called",
+  "category": "validation",
+  "file_path": "bank/limits.py",
+  "target_symbol": "set_limit",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "A validator is defined but set_limit never calls it.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate limit is not negative",
+      "target": "limit",
+      "condition": "limit < 0",
+      "expected_behavior": null
+    }
+  ]
+}

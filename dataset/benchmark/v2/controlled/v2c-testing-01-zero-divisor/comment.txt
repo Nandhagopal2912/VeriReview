@@ -1,0 +1,1 @@
+Add a test that a zero divisor raises ValueError.

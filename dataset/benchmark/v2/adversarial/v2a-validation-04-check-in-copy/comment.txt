@@ -1,0 +1,1 @@
+Validate that `limit` is not negative.

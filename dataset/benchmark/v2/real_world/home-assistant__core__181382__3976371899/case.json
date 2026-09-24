@@ -1,0 +1,2335 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#181382/3976371899",
+  "repository": "home-assistant/core",
+  "pull_number": 181382,
+  "pull_title": "Bump cookidoo-api to 0.18.4 and persist the OAuth2 tokens",
+  "base_sha": "7e23c4b38e721abdf83c2c43a246f9b1a5331b4c",
+  "head_sha": "dc3b1de18aff376a8ce033809c8663e9754e2e77",
+  "thread": {
+    "root_comment_id": 3976371899,
+    "path": "homeassistant/components/cookidoo/coordinator.py",
+    "line": null,
+    "original_line": 42,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -31,6 +33,32 @@\n type CookidooConfigEntry = ConfigEntry[CookidooDataUpdateCoordinator]\n \n \n+class _AuthDataHolder(Protocol):\n+    \"\"\"Something able to persist the tokens, i.e. the coordinator or an entity.\"\"\"\n+\n+    def save_auth_data(self) -> None: ...\n+\n+\n+def persist_auth_data[T: _AuthDataHolder, **P, R](",
+    "original_commit_sha": "af4d71c8cad9ed14ee2b28141c857d83524008a8",
+    "commit_sha": "af4d71c8cad9ed14ee2b28141c857d83524008a8",
+    "comments": [
+      {
+        "id": 3976371899,
+        "author": "reviewer",
+        "body": "At this current iteration I wonder why the logic of persisting the token should be managed in the intergration layer. I believe the API layer would be the better place to handle all the logic of fetching and properly storing the token. Have you tried that? :)",
+        "created_at": "2026-09-10T06:59:56Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 3976635995,
+        "author": "author",
+        "body": "Thanks for the review. One constraint I should flag: I don't maintain cookidoo-api directly, so each round of changes here requires @miaucl to review a PR upstream and cut a release. We've been through three of those cycles on this change, and I'd rather not keep adding to their queue.\r\n\r\nWould you be open to merging this as-is and handling any remaining items in follow-up PRs? If there's anything you consider blocking, I'm happy to address it — it would help a lot if you could list everything in one pass so we can wrap it in a single upstream round-trip.",
+        "created_at": "2026-09-10T07:33:10Z",
+        "in_reply_to_id": 3976371899
+      },
+      {
+        "id": 3976777576,
+        "author": "reviewer",
+        "body": "I understand your perspective and feeling regarding the cycles on the library dependency. From the HA Core perspective we should not rush in changes if they're not ready yet. If we identify a part which is better fitted in the API layer, we do/should identify that to the author. There's no deadline to chase. :)\r\n\r\nFor now this is the only thing I can mark that's better off in the upstream library. I hope you're willing to continue to get this in upstream and continue to work on the PR. :)",
+        "created_at": "2026-09-10T07:50:21Z",
+        "in_reply_to_id": 3976371899
+      },
+      {
+        "id": 3976874700,
+        "author": "author",
+        "body": "I understand that, what I am trying to say is that you can't expect people to go through several cycles of reviews because you review the PR only partially and then figure out new feedback on a subsequent review pass (or change your mind, like it happened earlier).",
+        "created_at": "2026-09-10T08:02:13Z",
+        "in_reply_to_id": 3976371899
+      },
+      {
+        "id": 3976992093,
+        "author": "reviewer",
+        "body": "Each iteration brings in new insights. Right now I saw the complexity rise as the persistence was being invoked on each interaction with the library and that got me thinking.\r\nThe three upstream changes you've made, were driven by your own discovery - which is good. Reviewing remains human work. :)",
+        "created_at": "2026-09-10T08:15:11Z",
+        "in_reply_to_id": 3976371899
+      },
+      {
+        "id": 4015484690,
+        "author": "author",
+        "body": "Done upstream — `cookidoo-api` 0.18.4 ships miaucl/cookidoo-api#267, and fe62d7f adopts it here.\n\n`Cookidoo` now takes an `on_auth_data_update` callback and calls it from `_apply_tokens()`, so the consumer is notified whenever the tokens actually change: on a login, and on the refresh a request performs on its own once the access token has expired (which is also where the server rotates the refresh token). The library is the only place that knows when that happens, so that is where the signal belongs — it just can't own the *storage*, since where the tokens live is a Home Assistant concern (the config entry).\n\nWhat that removes from the integration layer: the `persist_auth_data` decorator and the `_AuthDataHolder` protocol it needed, `CookidooDataUpdateCoordinator.save_auth_data()`, the shim on the base entity, and the `auth_data` snapshot at the end of the config flow validation. No call site knows about tokens any more — the client is built with one callback that writes `CONF_TOKEN` back on the entry, and from the config flow one that keeps the pair the entry is created with. Net −60 lines in the integration.\n\nThe PR title and description are updated to 0.18.4.",
+        "created_at": "2026-09-15T12:19:36Z",
+        "in_reply_to_id": 3976371899
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "af4d71c8cad9ed14ee2b28141c857d83524008a8",
+    "end_commit_sha": "dc3b1de18aff376a8ce033809c8663e9754e2e77",
+    "subsequent_commits": [
+      {
+        "sha": "0a4bae1a3c43511d42fb9ccd17300f0cfa73c46b",
+        "message": "Let the library hand us the tokens instead of collecting them\n\nPersisting the tokens was spread across the integration: a `persist_auth_data`\ndecorator on every call site that could rotate them, a `save_auth_data()` on\nthe coordinator and a shim on the base entity, plus a snapshot of `auth_data`\nat the end of the config flow validation. All of it existed because the\nlibrary gave no signal when the tokens changed, so each caller had to look.\n\ncookidoo-api 0.18.4 takes an `on_auth_data_update` callback and calls it\nwhenever the tokens change -- on a login, and on the refresh a request\nperforms on its own once the access token has expired. Pass it when building\nthe client: from a config entry it writes `CONF_TOKEN` back on the entry,\nfrom the config flow it keeps the pair the entry is created with.\n\nNo call site has to know about tokens any more, so the decorator, the\nprotocol it needed, the coordinator method and the entity shim are all gone.",
+        "authored_at": "2026-09-10T08:16:30Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "f5a149c602972e3b0eb61fe275517c8d1886ae6f",
+        "message": "Treat a login parse failure as a connection error in the config flow\n\nThe coordinator's _async_setup already maps CookidooParseException to the\nretryable setup_request_exception, because login() scrapes the CIAM login\npage and can fail to parse it -- a Cloudflare interstitial in place of the\nform is the practical case. validate_input() runs the same login() but only\ncaught CookidooRequestException, so that failure fell through to the generic\n\"unknown\" handler: the user saw \"Unexpected error\" instead of \"Failed to\nconnect\", and a routine upstream hiccup was logged with a full traceback.\n\nCatch it alongside CookidooRequestException, and cover it in the error\nparametrization of every flow that validates credentials: both user steps,\nboth reconfigure steps and reauth.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-15T13:01:36Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "0c6396f42f7820e5ff2283044c75b1b19f887a24",
+        "message": "Catch the parse failure by name in the coordinator\n\nThe two handlers that turn a failed login into UpdateFailed caught the base\nCookidooException. What they mean is the parse failure that login() can hit\nwhile scraping the CIAM page; the base class also covers\nCookidooConfigException, a permanent client defect that would then be\nreported to the user as a connection problem and retried forever instead of\nbeing logged as the bug it is. Name the exception that is actually expected,\nso anything else keeps its traceback.\n\nThe handler for the recovery login lists CookidooRequestException alongside\nit: that login() runs inside an except block, so the sibling\n\"except CookidooException\" of the same try cannot catch what it raises.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-15T13:19:55Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c8a177269073ccd2ec61f56884e82cb8e7dab0d5",
+        "message": "Create the entry even when the login hands us no tokens\n\nThe config flow only ever learns the tokens from the on_auth_data_update\ncallback, and the library skips it when auth_data is None. That is not a\nfailure mode: auth_data is None while the refresh token is unset, and\n_apply_tokens keeps the old one when a token response omits it\n(\"A refresh response may omit a new refresh token\"), so a response without\none is a successful login that notifies nothing. `token` had no default, so\nasync_create_entry then raised AttributeError instead of creating the entry.\n\nDefault it to an empty dict, which is also what the code this replaced fell\nback to. cookidoo_from_config_entry() skips a falsy token, so the entry is\nset up with a plain credential login and stores whatever that yields.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-16T05:57:13Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c55de3a654cd91109dca0b4afc993f055f3837e2",
+        "message": "Fall back to a login when the stored tokens cannot be restored\n\nCookidooAuthData(**token) is handed whatever shape the library wrote the last\ntime the entry was set up, and async_setup_entry awaits it outside any try. A\nfield the current library no longer accepts therefore raised TypeError and put\nthe entry in SETUP_ERROR: permanent, no retry, and no way out other than\ndeleting it -- the one path where a bad stored token did not degrade into a\ncredential login like every other one does.\n\nCatch it and leave the client without auth data, which is the state the\ncoordinator already handles by logging in with the credentials.\n\nAlso merge the two tests covering the tokens a request rotates mid-update.\nThey were written when a decorator persisted them in a finally, so the \"a\nlater call fails\" case exercised a distinct path; now that the callback writes\nthem as they arrive, the two differ only in whether a later call raises, which\nis a parameter.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-16T05:57:13Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "aae9309a63e47286796f2b7506240f80fdbe7d20",
+        "message": "Name the exceptions the migration expects\n\nThe migration caught the base CookidooException, which also covers\nCookidooConfigException -- a permanent client defect that would be reported as\n\"Could not migrate config entry\" and lose its traceback. The coordinator was\nnarrowed for that reason; the migration calls the same login() and\nget_user_info(), so list the same three exceptions it does.\n\nAlso drop the dead None branch in the test fixture that emulates the library\nnotifying its consumer: every call site passes a callback now.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-16T05:57:14Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "aef1987ffdff66a03f25fe87e04a55c4cabf704d",
+        "message": "Persist only the tokens of the validation attempt that succeeded\n\n_save_token runs from the library's callback, which a login that yields no\nauth data never fires, so `token` kept whatever an earlier attempt had left\nthere. An attempt can leave one behind while still reporting an error: login()\nnotifies as soon as it holds the tokens, and the get_user_info() right after it\ncan still fail. Retry with different credentials, and a login that hands back\nno tokens of its own would persist the pair belonging to the credentials that\nwere just rejected -- in a reauth, another account's.\n\nClear it before each attempt builds its client, so what reaches the entry is\nonly ever what that attempt produced, and an attempt that produced nothing\nstores nothing.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-16T06:12:02Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e99d2906e04b568e2c80f22bb8015c1e57d1e6bf",
+        "message": "Fold the token cases into the user flow test, shorten the docstrings\n\ntest_flow_user_success and the two tests that followed it ran the same three\nstep flow and differed only in what the validation left in the token: the pair\nthe login handed over, the pair a later request rotated them into, or nothing\nat all. That is a parameter, so they are one parametrized test now, with a\nhelper per case arranging the client.\n\nAlso reduce the two callbacks that store the tokens to one line docstrings.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-17T11:38:44Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "dc3b1de18aff376a8ce033809c8663e9754e2e77",
+        "message": "Move the validation token arrangement into a fixture, drop the stored token guard\n\nAddresses the last review round:\n\n- The three module level helpers arranging the client are gone. The cases now\n  parametrize the tokens each validation request hands over, and a conftest\n  fixture does the wiring, so the test body arranges in one line.\n\n- The try/except around restoring a stored token is removed, along with its\n  test. It could only fire if a future cookidoo-api changed the shape of\n  CookidooAuthData, and a change like that is better met with a config entry\n  migration than with a silent fallback to a credential login.\n\n- Rebased onto current dev.\n\nThis is the last commit I will send to this pull request. I am withdrawing my\nvolunteer work on the project, so there will be no further rounds from me.\n\nThe branch is left in a working state for anyone who wants to carry it\nforward: 81 tests pass, ruff, mypy and pylint are clean, and the upstream\nlibrary work this depends on is already released and needs nothing further\n(cookidoo-api 0.18.1 through 0.18.4, miaucl/cookidoo-api#259, #262, #266\nand #267).\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01GAQ727uX8BSNB1CPTEoGZE",
+        "authored_at": "2026-09-18T06:21:23Z",
+        "committed_at": "2026-09-18T06:21:23Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [
+      {
+        "sha": "43ea3905335a2b18c12119ef92e16ee0a19f0a1e",
+        "message": "Bump cookidoo-api to 0.18.1 and persist the OAuth2 tokens\n\n0.18.0 replaces the cookie session with a proper OAuth2 authorization\ncode + PKCE login that yields an access and a refresh token. Store them\non the config entry so a restart restores the session instead of\nreplaying the Cloudflare-protected credential login, and write them back\nwhenever the library rotates them.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01U9tJdQdLB7bcvqpRp16LXC",
+        "authored_at": "2026-09-05T12:19:24Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7cb8315531b7e53fa108d9fe120240c71e04af8e",
+        "message": "Seed the OAuth2 tokens in a config entry migration\n\nAddress review feedback: move the initial token seeding out of the\ncoordinator and into async_migrate_entry, so the entry already carries\nthe tokens once the integration is set up. Runtime persistence of\nrotated tokens stays in the coordinator.\n\nAlso broaden the exception handling in _async_setup. The cookidoo\nexceptions are siblings rather than a hierarchy, so CookidooParseException\nand friends escaped the CookidooRequestException/CookidooAuthException\nhandlers even though login() documents raising them.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T10:02:46Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "a3233cd1c672470f5a37773e0db742fbe797b46a",
+        "message": "Revert the config entry migration, keep the setup exception handling\n\nThe migration request was withdrawn in review: the coordinator already\npersists the tokens during _async_setup, so seeding them in\nasync_migrate_entry was redundant. This restores MINOR_VERSION 3 and\ndrops the migration and its tests.\n\nThe broadened exception handling in _async_setup stays: the cookidoo\nexceptions are siblings rather than a hierarchy, so CookidooParseException\nescaped the CookidooRequestException/CookidooAuthException handlers even\nthough login() documents raising it.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T13:28:13Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "4b73cbf60c093c71918ec2d453db7277152f1b72",
+        "message": "Handle parse failures at the remaining login call sites\n\nThe cookidoo exceptions are siblings rather than a hierarchy, and a\nrecovery login() runs inside an except block, so the sibling\n\"except CookidooException\" of the same try cannot catch what it raises.\nCookidooParseException therefore escaped both the coordinator's\nauth-recovery login and the calendar's, the latter reaching the service\ncaller as a raw library exception instead of a translated\nHomeAssistantError. The calendar retry after a successful login was\nunguarded for the same reason.\n\nAlso persist the tokens right after login() rather than after the user\ninfo fetch, so a failure there no longer discards them and replays the\nwhole CIAM login on the next attempt.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T14:58:00Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5b2fe21b6dab2ff38e54d14238db902f26bbcdac",
+        "message": "Persist rotated tokens on every recovery path\n\n_async_update_data saved the tokens only after all four fetches\nsucceeded, so a rotation triggered by an early call was discarded when a\nlater one failed. Move the save into a finally, which also covers the\nre-login branch. Since the tokens can rotate on any request, dropping\nthem can invalidate the stored refresh token and force a full credential\nlogin after a restart.\n\nThe calendar's recovery login had the same gap, so save there too. This\nmeans reaching the method from outside the coordinator; rename it to\nsave_auth_data, which also drops the _async_ prefix it never earned as a\nsync function.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T15:17:48Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "0890b370dab83b66c0f3f9ae4f5c2e5da05dd51f",
+        "message": "Persist tokens rotated by a plain calendar fetch\n\nget_recipes_in_calendar_week() can refresh and rotate the tokens on its\nown, so saving only after the explicit re-login left a rotation from the\nfetch itself unpersisted until the next coordinator poll. Move the save\ninto a finally, mirroring the coordinator, which covers the fetch, the\nretry and the re-login alike.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T16:21:03Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ee8ea7ba655d5bb13f0d01804ecc08fdb99cef98",
+        "message": "Persist rotated tokens from setup and the entity actions\n\nAny request can rotate the tokens, so the remaining call sites that\ntouch the client directly need the same treatment as the coordinator\nupdate: the todo and button actions, whose failure paths never reach\nasync_refresh(), and _async_setup, where a restored token can be\nrefreshed just before the request that then fails.\n\nThe explicit save after login() in _async_login goes away, since the new\nfinally in _async_setup already covers that path.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T16:47:26Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d23561a2569a7f46319bdae3a3285b7f2566aca2",
+        "message": "Replace the scattered token saves with a decorator\n\nEvery call site that touches the client had grown its own\n\"finally: save_auth_data()\", which is the sort of thing the next one\nforgets. Collapse them into a @persist_auth_data decorator, applied to\nthe coordinator setup and update, the calendar fetch and the todo and\nbutton actions alike. Entities delegate save_auth_data() to their\ncoordinator so the same decorator fits both.\n\nAlso catch CookidooException in the two migrations, so a login that\nfails to parse the CIAM page reports the same handled error as a request\nor auth failure instead of escaping async_migrate_entry.\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01PrpVvVSMPvxivpbK1cZEeu",
+        "authored_at": "2026-09-06T17:40:21Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "224a9bdf48a0ab34311844bcfcb276f9d3ce1f09",
+        "message": "Bump cookidoo-api to 0.18.2 for the serialized token refresh\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01VUMQZvcbcEk2cq2cwmaqGm",
+        "authored_at": "2026-09-08T19:17:38Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2de6d04b601918cba1c70fdb6c7985ede3edb543",
+        "message": "Snapshot the config flow tokens after the last validation request\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_01VUMQZvcbcEk2cq2cwmaqGm",
+        "authored_at": "2026-09-08T19:24:46Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2c4f35c962ea27bb337141601bcdb521484bd9d3",
+        "message": "Bump cookidoo-api to 0.18.3 for the normalized refresh failures\n\nCo-Authored-By: Claude Opus 5 (1M context) <<email>>\nClaude-Session: https://claude.ai/code/session_015XfphwxLWbVT1k2bxXGRcF",
+        "authored_at": "2026-09-10T05:20:58Z",
+        "committed_at": "2026-09-18T06:19:09Z",
+        "author_login": "author"
+      }
+    ],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "original_commit_not_in_pr",
+      "history_rewritten",
+      "ordered_by_timestamp",
+      "ambiguous_rewritten_commits",
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "homeassistant/components/cookidoo/coordinator.py",
+  "before_code": "\"\"\"DataUpdateCoordinator for the Cookidoo integration.\"\"\"\n\nfrom collections.abc import Callable, Coroutine\nfrom dataclasses import asdict, dataclass\nfrom datetime import timedelta\nfrom functools import wraps\nimport logging\nfrom typing import Any, Concatenate, Protocol, override\n\nfrom cookidoo_api import (\n    Cookidoo,\n    CookidooAdditionalItem,\n    CookidooAuthException,\n    CookidooException,\n    CookidooIngredientItem,\n    CookidooRequestException,\n    CookidooSubscription,\n    CookidooUserInfo,\n)\nfrom cookidoo_api.types import CookidooCalendarDay\n\nfrom homeassistant.config_entries import ConfigEntry\nfrom homeassistant.const import CONF_EMAIL, CONF_TOKEN\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.exceptions import ConfigEntryAuthFailed\nfrom homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed\nfrom homeassistant.util import dt as dt_util\n\nfrom .const import DOMAIN\n\n_LOGGER = logging.getLogger(__name__)\n\ntype CookidooConfigEntry = ConfigEntry[CookidooDataUpdateCoordinator]\n\n\nclass _AuthDataHolder(Protocol):\n    \"\"\"Something able to persist the tokens, i.e. the coordinator or an entity.\"\"\"\n\n    def save_auth_data(self) -> None: ...\n\n\ndef persist_auth_data[T: _AuthDataHolder, **P, R](\n    func: Callable[Concatenate[T, P], Coroutine[Any, Any, R]],\n) -> Callable[Concatenate[T, P], Coroutine[Any, Any, R]]:\n    \"\"\"Persist the tokens the library may rotate while the wrapped call runs.\n\n    Any request can transparently refresh the access token and hand back a new\n    refresh token, so the result has to be stored whether the call succeeded or\n    raised, or a restart can restore a refresh token the server already retired.\n    \"\"\"\n\n    @wraps(func)\n    async def wrapper(self: T, *args: P.args, **kwargs: P.kwargs) -> R:\n        try:\n            return await func(self, *args, **kwargs)\n        finally:\n            self.save_auth_data()\n\n    return wrapper\n\n\n@dataclass\nclass CookidooData:\n    \"\"\"Cookidoo data type.\"\"\"\n\n    ingredient_items: list[CookidooIngredientItem]\n    additional_items: list[CookidooAdditionalItem]\n    subscription: CookidooSubscription | None\n    week_plan: list[CookidooCalendarDay]\n\n\nclass CookidooDataUpdateCoordinator(DataUpdateCoordinator[CookidooData]):\n    \"\"\"A Cookidoo Data Update Coordinator.\"\"\"\n\n    config_entry: CookidooConfigEntry\n    user: CookidooUserInfo\n\n    def __init__(\n        self, hass: HomeAssistant, cookidoo: Cookidoo, entry: CookidooConfigEntry\n    ) -> None:\n        \"\"\"Initialize the Cookidoo data coordinator.\"\"\"\n        super().__init__(\n            hass,\n            _LOGGER,\n            name=DOMAIN,\n            update_interval=timedelta(seconds=90),\n            config_entry=entry,\n        )\n        self.cookidoo = cookidoo\n\n    async def _async_login(self) -> CookidooUserInfo:\n        \"\"\"Return the user info, reusing the persisted tokens while they are valid.\"\"\"\n        if self.cookidoo.auth_data is not None:\n            try:\n                return await self.cookidoo.get_user_info()\n            except CookidooAuthException:\n                _LOGGER.debug(\"Stored tokens are no longer valid, logging in again\")\n        await self.cookidoo.login()\n        return await self.cookidoo.get_user_info()\n\n    def save_auth_data(self) -> None:\n        \"\"\"Persist the OAuth2 tokens so a restart does not need a new login.\"\"\"\n        if (auth_data := self.cookidoo.auth_data) is None:\n            return\n        token = asdict(auth_data)\n        if self.config_entry.data.get(CONF_TOKEN) == token:\n            return\n        self.hass.config_entries.async_update_entry(\n            self.config_entry,\n            data={**self.config_entry.data, CONF_TOKEN: token},\n        )\n\n    @override\n    @persist_auth_data\n    async def _async_setup(self) -> None:\n        try:\n            self.user = await self._async_login()\n        except CookidooRequestException as e:\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_request_exception\",\n            ) from e\n        except CookidooAuthException as e:\n            raise ConfigEntryAuthFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_authentication_exception\",\n                translation_placeholders={\n                    CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                },\n            ) from e\n        except CookidooException as e:\n            # login() scrapes the CIAM login page, so it can also fail to parse it\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_request_exception\",\n            ) from e\n\n    @override\n    @persist_auth_data\n    async def _async_update_data(self) -> CookidooData:\n        try:\n            ingredient_items = await self.cookidoo.get_ingredient_items()\n            additional_items = await self.cookidoo.get_additional_items()\n            subscription = await self.cookidoo.get_active_subscription()\n            week_plan = await self.cookidoo.get_recipes_in_calendar_week(\n                dt_util.now().date()\n            )\n        except CookidooAuthException:\n            try:\n                await self.cookidoo.login()\n            except CookidooAuthException as exc:\n                raise ConfigEntryAuthFailed(\n                    translation_domain=DOMAIN,\n                    translation_key=\"setup_authentication_exception\",\n                    translation_placeholders={\n                        CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                    },\n                ) from exc\n            except CookidooException as exc:\n                raise UpdateFailed(\n                    translation_domain=DOMAIN,\n                    translation_key=\"setup_request_exception\",\n                ) from exc\n            _LOGGER.debug(\n                \"Authentication failed but re-authentication\"\n                \" was successful, trying again later\"\n            )\n            return self.data\n        except CookidooException as e:\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"update_exception\",\n            ) from e\n\n        return CookidooData(\n            ingredient_items=ingredient_items,\n            additional_items=additional_items,\n            subscription=subscription,\n            week_plan=week_plan,\n        )\n",
+  "anchor_line": 42,
+  "after_code": "\"\"\"DataUpdateCoordinator for the Cookidoo integration.\"\"\"\n\nfrom dataclasses import dataclass\nfrom datetime import timedelta\nimport logging\nfrom typing import override\n\nfrom cookidoo_api import (\n    Cookidoo,\n    CookidooAdditionalItem,\n    CookidooAuthException,\n    CookidooException,\n    CookidooIngredientItem,\n    CookidooParseException,\n    CookidooRequestException,\n    CookidooSubscription,\n    CookidooUserInfo,\n)\nfrom cookidoo_api.types import CookidooCalendarDay\n\nfrom homeassistant.config_entries import ConfigEntry\nfrom homeassistant.const import CONF_EMAIL\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.exceptions import ConfigEntryAuthFailed\nfrom homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed\nfrom homeassistant.util import dt as dt_util\n\nfrom .const import DOMAIN\n\n_LOGGER = logging.getLogger(__name__)\n\ntype CookidooConfigEntry = ConfigEntry[CookidooDataUpdateCoordinator]\n\n\n@dataclass\nclass CookidooData:\n    \"\"\"Cookidoo data type.\"\"\"\n\n    ingredient_items: list[CookidooIngredientItem]\n    additional_items: list[CookidooAdditionalItem]\n    subscription: CookidooSubscription | None\n    week_plan: list[CookidooCalendarDay]\n\n\nclass CookidooDataUpdateCoordinator(DataUpdateCoordinator[CookidooData]):\n    \"\"\"A Cookidoo Data Update Coordinator.\"\"\"\n\n    config_entry: CookidooConfigEntry\n    user: CookidooUserInfo\n\n    def __init__(\n        self, hass: HomeAssistant, cookidoo: Cookidoo, entry: CookidooConfigEntry\n    ) -> None:\n        \"\"\"Initialize the Cookidoo data coordinator.\"\"\"\n        super().__init__(\n            hass,\n            _LOGGER,\n            name=DOMAIN,\n            update_interval=timedelta(seconds=90),\n            config_entry=entry,\n        )\n        self.cookidoo = cookidoo\n\n    async def _async_login(self) -> CookidooUserInfo:\n        \"\"\"Return the user info, reusing the persisted tokens while they are valid.\"\"\"\n        if self.cookidoo.auth_data is not None:\n            try:\n                return await self.cookidoo.get_user_info()\n            except CookidooAuthException:\n                _LOGGER.debug(\"Stored tokens are no longer valid, logging in again\")\n        await self.cookidoo.login()\n        return await self.cookidoo.get_user_info()\n\n    @override\n    async def _async_setup(self) -> None:\n        try:\n            self.user = await self._async_login()\n        except CookidooRequestException as e:\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_request_exception\",\n            ) from e\n        except CookidooAuthException as e:\n            raise ConfigEntryAuthFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_authentication_exception\",\n                translation_placeholders={\n                    CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                },\n            ) from e\n        except CookidooParseException as e:\n            # login() scrapes the CIAM login page, so it can also fail to parse it\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"setup_request_exception\",\n            ) from e\n\n    @override\n    async def _async_update_data(self) -> CookidooData:\n        try:\n            ingredient_items = await self.cookidoo.get_ingredient_items()\n            additional_items = await self.cookidoo.get_additional_items()\n            subscription = await self.cookidoo.get_active_subscription()\n            week_plan = await self.cookidoo.get_recipes_in_calendar_week(\n                dt_util.now().date()\n            )\n        except CookidooAuthException:\n            try:\n                await self.cookidoo.login()\n            except CookidooAuthException as exc:\n                raise ConfigEntryAuthFailed(\n                    translation_domain=DOMAIN,\n                    translation_key=\"setup_authentication_exception\",\n                    translation_placeholders={\n                        CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                    },\n                ) from exc\n            except (CookidooRequestException, CookidooParseException) as exc:\n                raise UpdateFailed(\n                    translation_domain=DOMAIN,\n                    translation_key=\"setup_request_exception\",\n                ) from exc\n            _LOGGER.debug(\n                \"Authentication failed but re-authentication\"\n                \" was successful, trying again later\"\n            )\n            return self.data\n        except CookidooException as e:\n            raise UpdateFailed(\n                translation_domain=DOMAIN,\n                translation_key=\"update_exception\",\n            ) from e\n\n        return CookidooData(\n            ingredient_items=ingredient_items,\n            additional_items=additional_items,\n            subscription=subscription,\n            week_plan=week_plan,\n        )\n",
+  "unified_diff": "--- a/homeassistant/components/cookidoo/coordinator.py\n+++ b/homeassistant/components/cookidoo/coordinator.py\n@@ -1,11 +1,9 @@\n \"\"\"DataUpdateCoordinator for the Cookidoo integration.\"\"\"\n \n-from collections.abc import Callable, Coroutine\n-from dataclasses import asdict, dataclass\n+from dataclasses import dataclass\n from datetime import timedelta\n-from functools import wraps\n import logging\n-from typing import Any, Concatenate, Protocol, override\n+from typing import override\n \n from cookidoo_api import (\n     Cookidoo,\n@@ -13,6 +11,7 @@\n     CookidooAuthException,\n     CookidooException,\n     CookidooIngredientItem,\n+    CookidooParseException,\n     CookidooRequestException,\n     CookidooSubscription,\n     CookidooUserInfo,\n@@ -20,7 +19,7 @@\n from cookidoo_api.types import CookidooCalendarDay\n \n from homeassistant.config_entries import ConfigEntry\n-from homeassistant.const import CONF_EMAIL, CONF_TOKEN\n+from homeassistant.const import CONF_EMAIL\n from homeassistant.core import HomeAssistant\n from homeassistant.exceptions import ConfigEntryAuthFailed\n from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed\n@@ -31,32 +30,6 @@\n _LOGGER = logging.getLogger(__name__)\n \n type CookidooConfigEntry = ConfigEntry[CookidooDataUpdateCoordinator]\n-\n-\n-class _AuthDataHolder(Protocol):\n-    \"\"\"Something able to persist the tokens, i.e. the coordinator or an entity.\"\"\"\n-\n-    def save_auth_data(self) -> None: ...\n-\n-\n-def persist_auth_data[T: _AuthDataHolder, **P, R](\n-    func: Callable[Concatenate[T, P], Coroutine[Any, Any, R]],\n-) -> Callable[Concatenate[T, P], Coroutine[Any, Any, R]]:\n-    \"\"\"Persist the tokens the library may rotate while the wrapped call runs.\n-\n-    Any request can transparently refresh the access token and hand back a new\n-    refresh token, so the result has to be stored whether the call succeeded or\n-    raised, or a restart can restore a refresh token the server already retired.\n-    \"\"\"\n-\n-    @wraps(func)\n-    async def wrapper(self: T, *args: P.args, **kwargs: P.kwargs) -> R:\n-        try:\n-            return await func(self, *args, **kwargs)\n-        finally:\n-            self.save_auth_data()\n-\n-    return wrapper\n \n \n @dataclass\n@@ -98,20 +71,7 @@\n         await self.cookidoo.login()\n         return await self.cookidoo.get_user_info()\n \n-    def save_auth_data(self) -> None:\n-        \"\"\"Persist the OAuth2 tokens so a restart does not need a new login.\"\"\"\n-        if (auth_data := self.cookidoo.auth_data) is None:\n-            return\n-        token = asdict(auth_data)\n-        if self.config_entry.data.get(CONF_TOKEN) == token:\n-            return\n-        self.hass.config_entries.async_update_entry(\n-            self.config_entry,\n-            data={**self.config_entry.data, CONF_TOKEN: token},\n-        )\n-\n     @override\n-    @persist_auth_data\n     async def _async_setup(self) -> None:\n         try:\n             self.user = await self._async_login()\n@@ -128,7 +88,7 @@\n                     CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                 },\n             ) from e\n-        except CookidooException as e:\n+        except CookidooParseException as e:\n             # login() scrapes the CIAM login page, so it can also fail to parse it\n             raise UpdateFailed(\n                 translation_domain=DOMAIN,\n@@ -136,7 +96,6 @@\n             ) from e\n \n     @override\n-    @persist_auth_data\n     async def _async_update_data(self) -> CookidooData:\n         try:\n             ingredient_items = await self.cookidoo.get_ingredient_items()\n@@ -156,7 +115,7 @@\n                         CONF_EMAIL: self.config_entry.data[CONF_EMAIL]\n                     },\n                 ) from exc\n-            except CookidooException as exc:\n+            except (CookidooRequestException, CookidooParseException) as exc:\n                 raise UpdateFailed(\n                     translation_domain=DOMAIN,\n                     translation_key=\"setup_request_exception\",\n",
+  "changed_files": [
+    {
+      "path": ".core_files.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitattributes",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/restore-or-build-venv/action.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/aw/actions-lock.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/instructions/integrations.instructions.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/builder.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/e2e-tests.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".yamllint",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/totp.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/command_line.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/homeassistant.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/trusted_networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/bootstrap.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/gree.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/http.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/task.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarm_control_panel/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarm_control_panel/device_action.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarm_control_panel/device_condition.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarm_control_panel/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarm_control_panel/reproduce_state.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarmdecoder/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarmdecoder/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alarmdecoder/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alert/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa/state_report.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/todo.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alpha_vantage/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/altruist/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amazon_polly/tts.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amberelectric/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amberelectric/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ambient_network/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ambient_station/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amcrest/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amcrest/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/amcrest/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/analytics/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/analytics/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/analytics_insights/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/android_ip_webcam/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv_remote/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv_remote/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anel_pwrctrl/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anglian_water/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anova/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthemav/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/repairs.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aosmith/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aosmith/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apache_kafka/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apcupsd/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apcupsd/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/api/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apple_tv/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apple_tv/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apple_tv/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/application_credentials/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apprise/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aprilaire/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aprs/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/apsystems/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aquacell/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aquacell/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aqualogic/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aqualogic/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aquostv/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aqvify/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aqvify/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aranet/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arcam_fmj/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arcam_fmj/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arcam_fmj/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arest/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arest/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arest/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arris_tg2492lg/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aruba/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arve/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aseko_pool_live/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aseko_pool_live/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/default_pipeline.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/error.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/models.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/pipeline.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/repair_flows.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/run.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/runtime.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/intent.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/asuswrt/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/atag/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/atag/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/atome/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aurora/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aurora_abb_powerone/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aussie_broadband/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aussie_broadband/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/autarco/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/autarco/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/login_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/mfa_setup_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/automation/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/automation/config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/autoskope/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/autoskope/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/avea/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/awair/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/awair/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aws/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aws_s3/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axis/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axis/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/axle_energy/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_data_explorer/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_data_explorer/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_devops/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_event_hub/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_event_hub/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_service_bus/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_storage/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_storage/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backblaze_b2/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backblaze_b2/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backup/onboarding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backup/store.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backup/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/backup/websocket.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/baf/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/baidu/tts.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/balboa/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bang_olufsen/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bang_olufsen/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bayesian/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bayesian/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bayesian/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bbox/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bbox/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/number.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/device_condition.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitcoin/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bitvis/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bizkaibus/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blackbird/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blackbird/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blink/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blink/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blink/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blockchain/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blue_current/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blue_current/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blue_current/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluemaestro/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blueprint/errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blueprint/importer.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blueprint/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blueprint/schemas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blueprint/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluesound/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluesound/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth_le_tracker/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bond/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bond/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bosch_alarm/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bosch_alarm/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:15:39.605743Z"
+}

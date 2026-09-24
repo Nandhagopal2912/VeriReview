@@ -1,0 +1,286 @@
+{
+  "schema_version": "3",
+  "case_id": "encode/httpx#2990/1421694231",
+  "repository": "encode/httpx",
+  "pull_number": 2990,
+  "pull_title": "Cleanup URL percent-encoding behavior.",
+  "base_sha": "3b9060ee1121b48669e0b30045c9344065f4f2ae",
+  "head_sha": "53d15f192961386728826b15ce2939b394eaa8f5",
+  "thread": {
+    "root_comment_id": 1421694231,
+    "path": "httpx/_urlparse.py",
+    "line": 479,
+    "original_line": 474,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -449,6 +448,32 @@ def quote(string: str, safe: str = \"/\") -> str:\n     )\n \n \n+def quote(string: str, safe: str = \"/\") -> str:\n+    \"\"\"\n+    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.\n+    \"\"\"\n+    parts = []\n+    current_position = 0\n+    for match in re.finditer(PERCENT_ENCODED_REGEX, string):\n+        start_position, end_position = match.start(), match.end()\n+        matched_text = match.group(0)\n+        # Add any text up to the '%xx' escape sequence.\n+        if start_position != current_position:\n+            leading_text = string[current_position:start_position]\n+            parts.append(percent_encoded(leading_text, safe=safe))\n+\n+        # Add the '%xx' escape sequence.\n+        parts.append(matched_text)\n+        current_position = end_position\n+\n+    # Add any text after the final '%xx' escape sequence.\n+    if current_position != len(string):\n+        trailing_text = string[current_position:]\n+        parts.append(percent_encoded(trailing_text, safe=safe))\n+\n+    return \"\".join(parts)",
+    "original_commit_sha": "a1b4afcc24e6420be8403176d98d2bc500864af6",
+    "commit_sha": "53d15f192961386728826b15ce2939b394eaa8f5",
+    "comments": [
+      {
+        "id": 1421694231,
+        "author": "reviewer",
+        "body": "`parts` could be string. `parts +=` instead of `parts.append`",
+        "created_at": "2023-12-10T06:48:27Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 1422164211,
+        "author": "author",
+        "body": "It could, yes. I've gone with this pattern because in the past we've seen performance issues with the `+=` pattern, that a `.append() ... \"\".join()` pattern resolves. Might not be the case in this context, since we've got strict limits on the allowable string lengths in URLs. But... let's handle any performance related considerations separately to the behavioural fixes.",
+        "created_at": "2023-12-11T09:25:09Z",
+        "in_reply_to_id": 1421694231
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": false
+  },
+  "window": {
+    "start_commit_sha": "a1b4afcc24e6420be8403176d98d2bc500864af6",
+    "end_commit_sha": "53d15f192961386728826b15ce2939b394eaa8f5",
+    "subsequent_commits": [
+      {
+        "sha": "de9968a849c30b51e17b06d6e72e4cfadc2e0453",
+        "message": "Update docstring",
+        "authored_at": "2023-12-11T09:35:50Z",
+        "committed_at": "2023-12-11T09:35:50Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7bdf2277ccab31b1e3921d32b035122dbdaaa565",
+        "message": "Linting",
+        "authored_at": "2023-12-11T09:37:07Z",
+        "committed_at": "2023-12-11T09:37:07Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "76ec6eb6e52f4af2c0258e8d603957e61088eec2",
+        "message": "Merge branch 'master' into cleanup-url-encoding",
+        "authored_at": "2023-12-11T14:36:43Z",
+        "committed_at": "2023-12-11T14:36:43Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "dd7b657a60d7dc6ffd296b5fd05fb972cd732e2d",
+        "message": "Merge branch 'master' into cleanup-url-encoding",
+        "authored_at": "2023-12-13T06:14:04Z",
+        "committed_at": "2023-12-13T06:14:04Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "0d8cc4b001e46e290550e02862a4d040bce0be43",
+        "message": "Update outdated comment.",
+        "authored_at": "2023-12-13T07:36:18Z",
+        "committed_at": "2023-12-13T07:36:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e3532aa68043b5a52d3ef6c2e8b7b6ba09bcf638",
+        "message": "Revert unrelated change",
+        "authored_at": "2023-12-13T10:28:16Z",
+        "committed_at": "2023-12-13T10:28:16Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "84f6338551bee66c8a0f674d59dd0bb96129a953",
+        "message": "Merge branch 'master' into cleanup-url-encoding",
+        "authored_at": "2023-12-13T11:34:25Z",
+        "committed_at": "2023-12-13T11:34:25Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "53d15f192961386728826b15ce2939b394eaa8f5",
+        "message": "Merge branch 'master' into cleanup-url-encoding",
+        "authored_at": "2023-12-15T10:26:13Z",
+        "committed_at": "2023-12-15T10:26:13Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "httpx/_urlparse.py",
+  "before_code": "\"\"\"\nAn implementation of `urlparse` that provides URL validation and normalization\nas described by RFC3986.\n\nWe rely on this implementation rather than the one in Python's stdlib, because:\n\n* It provides more complete URL validation.\n* It properly differentiates between an empty querystring and an absent querystring,\n  to distinguish URLs with a trailing '?'.\n* It handles scheme, hostname, port, and path normalization.\n* It supports IDNA hostnames, normalizing them to their encoded form.\n* The API supports passing individual components, as well as the complete URL string.\n\nPreviously we relied on the excellent `rfc3986` package to handle URL parsing and\nvalidation, but this module provides a simpler alternative, with less indirection\nrequired.\n\"\"\"\nimport ipaddress\nimport re\nimport typing\n\nimport idna\n\nfrom ._exceptions import InvalidURL\n\nMAX_URL_LENGTH = 65536\n\n# https://datatracker.ietf.org/doc/html/rfc3986.html#section-2.3\nUNRESERVED_CHARACTERS = (\n    \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~\"\n)\nSUB_DELIMS = \"!$&'()*+,;=\"\n\nPERCENT_ENCODED_REGEX = re.compile(\"%[A-Fa-f0-9]{2}\")\n\n\n# {scheme}:      (optional)\n# //{authority}  (optional)\n# {path}\n# ?{query}       (optional)\n# #{fragment}    (optional)\nURL_REGEX = re.compile(\n    (\n        r\"(?:(?P<scheme>{scheme}):)?\"\n        r\"(?://(?P<authority>{authority}))?\"\n        r\"(?P<path>{path})\"\n        r\"(?:\\?(?P<query>{query}))?\"\n        r\"(?:#(?P<fragment>{fragment}))?\"\n    ).format(\n        scheme=\"([a-zA-Z][a-zA-Z0-9+.-]*)?\",\n        authority=\"[^/?#]*\",\n        path=\"[^?#]*\",\n        query=\"[^#]*\",\n        fragment=\".*\",\n    )\n)\n\n# {userinfo}@    (optional)\n# {host}\n# :{port}        (optional)\nAUTHORITY_REGEX = re.compile(\n    (\n        r\"(?:(?P<userinfo>{userinfo})@)?\" r\"(?P<host>{host})\" r\":?(?P<port>{port})?\"\n    ).format(\n        userinfo=\".*\",  # Any character sequence.\n        host=\"(\\\\[.*\\\\]|[^:@]*)\",  # Either any character sequence excluding ':' or '@',\n        # or an IPv6 address enclosed within square brackets.\n        port=\".*\",  # Any character sequence.\n    )\n)\n\n\n# If we call urlparse with an individual component, then we need to regex\n# validate that component individually.\n# Note that we're duplicating the same strings as above. Shock! Horror!!\nCOMPONENT_REGEX = {\n    \"scheme\": re.compile(\"([a-zA-Z][a-zA-Z0-9+.-]*)?\"),\n    \"authority\": re.compile(\"[^/?#]*\"),\n    \"path\": re.compile(\"[^?#]*\"),\n    \"query\": re.compile(\"[^#]*\"),\n    \"fragment\": re.compile(\".*\"),\n    \"userinfo\": re.compile(\"[^@]*\"),\n    \"host\": re.compile(\"(\\\\[.*\\\\]|[^:]*)\"),\n    \"port\": re.compile(\".*\"),\n}\n\n\n# We use these simple regexs as a first pass before handing off to\n# the stdlib 'ipaddress' module for IP address validation.\nIPv4_STYLE_HOSTNAME = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$\")\nIPv6_STYLE_HOSTNAME = re.compile(r\"^\\[.*\\]$\")\n\n\nclass ParseResult(typing.NamedTuple):\n    scheme: str\n    userinfo: str\n    host: str\n    port: typing.Optional[int]\n    path: str\n    query: typing.Optional[str]\n    fragment: typing.Optional[str]\n\n    @property\n    def authority(self) -> str:\n        return \"\".join(\n            [\n                f\"{self.userinfo}@\" if self.userinfo else \"\",\n                f\"[{self.host}]\" if \":\" in self.host else self.host,\n                f\":{self.port}\" if self.port is not None else \"\",\n            ]\n        )\n\n    @property\n    def netloc(self) -> str:\n        return \"\".join(\n            [\n                f\"[{self.host}]\" if \":\" in self.host else self.host,\n                f\":{self.port}\" if self.port is not None else \"\",\n            ]\n        )\n\n    def copy_with(self, **kwargs: typing.Optional[str]) -> \"ParseResult\":\n        if not kwargs:\n            return self\n\n        defaults = {\n            \"scheme\": self.scheme,\n            \"authority\": self.authority,\n            \"path\": self.path,\n            \"query\": self.query,\n            \"fragment\": self.fragment,\n        }\n        defaults.update(kwargs)\n        return urlparse(\"\", **defaults)\n\n    def __str__(self) -> str:\n        authority = self.authority\n        return \"\".join(\n            [\n                f\"{self.scheme}:\" if self.scheme else \"\",\n                f\"//{authority}\" if authority else \"\",\n                self.path,\n                f\"?{self.query}\" if self.query is not None else \"\",\n                f\"#{self.fragment}\" if self.fragment is not None else \"\",\n            ]\n        )\n\n\ndef urlparse(url: str = \"\", **kwargs: typing.Optional[str]) -> ParseResult:\n    # Initial basic checks on allowable URLs.\n    # ---------------------------------------\n\n    # Hard limit the maximum allowable URL length.\n    if len(url) > MAX_URL_LENGTH:\n        raise InvalidURL(\"URL too long\")\n\n    # If a URL includes any ASCII control characters including \\t, \\r, \\n,\n    # then treat it as invalid.\n    if any(char.isascii() and not char.isprintable() for char in url):\n        raise InvalidURL(\"Invalid non-printable ASCII character in URL\")\n\n    # Some keyword arguments require special handling.\n    # ------------------------------------------------\n\n    # Coerce \"port\" to a string, if it is provided as an integer.\n    if \"port\" in kwargs:\n        port = kwargs[\"port\"]\n        kwargs[\"port\"] = str(port) if isinstance(port, int) else port\n\n    # Replace \"netloc\" with \"host and \"port\".\n    if \"netloc\" in kwargs:\n        netloc = kwargs.pop(\"netloc\") or \"\"\n        kwargs[\"host\"], _, kwargs[\"port\"] = netloc.partition(\":\")\n\n    # Replace \"username\" and/or \"password\" with \"userinfo\".\n    if \"username\" in kwargs or \"password\" in kwargs:\n        username = quote(kwargs.pop(\"username\", \"\") or \"\")\n        password = quote(kwargs.pop(\"password\", \"\") or \"\")\n        kwargs[\"userinfo\"] = f\"{username}:{password}\" if password else username\n\n    # Replace \"raw_path\" with \"path\" and \"query\".\n    if \"raw_path\" in kwargs:\n        raw_path = kwargs.pop(\"raw_path\") or \"\"\n        kwargs[\"path\"], seperator, kwargs[\"query\"] = raw_path.partition(\"?\")\n        if not seperator:\n            kwargs[\"query\"] = None\n\n    # Ensure that IPv6 \"host\" addresses are always escaped with \"[...]\".\n    if \"host\" in kwargs:\n        host = kwargs.get(\"host\") or \"\"\n        if \":\" in host and not (host.startswith(\"[\") and host.endswith(\"]\")):\n            kwargs[\"host\"] = f\"[{host}]\"\n\n    # If any keyword arguments are provided, ensure they are valid.\n    # -------------------------------------------------------------\n\n    for key, value in kwargs.items():\n        if value is not None:\n            if len(value) > MAX_URL_LENGTH:\n                raise InvalidURL(f\"URL component '{key}' too long\")\n\n            # If a component includes any ASCII control characters including \\t, \\r, \\n,\n            # then treat it as invalid.\n            if any(char.isascii() and not char.isprintable() for char in value):\n                raise InvalidURL(\n                    f\"Invalid non-printable ASCII character in URL component '{key}'\"\n                )\n\n            # Ensure that keyword arguments match as a valid regex.\n            if not COMPONENT_REGEX[key].fullmatch(value):\n                raise InvalidURL(f\"Invalid URL component '{key}'\")\n\n    # The URL_REGEX will always match, but may have empty components.\n    url_match = URL_REGEX.match(url)\n    assert url_match is not None\n    url_dict = url_match.groupdict()\n\n    # * 'scheme', 'authority', and 'path' may be empty strings.\n    # * 'query' may be 'None', indicating no trailing \"?\" portion.\n    #   Any string including the empty string, indicates a trailing \"?\".\n    # * 'fragment' may be 'None', indicating no trailing \"#\" portion.\n    #   Any string including the empty string, indicates a trailing \"#\".\n    scheme = kwargs.get(\"scheme\", url_dict[\"scheme\"]) or \"\"\n    authority = kwargs.get(\"authority\", url_dict[\"authority\"]) or \"\"\n    path = kwargs.get(\"path\", url_dict[\"path\"]) or \"\"\n    query = kwargs.get(\"query\", url_dict[\"query\"])\n    fragment = kwargs.get(\"fragment\", url_dict[\"fragment\"])\n\n    # The AUTHORITY_REGEX will always match, but may have empty components.\n    authority_match = AUTHORITY_REGEX.match(authority)\n    assert authority_match is not None\n    authority_dict = authority_match.groupdict()\n\n    # * 'userinfo' and 'host' may be empty strings.\n    # * 'port' may be 'None'.\n    userinfo = kwargs.get(\"userinfo\", authority_dict[\"userinfo\"]) or \"\"\n    host = kwargs.get(\"host\", authority_dict[\"host\"]) or \"\"\n    port = kwargs.get(\"port\", authority_dict[\"port\"])\n\n    # Normalize and validate each component.\n    # We end up with a parsed representation of the URL,\n    # with components that are plain ASCII bytestrings.\n    parsed_scheme: str = scheme.lower()\n    parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + \":\")\n    parsed_host: str = encode_host(host)\n    parsed_port: typing.Optional[int] = normalize_port(port, scheme)\n\n    has_scheme = parsed_scheme != \"\"\n    has_authority = (\n        parsed_userinfo != \"\" or parsed_host != \"\" or parsed_port is not None\n    )\n    validate_path(path, has_scheme=has_scheme, has_authority=has_authority)\n    if has_authority:\n        path = normalize_path(path)\n\n    # The GEN_DELIMS set is... : / ? # [ ] @\n    # These do not need to be percent-quoted unless they serve as delimiters for the\n    # specific component.\n\n    # For 'path' we need to drop ? and # from the GEN_DELIMS set.\n    parsed_path: str = quote(path, safe=SUB_DELIMS + \":/[]@\")\n    # For 'query' we need to drop '#' from the GEN_DELIMS set.\n    # We also exclude '/' because it is more robust to replace it with a percent\n    # encoding despite it not being a requirement of the spec.\n    parsed_query: typing.Optional[str] = (\n        None if query is None else quote(query, safe=SUB_DELIMS + \":/?[]@\")\n    )\n    # For 'fragment' we can include all of the GEN_DELIMS set.\n    parsed_fragment: typing.Optional[str] = (\n        None if fragment is None else quote(fragment, safe=SUB_DELIMS + \":/?#[]@\")\n    )\n\n    # The parsed ASCII bytestrings are our canonical form.\n    # All properties of the URL are derived from these.\n    return ParseResult(\n        parsed_scheme,\n        parsed_userinfo,\n        parsed_host,\n        parsed_port,\n        parsed_path,\n        parsed_query,\n        parsed_fragment,\n    )\n\n\ndef encode_host(host: str) -> str:\n    if not host:\n        return \"\"\n\n    elif IPv4_STYLE_HOSTNAME.match(host):\n        # Validate IPv4 hostnames like #.#.#.#\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # IPv4address = dec-octet \".\" dec-octet \".\" dec-octet \".\" dec-octet\n        try:\n            ipaddress.IPv4Address(host)\n        except ipaddress.AddressValueError:\n            raise InvalidURL(f\"Invalid IPv4 address: {host!r}\")\n        return host\n\n    elif IPv6_STYLE_HOSTNAME.match(host):\n        # Validate IPv6 hostnames like [...]\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # \"A host identified by an Internet Protocol literal address, version 6\n        # [RFC3513] or later, is distinguished by enclosing the IP literal\n        # within square brackets (\"[\" and \"]\").  This is the only place where\n        # square bracket characters are allowed in the URI syntax.\"\n        try:\n            ipaddress.IPv6Address(host[1:-1])\n        except ipaddress.AddressValueError:\n            raise InvalidURL(f\"Invalid IPv6 address: {host!r}\")\n        return host[1:-1]\n\n    elif host.isascii():\n        # Regular ASCII hostnames\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # reg-name    = *( unreserved / pct-encoded / sub-delims )\n        return quote(host.lower(), safe=SUB_DELIMS)\n\n    # IDNA hostnames\n    try:\n        return idna.encode(host.lower()).decode(\"ascii\")\n    except idna.IDNAError:\n        raise InvalidURL(f\"Invalid IDNA hostname: {host!r}\")\n\n\ndef normalize_port(\n    port: typing.Optional[typing.Union[str, int]], scheme: str\n) -> typing.Optional[int]:\n    # From https://tools.ietf.org/html/rfc3986#section-3.2.3\n    #\n    # \"A scheme may define a default port.  For example, the \"http\" scheme\n    # defines a default port of \"80\", corresponding to its reserved TCP\n    # port number.  The type of port designated by the port number (e.g.,\n    # TCP, UDP, SCTP) is defined by the URI scheme.  URI producers and\n    # normalizers should omit the port component and its \":\" delimiter if\n    # port is empty or if its value would be the same as that of the\n    # scheme's default.\"\n    if port is None or port == \"\":\n        return None\n\n    try:\n        port_as_int = int(port)\n    except ValueError:\n        raise InvalidURL(f\"Invalid port: {port!r}\")\n\n    # See https://url.spec.whatwg.org/#url-miscellaneous\n    default_port = {\"ftp\": 21, \"http\": 80, \"https\": 443, \"ws\": 80, \"wss\": 443}.get(\n        scheme\n    )\n    if port_as_int == default_port:\n        return None\n    return port_as_int\n\n\ndef validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:\n    \"\"\"\n    Path validation rules that depend on if the URL contains\n    a scheme or authority component.\n\n    See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3\n    \"\"\"\n    if has_authority:\n        # If a URI contains an authority component, then the path component\n        # must either be empty or begin with a slash (\"/\") character.\"\n        if path and not path.startswith(\"/\"):\n            raise InvalidURL(\"For absolute URLs, path must be empty or begin with '/'\")\n    else:\n        # If a URI does not contain an authority component, then the path cannot begin\n        # with two slash characters (\"//\").\n        if path.startswith(\"//\"):\n            raise InvalidURL(\n                \"URLs with no authority component cannot have a path starting with '//'\"\n            )\n        # In addition, a URI reference (Section 4.1) may be a relative-path reference,\n        # in which case the first path segment cannot contain a colon (\":\") character.\n        if path.startswith(\":\") and not has_scheme:\n            raise InvalidURL(\n                \"URLs with no scheme component cannot have a path starting with ':'\"\n            )\n\n\ndef normalize_path(path: str) -> str:\n    \"\"\"\n    Drop \".\" and \"..\" segments from a URL path.\n\n    For example:\n\n        normalize_path(\"/path/./to/somewhere/..\") == \"/path/to\"\n    \"\"\"\n    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4\n    components = path.split(\"/\")\n    output: typing.List[str] = []\n    for component in components:\n        if component == \".\":\n            pass\n        elif component == \"..\":\n            if output and output != [\"\"]:\n                output.pop()\n        else:\n            output.append(component)\n    return \"/\".join(output)\n\n\ndef percent_encode(char: str) -> str:\n    \"\"\"\n    Replace a single character with the percent-encoded representation.\n\n    Characters outside the ASCII range are represented with their a percent-encoded\n    representation of their UTF-8 byte sequence.\n\n    For example:\n\n        percent_encode(\" \") == \"%20\"\n    \"\"\"\n    return \"\".join([f\"%{byte:02x}\" for byte in char.encode(\"utf-8\")]).upper()\n\n\ndef is_safe(string: str, safe: str = \"/\") -> bool:\n    \"\"\"\n    Determine if a given string is already quote-safe.\n    \"\"\"\n    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + \"%\"\n\n    # All characters must already be non-escaping or '%'\n    for char in string:\n        if char not in NON_ESCAPED_CHARS:\n            return False\n\n    return True\n\n\ndef percent_encoded(string: str, safe: str = \"/\") -> str:\n    \"\"\"\n    Use percent-encoding to quote a string.\n    \"\"\"\n    if is_safe(string, safe=safe):\n        return string\n\n    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe\n    return \"\".join(\n        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]\n    )\n\n\ndef quote(string: str, safe: str = \"/\") -> str:\n    \"\"\"\n    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.\n    \"\"\"\n    parts = []\n    current_position = 0\n    for match in re.finditer(PERCENT_ENCODED_REGEX, string):\n        start_position, end_position = match.start(), match.end()\n        matched_text = match.group(0)\n        # Add any text up to the '%xx' escape sequence.\n        if start_position != current_position:\n            leading_text = string[current_position:start_position]\n            parts.append(percent_encoded(leading_text, safe=safe))\n\n        # Add the '%xx' escape sequence.\n        parts.append(matched_text)\n        current_position = end_position\n\n    # Add any text after the final '%xx' escape sequence.\n    if current_position != len(string):\n        trailing_text = string[current_position:]\n        parts.append(percent_encoded(trailing_text, safe=safe))\n\n    return \"\".join(parts)\n\n\ndef urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:\n    \"\"\"\n    We can use a much simpler version of the stdlib urlencode here because\n    we don't need to handle a bunch of different typing cases, such as bytes vs str.\n\n    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926\n\n    Note that we use '%20' encoding for spaces. and '%2F  for '/'.\n    This is slightly different than `requests`, but is the behaviour that browsers use.\n\n    See\n    - https://github.com/encode/httpx/issues/2536\n    - https://github.com/encode/httpx/issues/2721\n    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode\n    \"\"\"\n    return \"&\".join(\n        [\n            percent_encoded(k, safe=\"\") + \"=\" + percent_encoded(v, safe=\"\")\n            for k, v in items\n        ]\n    )\n",
+  "anchor_line": 474,
+  "after_code": "\"\"\"\nAn implementation of `urlparse` that provides URL validation and normalization\nas described by RFC3986.\n\nWe rely on this implementation rather than the one in Python's stdlib, because:\n\n* It provides more complete URL validation.\n* It properly differentiates between an empty querystring and an absent querystring,\n  to distinguish URLs with a trailing '?'.\n* It handles scheme, hostname, port, and path normalization.\n* It supports IDNA hostnames, normalizing them to their encoded form.\n* The API supports passing individual components, as well as the complete URL string.\n\nPreviously we relied on the excellent `rfc3986` package to handle URL parsing and\nvalidation, but this module provides a simpler alternative, with less indirection\nrequired.\n\"\"\"\nimport ipaddress\nimport re\nimport typing\n\nimport idna\n\nfrom ._exceptions import InvalidURL\n\nMAX_URL_LENGTH = 65536\n\n# https://datatracker.ietf.org/doc/html/rfc3986.html#section-2.3\nUNRESERVED_CHARACTERS = (\n    \"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~\"\n)\nSUB_DELIMS = \"!$&'()*+,;=\"\n\nPERCENT_ENCODED_REGEX = re.compile(\"%[A-Fa-f0-9]{2}\")\n\n\n# {scheme}:      (optional)\n# //{authority}  (optional)\n# {path}\n# ?{query}       (optional)\n# #{fragment}    (optional)\nURL_REGEX = re.compile(\n    (\n        r\"(?:(?P<scheme>{scheme}):)?\"\n        r\"(?://(?P<authority>{authority}))?\"\n        r\"(?P<path>{path})\"\n        r\"(?:\\?(?P<query>{query}))?\"\n        r\"(?:#(?P<fragment>{fragment}))?\"\n    ).format(\n        scheme=\"([a-zA-Z][a-zA-Z0-9+.-]*)?\",\n        authority=\"[^/?#]*\",\n        path=\"[^?#]*\",\n        query=\"[^#]*\",\n        fragment=\".*\",\n    )\n)\n\n# {userinfo}@    (optional)\n# {host}\n# :{port}        (optional)\nAUTHORITY_REGEX = re.compile(\n    (\n        r\"(?:(?P<userinfo>{userinfo})@)?\" r\"(?P<host>{host})\" r\":?(?P<port>{port})?\"\n    ).format(\n        userinfo=\".*\",  # Any character sequence.\n        host=\"(\\\\[.*\\\\]|[^:@]*)\",  # Either any character sequence excluding ':' or '@',\n        # or an IPv6 address enclosed within square brackets.\n        port=\".*\",  # Any character sequence.\n    )\n)\n\n\n# If we call urlparse with an individual component, then we need to regex\n# validate that component individually.\n# Note that we're duplicating the same strings as above. Shock! Horror!!\nCOMPONENT_REGEX = {\n    \"scheme\": re.compile(\"([a-zA-Z][a-zA-Z0-9+.-]*)?\"),\n    \"authority\": re.compile(\"[^/?#]*\"),\n    \"path\": re.compile(\"[^?#]*\"),\n    \"query\": re.compile(\"[^#]*\"),\n    \"fragment\": re.compile(\".*\"),\n    \"userinfo\": re.compile(\"[^@]*\"),\n    \"host\": re.compile(\"(\\\\[.*\\\\]|[^:]*)\"),\n    \"port\": re.compile(\".*\"),\n}\n\n\n# We use these simple regexs as a first pass before handing off to\n# the stdlib 'ipaddress' module for IP address validation.\nIPv4_STYLE_HOSTNAME = re.compile(r\"^[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+$\")\nIPv6_STYLE_HOSTNAME = re.compile(r\"^\\[.*\\]$\")\n\n\nclass ParseResult(typing.NamedTuple):\n    scheme: str\n    userinfo: str\n    host: str\n    port: typing.Optional[int]\n    path: str\n    query: typing.Optional[str]\n    fragment: typing.Optional[str]\n\n    @property\n    def authority(self) -> str:\n        return \"\".join(\n            [\n                f\"{self.userinfo}@\" if self.userinfo else \"\",\n                f\"[{self.host}]\" if \":\" in self.host else self.host,\n                f\":{self.port}\" if self.port is not None else \"\",\n            ]\n        )\n\n    @property\n    def netloc(self) -> str:\n        return \"\".join(\n            [\n                f\"[{self.host}]\" if \":\" in self.host else self.host,\n                f\":{self.port}\" if self.port is not None else \"\",\n            ]\n        )\n\n    def copy_with(self, **kwargs: typing.Optional[str]) -> \"ParseResult\":\n        if not kwargs:\n            return self\n\n        defaults = {\n            \"scheme\": self.scheme,\n            \"authority\": self.authority,\n            \"path\": self.path,\n            \"query\": self.query,\n            \"fragment\": self.fragment,\n        }\n        defaults.update(kwargs)\n        return urlparse(\"\", **defaults)\n\n    def __str__(self) -> str:\n        authority = self.authority\n        return \"\".join(\n            [\n                f\"{self.scheme}:\" if self.scheme else \"\",\n                f\"//{authority}\" if authority else \"\",\n                self.path,\n                f\"?{self.query}\" if self.query is not None else \"\",\n                f\"#{self.fragment}\" if self.fragment is not None else \"\",\n            ]\n        )\n\n\ndef urlparse(url: str = \"\", **kwargs: typing.Optional[str]) -> ParseResult:\n    # Initial basic checks on allowable URLs.\n    # ---------------------------------------\n\n    # Hard limit the maximum allowable URL length.\n    if len(url) > MAX_URL_LENGTH:\n        raise InvalidURL(\"URL too long\")\n\n    # If a URL includes any ASCII control characters including \\t, \\r, \\n,\n    # then treat it as invalid.\n    if any(char.isascii() and not char.isprintable() for char in url):\n        raise InvalidURL(\"Invalid non-printable ASCII character in URL\")\n\n    # Some keyword arguments require special handling.\n    # ------------------------------------------------\n\n    # Coerce \"port\" to a string, if it is provided as an integer.\n    if \"port\" in kwargs:\n        port = kwargs[\"port\"]\n        kwargs[\"port\"] = str(port) if isinstance(port, int) else port\n\n    # Replace \"netloc\" with \"host and \"port\".\n    if \"netloc\" in kwargs:\n        netloc = kwargs.pop(\"netloc\") or \"\"\n        kwargs[\"host\"], _, kwargs[\"port\"] = netloc.partition(\":\")\n\n    # Replace \"username\" and/or \"password\" with \"userinfo\".\n    if \"username\" in kwargs or \"password\" in kwargs:\n        username = quote(kwargs.pop(\"username\", \"\") or \"\")\n        password = quote(kwargs.pop(\"password\", \"\") or \"\")\n        kwargs[\"userinfo\"] = f\"{username}:{password}\" if password else username\n\n    # Replace \"raw_path\" with \"path\" and \"query\".\n    if \"raw_path\" in kwargs:\n        raw_path = kwargs.pop(\"raw_path\") or \"\"\n        kwargs[\"path\"], seperator, kwargs[\"query\"] = raw_path.partition(\"?\")\n        if not seperator:\n            kwargs[\"query\"] = None\n\n    # Ensure that IPv6 \"host\" addresses are always escaped with \"[...]\".\n    if \"host\" in kwargs:\n        host = kwargs.get(\"host\") or \"\"\n        if \":\" in host and not (host.startswith(\"[\") and host.endswith(\"]\")):\n            kwargs[\"host\"] = f\"[{host}]\"\n\n    # If any keyword arguments are provided, ensure they are valid.\n    # -------------------------------------------------------------\n\n    for key, value in kwargs.items():\n        if value is not None:\n            if len(value) > MAX_URL_LENGTH:\n                raise InvalidURL(f\"URL component '{key}' too long\")\n\n            # If a component includes any ASCII control characters including \\t, \\r, \\n,\n            # then treat it as invalid.\n            if any(char.isascii() and not char.isprintable() for char in value):\n                raise InvalidURL(\n                    f\"Invalid non-printable ASCII character in URL component '{key}'\"\n                )\n\n            # Ensure that keyword arguments match as a valid regex.\n            if not COMPONENT_REGEX[key].fullmatch(value):\n                raise InvalidURL(f\"Invalid URL component '{key}'\")\n\n    # The URL_REGEX will always match, but may have empty components.\n    url_match = URL_REGEX.match(url)\n    assert url_match is not None\n    url_dict = url_match.groupdict()\n\n    # * 'scheme', 'authority', and 'path' may be empty strings.\n    # * 'query' may be 'None', indicating no trailing \"?\" portion.\n    #   Any string including the empty string, indicates a trailing \"?\".\n    # * 'fragment' may be 'None', indicating no trailing \"#\" portion.\n    #   Any string including the empty string, indicates a trailing \"#\".\n    scheme = kwargs.get(\"scheme\", url_dict[\"scheme\"]) or \"\"\n    authority = kwargs.get(\"authority\", url_dict[\"authority\"]) or \"\"\n    path = kwargs.get(\"path\", url_dict[\"path\"]) or \"\"\n    query = kwargs.get(\"query\", url_dict[\"query\"])\n    fragment = kwargs.get(\"fragment\", url_dict[\"fragment\"])\n\n    # The AUTHORITY_REGEX will always match, but may have empty components.\n    authority_match = AUTHORITY_REGEX.match(authority)\n    assert authority_match is not None\n    authority_dict = authority_match.groupdict()\n\n    # * 'userinfo' and 'host' may be empty strings.\n    # * 'port' may be 'None'.\n    userinfo = kwargs.get(\"userinfo\", authority_dict[\"userinfo\"]) or \"\"\n    host = kwargs.get(\"host\", authority_dict[\"host\"]) or \"\"\n    port = kwargs.get(\"port\", authority_dict[\"port\"])\n\n    # Normalize and validate each component.\n    # We end up with a parsed representation of the URL,\n    # with components that are plain ASCII bytestrings.\n    parsed_scheme: str = scheme.lower()\n    parsed_userinfo: str = quote(userinfo, safe=SUB_DELIMS + \":\")\n    parsed_host: str = encode_host(host)\n    parsed_port: typing.Optional[int] = normalize_port(port, scheme)\n\n    has_scheme = parsed_scheme != \"\"\n    has_authority = (\n        parsed_userinfo != \"\" or parsed_host != \"\" or parsed_port is not None\n    )\n    validate_path(path, has_scheme=has_scheme, has_authority=has_authority)\n    if has_authority:\n        path = normalize_path(path)\n\n    # The GEN_DELIMS set is... : / ? # [ ] @\n    # These do not need to be percent-quoted unless they serve as delimiters for the\n    # specific component.\n\n    # For 'path' we need to drop ? and # from the GEN_DELIMS set.\n    parsed_path: str = quote(path, safe=SUB_DELIMS + \":/[]@\")\n    # For 'query' we need to drop '#' from the GEN_DELIMS set.\n    parsed_query: typing.Optional[str] = (\n        None if query is None else quote(query, safe=SUB_DELIMS + \":/?[]@\")\n    )\n    # For 'fragment' we can include all of the GEN_DELIMS set.\n    parsed_fragment: typing.Optional[str] = (\n        None if fragment is None else quote(fragment, safe=SUB_DELIMS + \":/?#[]@\")\n    )\n\n    # The parsed ASCII bytestrings are our canonical form.\n    # All properties of the URL are derived from these.\n    return ParseResult(\n        parsed_scheme,\n        parsed_userinfo,\n        parsed_host,\n        parsed_port,\n        parsed_path,\n        parsed_query,\n        parsed_fragment,\n    )\n\n\ndef encode_host(host: str) -> str:\n    if not host:\n        return \"\"\n\n    elif IPv4_STYLE_HOSTNAME.match(host):\n        # Validate IPv4 hostnames like #.#.#.#\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # IPv4address = dec-octet \".\" dec-octet \".\" dec-octet \".\" dec-octet\n        try:\n            ipaddress.IPv4Address(host)\n        except ipaddress.AddressValueError:\n            raise InvalidURL(f\"Invalid IPv4 address: {host!r}\")\n        return host\n\n    elif IPv6_STYLE_HOSTNAME.match(host):\n        # Validate IPv6 hostnames like [...]\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # \"A host identified by an Internet Protocol literal address, version 6\n        # [RFC3513] or later, is distinguished by enclosing the IP literal\n        # within square brackets (\"[\" and \"]\").  This is the only place where\n        # square bracket characters are allowed in the URI syntax.\"\n        try:\n            ipaddress.IPv6Address(host[1:-1])\n        except ipaddress.AddressValueError:\n            raise InvalidURL(f\"Invalid IPv6 address: {host!r}\")\n        return host[1:-1]\n\n    elif host.isascii():\n        # Regular ASCII hostnames\n        #\n        # From https://datatracker.ietf.org/doc/html/rfc3986/#section-3.2.2\n        #\n        # reg-name    = *( unreserved / pct-encoded / sub-delims )\n        return quote(host.lower(), safe=SUB_DELIMS)\n\n    # IDNA hostnames\n    try:\n        return idna.encode(host.lower()).decode(\"ascii\")\n    except idna.IDNAError:\n        raise InvalidURL(f\"Invalid IDNA hostname: {host!r}\")\n\n\ndef normalize_port(\n    port: typing.Optional[typing.Union[str, int]], scheme: str\n) -> typing.Optional[int]:\n    # From https://tools.ietf.org/html/rfc3986#section-3.2.3\n    #\n    # \"A scheme may define a default port.  For example, the \"http\" scheme\n    # defines a default port of \"80\", corresponding to its reserved TCP\n    # port number.  The type of port designated by the port number (e.g.,\n    # TCP, UDP, SCTP) is defined by the URI scheme.  URI producers and\n    # normalizers should omit the port component and its \":\" delimiter if\n    # port is empty or if its value would be the same as that of the\n    # scheme's default.\"\n    if port is None or port == \"\":\n        return None\n\n    try:\n        port_as_int = int(port)\n    except ValueError:\n        raise InvalidURL(f\"Invalid port: {port!r}\")\n\n    # See https://url.spec.whatwg.org/#url-miscellaneous\n    default_port = {\"ftp\": 21, \"http\": 80, \"https\": 443, \"ws\": 80, \"wss\": 443}.get(\n        scheme\n    )\n    if port_as_int == default_port:\n        return None\n    return port_as_int\n\n\ndef validate_path(path: str, has_scheme: bool, has_authority: bool) -> None:\n    \"\"\"\n    Path validation rules that depend on if the URL contains\n    a scheme or authority component.\n\n    See https://datatracker.ietf.org/doc/html/rfc3986.html#section-3.3\n    \"\"\"\n    if has_authority:\n        # If a URI contains an authority component, then the path component\n        # must either be empty or begin with a slash (\"/\") character.\"\n        if path and not path.startswith(\"/\"):\n            raise InvalidURL(\"For absolute URLs, path must be empty or begin with '/'\")\n    else:\n        # If a URI does not contain an authority component, then the path cannot begin\n        # with two slash characters (\"//\").\n        if path.startswith(\"//\"):\n            raise InvalidURL(\n                \"URLs with no authority component cannot have a path starting with '//'\"\n            )\n        # In addition, a URI reference (Section 4.1) may be a relative-path reference,\n        # in which case the first path segment cannot contain a colon (\":\") character.\n        if path.startswith(\":\") and not has_scheme:\n            raise InvalidURL(\n                \"URLs with no scheme component cannot have a path starting with ':'\"\n            )\n\n\ndef normalize_path(path: str) -> str:\n    \"\"\"\n    Drop \".\" and \"..\" segments from a URL path.\n\n    For example:\n\n        normalize_path(\"/path/./to/somewhere/..\") == \"/path/to\"\n    \"\"\"\n    # https://datatracker.ietf.org/doc/html/rfc3986#section-5.2.4\n    components = path.split(\"/\")\n    output: typing.List[str] = []\n    for component in components:\n        if component == \".\":\n            pass\n        elif component == \"..\":\n            if output and output != [\"\"]:\n                output.pop()\n        else:\n            output.append(component)\n    return \"/\".join(output)\n\n\ndef percent_encode(char: str) -> str:\n    \"\"\"\n    Replace a single character with the percent-encoded representation.\n\n    Characters outside the ASCII range are represented with their a percent-encoded\n    representation of their UTF-8 byte sequence.\n\n    For example:\n\n        percent_encode(\" \") == \"%20\"\n    \"\"\"\n    return \"\".join([f\"%{byte:02x}\" for byte in char.encode(\"utf-8\")]).upper()\n\n\ndef is_safe(string: str, safe: str = \"/\") -> bool:\n    \"\"\"\n    Determine if a given string is already quote-safe.\n    \"\"\"\n    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe + \"%\"\n\n    # All characters must already be non-escaping or '%'\n    for char in string:\n        if char not in NON_ESCAPED_CHARS:\n            return False\n\n    return True\n\n\ndef percent_encoded(string: str, safe: str = \"/\") -> str:\n    \"\"\"\n    Use percent-encoding to quote a string.\n    \"\"\"\n    if is_safe(string, safe=safe):\n        return string\n\n    NON_ESCAPED_CHARS = UNRESERVED_CHARACTERS + safe\n    return \"\".join(\n        [char if char in NON_ESCAPED_CHARS else percent_encode(char) for char in string]\n    )\n\n\ndef quote(string: str, safe: str = \"/\") -> str:\n    \"\"\"\n    Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.\n\n    See: https://www.rfc-editor.org/rfc/rfc3986#section-2.1\n\n    * `string`: The string to be percent-escaped.\n    * `safe`: A string containing characters that may be treated as safe, and do not\n        need to be escaped. Unreserved characters are always treated as safe.\n        See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3\n    \"\"\"\n    parts = []\n    current_position = 0\n    for match in re.finditer(PERCENT_ENCODED_REGEX, string):\n        start_position, end_position = match.start(), match.end()\n        matched_text = match.group(0)\n        # Add any text up to the '%xx' escape sequence.\n        if start_position != current_position:\n            leading_text = string[current_position:start_position]\n            parts.append(percent_encoded(leading_text, safe=safe))\n\n        # Add the '%xx' escape sequence.\n        parts.append(matched_text)\n        current_position = end_position\n\n    # Add any text after the final '%xx' escape sequence.\n    if current_position != len(string):\n        trailing_text = string[current_position:]\n        parts.append(percent_encoded(trailing_text, safe=safe))\n\n    return \"\".join(parts)\n\n\ndef urlencode(items: typing.List[typing.Tuple[str, str]]) -> str:\n    \"\"\"\n    We can use a much simpler version of the stdlib urlencode here because\n    we don't need to handle a bunch of different typing cases, such as bytes vs str.\n\n    https://github.com/python/cpython/blob/b2f7b2ef0b5421e01efb8c7bee2ef95d3bab77eb/Lib/urllib/parse.py#L926\n\n    Note that we use '%20' encoding for spaces. and '%2F  for '/'.\n    This is slightly different than `requests`, but is the behaviour that browsers use.\n\n    See\n    - https://github.com/encode/httpx/issues/2536\n    - https://github.com/encode/httpx/issues/2721\n    - https://docs.python.org/3/library/urllib.parse.html#urllib.parse.urlencode\n    \"\"\"\n    return \"&\".join(\n        [\n            percent_encoded(k, safe=\"\") + \"=\" + percent_encoded(v, safe=\"\")\n            for k, v in items\n        ]\n    )\n",
+  "unified_diff": "--- a/httpx/_urlparse.py\n+++ b/httpx/_urlparse.py\n@@ -260,8 +260,6 @@\n     # For 'path' we need to drop ? and # from the GEN_DELIMS set.\n     parsed_path: str = quote(path, safe=SUB_DELIMS + \":/[]@\")\n     # For 'query' we need to drop '#' from the GEN_DELIMS set.\n-    # We also exclude '/' because it is more robust to replace it with a percent\n-    # encoding despite it not being a requirement of the spec.\n     parsed_query: typing.Optional[str] = (\n         None if query is None else quote(query, safe=SUB_DELIMS + \":/?[]@\")\n     )\n@@ -451,6 +449,13 @@\n def quote(string: str, safe: str = \"/\") -> str:\n     \"\"\"\n     Use percent-encoding to quote a string, omitting existing '%xx' escape sequences.\n+\n+    See: https://www.rfc-editor.org/rfc/rfc3986#section-2.1\n+\n+    * `string`: The string to be percent-escaped.\n+    * `safe`: A string containing characters that may be treated as safe, and do not\n+        need to be escaped. Unreserved characters are always treated as safe.\n+        See: https://www.rfc-editor.org/rfc/rfc3986#section-2.3\n     \"\"\"\n     parts = []\n     current_position = 0\n",
+  "changed_files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/advanced.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/compatibility.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/contributing.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/troubleshooting.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_content.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_decoders.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_transports/asgi.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_transports/default.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_urlparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_proxies.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_redirects.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_requests.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_responses.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_asgi.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_content.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_decoders.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:17:33.428838Z"
+}

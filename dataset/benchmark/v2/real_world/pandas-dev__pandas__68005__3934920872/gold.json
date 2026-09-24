@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__68005__3934920872",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Fix the typo: assign the indexed expected frame to df_out (df_out = df_out.set_index(\"a\")) (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/groupby/test_reductions.py:1642: df_out = df_out.set_index(\"a\")",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

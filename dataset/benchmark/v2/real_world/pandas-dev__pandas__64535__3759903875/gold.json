@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3759903875",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Turn the _get_plot_df helper into a pytest fixture (plot_data on BasePlottingTests)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/extension/base/plotting.py:126-131: @pytest.fixture(params=[True, False]) def plot_data(self, data, request); tests take plot_data",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

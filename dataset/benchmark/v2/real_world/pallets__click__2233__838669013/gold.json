@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2233__838669013",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Rename the group overload parameter __name to __func (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/decorators.py:231: __func: t.Callable",
+    "confidence": "medium",
+    "notes": "Rewritten history; the change is visible in the window diff."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

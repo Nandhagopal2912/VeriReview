@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13690__3842248596",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Replace the test docstring with 'Regression test for .../pull/13573.' (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/types/test_list.py:295: the suggested docstring",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

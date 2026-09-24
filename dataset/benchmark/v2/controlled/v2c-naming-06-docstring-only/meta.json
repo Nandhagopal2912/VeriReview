@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-06-docstring-only",
+  "category": "naming",
+  "file_path": "app/settings.py",
+  "target_symbol": "load",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only the docstring says 'config'; the parameter is still cfg.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename cfg to config",
+      "target": "cfg",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

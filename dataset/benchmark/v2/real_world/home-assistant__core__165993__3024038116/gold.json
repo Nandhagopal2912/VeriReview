@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3024038116",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Only set up subentries of the expected type, using entry.get_subentries_of_type",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "homeassistant/components/threema/notify.py:24: for subentry in entry.get_subentries_of_type(SUBENTRY_TYPE_RECIPIENT)",
+    "confidence": "high",
+    "notes": "The author's reply proposed a manual filter first; the final code uses the requested helper."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

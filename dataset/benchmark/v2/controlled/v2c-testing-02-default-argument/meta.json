@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-02-default-argument",
+  "category": "testing",
+  "file_path": "text/greet.py",
+  "target_symbol": "greet",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test calls greet without a greeting and checks 'Hello'.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the default greeting",
+      "target": "greet",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

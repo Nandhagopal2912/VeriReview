@@ -1,0 +1,2332 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#174407/3452221153",
+  "repository": "home-assistant/core",
+  "pull_number": 174407,
+  "pull_title": "Add a new integration for Theben Conexa smartmeter gateway",
+  "base_sha": "bb7b66c37461ef58665d014ace4760e287f20be6",
+  "head_sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+  "thread": {
+    "root_comment_id": 3452221153,
+    "path": "homeassistant/components/theben_conexa/__init__.py",
+    "line": null,
+    "original_line": 36,
+    "start_line": null,
+    "original_start_line": 22,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -0,0 +1,48 @@\n+\"\"\"The Theben Conexa Smartmeter gateway integration.\"\"\"\n+\n+import logging\n+\n+import aiohttp\n+from theben_conexa_smgw import checkNetworkConnection\n+\n+from homeassistant.const import CONF_HOST, Platform\n+from homeassistant.core import HomeAssistant\n+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady\n+\n+from .coordinator import SmgwSensorCoordinator, ThebenConfigEntry\n+\n+_LOGGER = logging.getLogger(__name__)\n+\n+_PLATFORMS: list[Platform] = [Platform.SENSOR]\n+\n+\n+async def async_setup_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n+    \"\"\"Set up Theben Conexa Smartmeter gateway from a config entry.\"\"\"\n+\n+    try:\n+        # This function tries to establish a TCP connection and raises an exception on error\n+        await checkNetworkConnection(entry.data[CONF_HOST])\n+    except (OSError, aiohttp.ClientError) as e:\n+        raise ConfigEntryNotReady(\"Device is not reachable\") from e\n+\n+    try:\n+        # Unfortunately the Conexa 3.0 doesn't provide separate authentication feedback it just ignores all requests with invalid username/password,\n+        # That's why here we need to assume it failed because of wrong credentials, as we checked for connectivity just before and the device was reachable.\n+        coordinator = SmgwSensorCoordinator(hass, entry)\n+        await coordinator.async_init()\n+        entry.runtime_data = coordinator\n+\n+    except (OSError, aiohttp.ClientError) as e:\n+        raise ConfigEntryAuthFailed(\"Authentication failed\") from e",
+    "original_commit_sha": "8db948042dd864ea087c53ef2a22d3e3348dab8c",
+    "commit_sha": "8db948042dd864ea087c53ef2a22d3e3348dab8c",
+    "comments": [
+      {
+        "id": 3452221153,
+        "author": "reviewer",
+        "body": "I think most of this setup can move to `_async_setup` in the coordinator",
+        "created_at": "2026-06-22T12:34:47Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "8db948042dd864ea087c53ef2a22d3e3348dab8c",
+    "end_commit_sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+    "subsequent_commits": [
+      {
+        "sha": "4320dcdbaa99dbd0cd5f545c2191d09dad3cb466",
+        "message": "Move logic from __init__ to coordinator",
+        "authored_at": "2026-06-22T13:55:09Z",
+        "committed_at": "2026-06-22T13:55:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "629ea48ac5561f4166c39bae47737ecdec356154",
+        "message": "Improve coordinator to simplify parts of the code",
+        "authored_at": "2026-06-22T14:35:16Z",
+        "committed_at": "2026-06-22T15:15:02Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b2bc08264fbc9b8ed812a34ae04f0aab1bb20c5d",
+        "message": "Refactor config_flow and remove now unnecessary check",
+        "authored_at": "2026-06-22T15:40:55Z",
+        "committed_at": "2026-06-22T15:43:44Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "53f5a4b2e5f015ff75c8465bd6c22bcf601edf76",
+        "message": "Update of quality_scale and improve sensor",
+        "authored_at": "2026-06-22T16:23:03Z",
+        "committed_at": "2026-06-22T16:23:03Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5522a5b0c5cfb01e1ae248b9741545c5d0321208",
+        "message": "Remove device name and formatted serial number as per device",
+        "authored_at": "2026-06-22T17:04:53Z",
+        "committed_at": "2026-06-22T17:04:53Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "3c99eb9deccd239b0b7d0699bd75a5784b7608c9",
+        "message": "refactor sensor.py - now uses SensorEntityDescription",
+        "authored_at": "2026-06-24T17:20:54Z",
+        "committed_at": "2026-06-24T17:20:54Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "1c2af0712f7dad077c9f32c7671c32a7da349024",
+        "message": "Remove unnecessary logic from coordinator",
+        "authored_at": "2026-06-24T17:44:00Z",
+        "committed_at": "2026-06-24T17:44:00Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c98ea3d1d3da9e29edc55ed11b472d019e42e50a",
+        "message": "Add missing override decorators",
+        "authored_at": "2026-06-24T18:02:38Z",
+        "committed_at": "2026-06-24T18:03:32Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "fddc63987bacdf5007f3417ac43ab2f398bc2342",
+        "message": "Update quality_scale to use exempt and improve excception handling",
+        "authored_at": "2026-06-24T19:14:22Z",
+        "committed_at": "2026-06-24T19:14:22Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c6057338be5e4cdcbc1201a30ad06331d978f979",
+        "message": "Incorporate changes from review\n\n  - Better uniqueness check in config_flow and sensor\n  - Quality scale uses excempt instead of done\n  - config flow strings",
+        "authored_at": "2026-06-27T10:50:41Z",
+        "committed_at": "2026-06-27T10:50:41Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2619ccf9391c5b26b7789a2d5212fa87478750c0",
+        "message": "Remove debug logs and move abort out of try block",
+        "authored_at": "2026-07-13T17:31:05Z",
+        "committed_at": "2026-07-13T17:31:05Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "376ca3b1e0a49d05bda9c8412fc145c8fe4d066f",
+        "message": "Improve config flow tests",
+        "authored_at": "2026-07-19T12:21:53Z",
+        "committed_at": "2026-07-19T12:51:49Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "72e66e5d4e30090804e9f1f45f807a3e77b58e6f",
+        "message": "Minor fixes and added simple tests for sensor and coordinator.",
+        "authored_at": "2026-07-20T17:52:48Z",
+        "committed_at": "2026-07-20T17:52:48Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "00ecb2fcfbeb9ffcba39d525c99541474f4b6b89",
+        "message": "Removed coments, improved wording and got rid of nested try block",
+        "authored_at": "2026-08-02T19:37:05Z",
+        "committed_at": "2026-08-02T19:37:05Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "02602e93c38c63348e4f5f9b40150d47cff63861",
+        "message": "Refactor tests/components/theben_conexa.",
+        "authored_at": "2026-08-02T20:48:31Z",
+        "committed_at": "2026-08-02T20:48:31Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "3fc04b9c449ef22ebc93d8766b1bc2a3f1385aae",
+        "message": "Improved coordinator and sensor tests for the Theben Conexa component",
+        "authored_at": "2026-08-04T17:57:29Z",
+        "committed_at": "2026-08-04T18:25:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e449d9622242d661c6fe54f452746de850e78374",
+        "message": "Rename sensor names from total power -> energy",
+        "authored_at": "2026-08-05T18:38:28Z",
+        "committed_at": "2026-08-05T18:38:28Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "42d15369c3310415ccbf80e3d3e4014942a9d62d",
+        "message": "Improvements suggested by copilot review",
+        "authored_at": "2026-08-06T19:06:35Z",
+        "committed_at": "2026-08-06T19:06:35Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "94bd14619706db6b1d90cab6ea819b2004748c82",
+        "message": "Merge branch 'dev' into theben-conexa",
+        "authored_at": "2026-08-29T14:57:27Z",
+        "committed_at": "2026-08-29T14:57:27Z",
+        "author_login": "reviewer"
+      },
+      {
+        "sha": "9fc2b225b40ced7134ef67922fc101f4ad19c524",
+        "message": "Update quality scale and tests",
+        "authored_at": "2026-09-01T18:08:57Z",
+        "committed_at": "2026-09-01T18:08:57Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "da446cdf0d6b13562fccaf1336f72f75f0f523ee",
+        "message": "Remove unnecessary patches",
+        "authored_at": "2026-09-20T07:55:34Z",
+        "committed_at": "2026-09-20T07:55:34Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "22223d2f1a0d84e48798a0d89be5f7a170711a47",
+        "message": "Split one big fixture into separate fixtures.",
+        "authored_at": "2026-09-20T08:12:13Z",
+        "committed_at": "2026-09-20T08:12:13Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "49e3f7151935e7ce284cc5718a03b48c9e9bc43b",
+        "message": "Migrate from vol to probatio.",
+        "authored_at": "2026-09-20T08:18:23Z",
+        "committed_at": "2026-09-20T08:18:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+        "message": "Merge branch 'dev' into theben-conexa",
+        "authored_at": "2026-09-20T14:41:18Z",
+        "committed_at": "2026-09-20T14:41:18Z",
+        "author_login": "reviewer"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [
+      {
+        "sha": "5e1ff90add8eeae763ede4c98ddfa338ed8dde82",
+        "message": "Improve typing, naming; remove dead code; add test",
+        "authored_at": "2026-06-22T12:03:41Z",
+        "committed_at": "2026-06-22T12:03:41Z",
+        "author_login": "author"
+      }
+    ],
+    "flags": [
+      "pre_comment_commits_excluded",
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "homeassistant/components/theben_conexa/__init__.py",
+  "before_code": "\"\"\"The Theben Conexa Smartmeter gateway integration.\"\"\"\n\nimport logging\n\nimport aiohttp\nfrom theben_conexa_smgw import checkNetworkConnection\n\nfrom homeassistant.const import CONF_HOST, Platform\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady\n\nfrom .coordinator import SmgwSensorCoordinator, ThebenConfigEntry\n\n_LOGGER = logging.getLogger(__name__)\n\n_PLATFORMS: list[Platform] = [Platform.SENSOR]\n\n\nasync def async_setup_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n    \"\"\"Set up Theben Conexa Smartmeter gateway from a config entry.\"\"\"\n\n    try:\n        # This function tries to establish a TCP connection and raises an exception on error\n        await checkNetworkConnection(entry.data[CONF_HOST])\n    except (OSError, aiohttp.ClientError) as e:\n        raise ConfigEntryNotReady(\"Device is not reachable\") from e\n\n    try:\n        # Unfortunately the Conexa 3.0 doesn't provide separate authentication feedback it just ignores all requests with invalid username/password,\n        # That's why here we need to assume it failed because of wrong credentials, as we checked for connectivity just before and the device was reachable.\n        coordinator = SmgwSensorCoordinator(hass, entry)\n        await coordinator.async_init()\n        entry.runtime_data = coordinator\n\n    except (OSError, aiohttp.ClientError) as e:\n        raise ConfigEntryAuthFailed(\"Authentication failed\") from e\n\n    # Get initial data\n    await coordinator.async_config_entry_first_refresh()\n\n    await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)\n\n    return True\n\n\nasync def async_unload_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n    \"\"\"Unload a config entry.\"\"\"\n    return await hass.config_entries.async_unload_platforms(entry, _PLATFORMS)\n",
+  "anchor_line": 36,
+  "after_code": "\"\"\"The Theben Conexa Smartmeter gateway integration.\"\"\"\n\nfrom homeassistant.const import Platform\nfrom homeassistant.core import HomeAssistant\n\nfrom .coordinator import SmgwSensorCoordinator, ThebenConfigEntry\n\n_PLATFORMS: list[Platform] = [Platform.SENSOR]\n\n\nasync def async_setup_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n    \"\"\"Set up Theben Conexa Smartmeter gateway from a config entry.\"\"\"\n\n    coordinator = SmgwSensorCoordinator(hass, entry)\n    await coordinator.async_init()\n    entry.runtime_data = coordinator\n\n    # first_refresh means get initial data\n    await coordinator.async_config_entry_first_refresh()\n\n    await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)\n\n    return True\n\n\nasync def async_unload_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n    \"\"\"Unload a config entry.\n\n    The Conexa http based query protocol does not need any cleanup\n    \"\"\"\n    return await hass.config_entries.async_unload_platforms(entry, _PLATFORMS)\n",
+  "unified_diff": "--- a/homeassistant/components/theben_conexa/__init__.py\n+++ b/homeassistant/components/theben_conexa/__init__.py\n@@ -1,17 +1,9 @@\n \"\"\"The Theben Conexa Smartmeter gateway integration.\"\"\"\n \n-import logging\n-\n-import aiohttp\n-from theben_conexa_smgw import checkNetworkConnection\n-\n-from homeassistant.const import CONF_HOST, Platform\n+from homeassistant.const import Platform\n from homeassistant.core import HomeAssistant\n-from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady\n \n from .coordinator import SmgwSensorCoordinator, ThebenConfigEntry\n-\n-_LOGGER = logging.getLogger(__name__)\n \n _PLATFORMS: list[Platform] = [Platform.SENSOR]\n \n@@ -19,23 +11,11 @@\n async def async_setup_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n     \"\"\"Set up Theben Conexa Smartmeter gateway from a config entry.\"\"\"\n \n-    try:\n-        # This function tries to establish a TCP connection and raises an exception on error\n-        await checkNetworkConnection(entry.data[CONF_HOST])\n-    except (OSError, aiohttp.ClientError) as e:\n-        raise ConfigEntryNotReady(\"Device is not reachable\") from e\n+    coordinator = SmgwSensorCoordinator(hass, entry)\n+    await coordinator.async_init()\n+    entry.runtime_data = coordinator\n \n-    try:\n-        # Unfortunately the Conexa 3.0 doesn't provide separate authentication feedback it just ignores all requests with invalid username/password,\n-        # That's why here we need to assume it failed because of wrong credentials, as we checked for connectivity just before and the device was reachable.\n-        coordinator = SmgwSensorCoordinator(hass, entry)\n-        await coordinator.async_init()\n-        entry.runtime_data = coordinator\n-\n-    except (OSError, aiohttp.ClientError) as e:\n-        raise ConfigEntryAuthFailed(\"Authentication failed\") from e\n-\n-    # Get initial data\n+    # first_refresh means get initial data\n     await coordinator.async_config_entry_first_refresh()\n \n     await hass.config_entries.async_forward_entry_setups(entry, _PLATFORMS)\n@@ -44,5 +24,8 @@\n \n \n async def async_unload_entry(hass: HomeAssistant, entry: ThebenConfigEntry) -> bool:\n-    \"\"\"Unload a config entry.\"\"\"\n+    \"\"\"Unload a config entry.\n+\n+    The Conexa http based query protocol does not need any cleanup\n+    \"\"\"\n     return await hass.config_entries.async_unload_platforms(entry, _PLATFORMS)\n",
+  "changed_files": [
+    {
+      "path": ".claude/agents/quality-scale-rule-verifier.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/scripts/resolve_dependency.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/github-pr-reviewer/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-merge-queue/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-comment-audit/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-reviewer/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-quality-scale-verify/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-review/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/review/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".core_files.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitattributes",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/cache-apt-packages/action.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/restore-or-build-venv/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/setup-uv-python/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/assets/screenshot-integrations.png",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/aw/actions-lock.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/instructions/integrations.instructions.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/renovate.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/aw.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/builder.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements-deterministic.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/e2e-tests.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/translations.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".prettierignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".yamllint",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AI_POLICY.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "Dockerfile.dev",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/jwt_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/totp.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/command_line.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/homeassistant.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/trusted_networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/bootstrap.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/fireavert.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/geosphere_austria.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/google.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/gree.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/microsoft.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/midea.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/mitsubishi.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/samsung.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/solaredge.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/ubiquiti.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/vlc.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/__init__.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/const.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/manifest.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/switch.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/hub.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/cover.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/http.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/media_source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/task.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/condition.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/helpers.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/water_heater.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/water_heater.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:17:01.845721Z"
+}

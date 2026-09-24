@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3024046975",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Store the client in the entity instead of the whole config entry",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "notify.py __init__: self._client = entry.runtime_data; async_send_message uses self._client",
+    "confidence": "high",
+    "notes": "Phrased as a question, but it is a request."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

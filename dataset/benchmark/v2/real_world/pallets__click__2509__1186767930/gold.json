@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2509__1186767930",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Add a comment in the test explaining what it checks",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_termui.py:458-459: comment 'Confirm that the default value is not included in the output when show_default is False'",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

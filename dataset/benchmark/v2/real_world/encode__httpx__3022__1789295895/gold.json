@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3022__1789295895",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Pass trust_env to SSLContext in HTTPTransport.__init__ (suggestion)",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "httpx/_transports/default.py:140: still SSLContext() (SSLContext no longer takes trust_env)",
+    "confidence": "low",
+    "notes": "Superseded by removing trust_env from SSLContext (same PR). Not done as written; human check advised."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

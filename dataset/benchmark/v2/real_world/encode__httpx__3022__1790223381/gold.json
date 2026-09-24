@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3022__1790223381",
+    "include": true,
+    "requirements": [
+      {
+        "category": "naming",
+        "description": "Use `import typing` instead of `import typing as t` (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_config.py:2: import typing; the t.Any usage became typing.Any",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

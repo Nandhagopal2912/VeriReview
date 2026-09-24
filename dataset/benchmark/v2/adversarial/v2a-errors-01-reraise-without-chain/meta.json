@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-errors-01-reraise-without-chain",
+  "category": "error_handling",
+  "file_path": "app/settings_io.py",
+  "target_symbol": "load_settings",
+  "comment_line": 10,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The error is wrapped in SettingsError, but `from None` explicitly drops the original instead of chaining it.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Wrap JSONDecodeError in SettingsError",
+      "target": "json.load",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "SettingsError"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Chain the original exception",
+      "target": "json.load",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "raise ... from err"
+    }
+  ]
+}

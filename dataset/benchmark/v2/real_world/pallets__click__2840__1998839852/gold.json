@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2840__1998839852",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Reword the get_help_option docstring to 'Skipped if :attr:`add_help_option` is ``False``.' (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/core.py:1019: the suggested sentence",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,1 @@
+Deleting should return 204 with no body.

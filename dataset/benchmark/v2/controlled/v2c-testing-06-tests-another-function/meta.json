@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-06-tests-another-function",
+  "category": "testing",
+  "file_path": "mathx/ratio.py",
+  "target_symbol": "ratio",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The new test exercises percent(), not ratio().",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a zero divisor raises ValueError",
+      "target": "ratio",
+      "condition": "b == 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

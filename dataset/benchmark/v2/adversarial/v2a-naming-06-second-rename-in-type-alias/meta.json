@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-naming-06-second-rename-in-type-alias",
+  "category": "naming",
+  "file_path": "geo/route.py",
+  "target_symbol": "length",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "pts became points; `distance` was added as an unrelated type alias while the parameter is still d.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename pts to points",
+      "target": "pts",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename d to distance",
+      "target": "d",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

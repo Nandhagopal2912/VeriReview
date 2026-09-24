@@ -1,0 +1,1 @@
+Rename `a` to `amount` and `r` to `rate`.

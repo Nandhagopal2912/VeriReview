@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-testing-06-second-assert-commented",
+  "category": "testing",
+  "file_path": "net/port.py",
+  "target_symbol": "parse_port",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The non-numeric test is complete; the out-of-range test's check is commented out.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for a non-numeric port",
+      "target": "parse_port",
+      "condition": "text not numeric",
+      "expected_behavior": "ValueError"
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for an out-of-range port",
+      "target": "parse_port",
+      "condition": "port >= 65536",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

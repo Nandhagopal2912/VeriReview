@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3022__1790231357",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Put the transport parameter before trust_env in Client._init_transport (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_client.py:690-691: transport: BaseTransport | None = None, then trust_env: bool = True",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-12-better-names",
+  "category": "naming",
+  "file_path": "geo/grid.py",
+  "target_symbol": "cell",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "'these' does not say which names (p, n, i, j) or what they should become; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Find better names",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

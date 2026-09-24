@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-validation-10-order-not-type",
+  "category": "validation",
+  "file_path": "calendar/span.py",
+  "target_symbol": "span",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The order check exists; the type check is missing.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check start is before end",
+      "target": "start",
+      "condition": "start > end",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Check start and end are dates",
+      "target": "start",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

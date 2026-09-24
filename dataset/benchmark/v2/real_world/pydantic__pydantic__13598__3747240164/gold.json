@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13598__3747240164",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Fix the indentation of the `if decimal_places_ > decimal_places:` line (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/_internal/_validators.py:392: the line is indented inside the try block",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

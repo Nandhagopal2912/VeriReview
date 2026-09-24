@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-06-broad-instead-of-narrow",
+  "category": "error_handling",
+  "file_path": "net/ping.py",
+  "target_symbol": "ping",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "Everything is caught (except Exception), not only TimeoutError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch only TimeoutError",
+      "target": "sock.recv",
+      "condition": "TimeoutError",
+      "expected_behavior": null
+    }
+  ]
+}

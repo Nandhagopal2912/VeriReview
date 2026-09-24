@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3555873359",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Do not include the builtin `object` in the scatter include types, since it matches every dtype",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/plotting/_matplotlib/core.py:715: include_type.extend([np.object_, CategoricalDtypeType, str])",
+    "confidence": "medium",
+    "notes": "Question-form concern; the author replaces object with np.object_ as discussed. The reviewer's last reply is skeptical but asks the author, so the final code is judged."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

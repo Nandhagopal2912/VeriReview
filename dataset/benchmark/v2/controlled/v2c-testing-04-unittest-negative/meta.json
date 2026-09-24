@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-04-unittest-negative",
+  "category": "testing",
+  "file_path": "fmt/money.py",
+  "target_symbol": "money",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A unittest method asserts money(-250) == '-$2.50'.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for negative amounts",
+      "target": "money",
+      "condition": "cents < 0",
+      "expected_behavior": null
+    }
+  ]
+}

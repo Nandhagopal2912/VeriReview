@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-12-opaque-helper",
+  "category": "testing",
+  "file_path": "shop/limits.py",
+  "target_symbol": "approve",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The new test only calls a helper from a conftest that is not shown; whether it covers the case cannot be seen.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an order above the credit limit",
+      "target": "approve",
+      "condition": "order.total > limit",
+      "expected_behavior": null
+    }
+  ]
+}

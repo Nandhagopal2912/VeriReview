@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-08-wrong-condition",
+  "category": "api_behavior",
+  "file_path": "api/orders.py",
+  "target_symbol": "read_order",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "404 is raised only for negative ids; a missing order still returns null with 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the order does not exist",
+      "target": "read_order",
+      "condition": "order missing",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

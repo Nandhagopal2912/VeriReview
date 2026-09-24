@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-02-empty-items",
+  "category": "validation",
+  "file_path": "shop/checkout.py",
+  "target_symbol": "checkout",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An empty items list raises before the total is computed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject an empty items list",
+      "target": "items",
+      "condition": "not items",
+      "expected_behavior": null
+    }
+  ]
+}

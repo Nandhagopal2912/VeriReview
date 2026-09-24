@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-api-01-status-in-docstring",
+  "category": "api_behavior",
+  "file_path": "api/notes.py",
+  "target_symbol": "read_note",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only the docstring promises a 404; a missing note still returns null with 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the note does not exist",
+      "target": "read_note",
+      "condition": "note missing",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

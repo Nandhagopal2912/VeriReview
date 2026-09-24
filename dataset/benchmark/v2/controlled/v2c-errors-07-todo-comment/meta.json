@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-07-todo-comment",
+  "category": "error_handling",
+  "file_path": "reports/pdf.py",
+  "target_symbol": "render",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "Only a TODO comment was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle RenderError",
+      "target": "engine.render",
+      "condition": "RenderError",
+      "expected_behavior": null
+    }
+  ]
+}

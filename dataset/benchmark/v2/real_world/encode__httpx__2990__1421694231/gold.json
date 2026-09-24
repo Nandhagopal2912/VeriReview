@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2990__1421694231",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Build the result with string += instead of parts.append / join",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "httpx/_urlparse.py quote(): still parts.append(...) and \"\".join(parts)",
+    "confidence": "high",
+    "notes": "Declined by the author for performance reasons; not satisfied as written (guide: judge the request, not whether declining was fine)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

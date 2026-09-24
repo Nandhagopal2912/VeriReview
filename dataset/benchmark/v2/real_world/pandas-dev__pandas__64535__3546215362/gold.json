@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3546215362",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Update the ExtensionDtype docstring: _is_plottable was replaced by _get_plot_converter",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/dtypes/base.py:91: the `* _is_plottable` line is removed",
+    "confidence": "medium",
+    "notes": "Question that the author confirms and fixes."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

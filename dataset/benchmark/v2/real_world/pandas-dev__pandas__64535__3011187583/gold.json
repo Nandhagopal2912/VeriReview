@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3011187583",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Let _get_plot_converter signal 'not plottable' itself so the separate _is_plottable attribute is not needed",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/dtypes/base.py:476-497: _get_plot_converter returns [] by default (not plottable); _is_plottable is no longer documented or used",
+    "confidence": "medium",
+    "notes": "Phrased as a question; the author treats it as a suggestion and implements it (returns an empty list rather than None)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

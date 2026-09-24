@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-12-opaque-decorator",
+  "category": "error_handling",
+  "file_path": "jobs/fetch.py",
+  "target_symbol": "fetch_feed",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The @resilient decorator is defined elsewhere; what it does on network errors cannot be seen.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Survive transient network errors",
+      "target": "client.get",
+      "condition": "network error",
+      "expected_behavior": null
+    }
+  ]
+}

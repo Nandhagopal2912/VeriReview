@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3574519955",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "In the categorical test, replace the xfail on test_plot_on_y_axis with pytest.raises(...)",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Do the same for the other dtypes whose plot test is xfailed for an expected error",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "test_categorical.py:183-187: with pytest.raises(TypeError, match='no numeric data to plot'); at the PR head json, interval, numpy-object, period and string overrides also use pytest.raises (sibling case ...3759896069)",
+    "confidence": "medium",
+    "notes": "The second requirement is only visible through the other test files at the same PR head. The remaining datetime xfail is for a different, genuine failure (AssertionError on the x axis)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

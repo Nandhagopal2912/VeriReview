@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14791__3663366753",
+    "include": true,
+    "requirements": [
+      {
+        "category": "error_handling",
+        "description": "Turn invalid ini values into UsageError inside getini by default instead of wrapping each call site",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/tmpdir.py:101: the local try/except -> UsageError is removed; testing/test_config.py now expects UsageError from getini for invalid types",
+    "confidence": "medium",
+    "notes": "getini itself (config/__init__.py) is not in this case; the change is judged from the removed wrapper and the updated getini tests."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

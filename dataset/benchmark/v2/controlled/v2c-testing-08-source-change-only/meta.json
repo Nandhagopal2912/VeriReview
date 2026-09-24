@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-08-source-change-only",
+  "category": "testing",
+  "file_path": "shop/coupon.py",
+  "target_symbol": "discount",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "The function changed but no test was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an expired coupon",
+      "target": "discount",
+      "condition": "coupon.expires < today",
+      "expected_behavior": null
+    }
+  ]
+}

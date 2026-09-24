@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3039647302",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Use the mock_config_entry fixture instead of building a MockConfigEntry in the test",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/threema/test_notify.py:94-103: the test takes mock_config_entry and adds it to hass",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-03-closing-connection",
+  "category": "error_handling",
+  "file_path": "db/export.py",
+  "target_symbol": "export",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "contextlib.closing closes the connection even when the query raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Use a context manager so the connection is closed on errors",
+      "target": "sqlite3.connect",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

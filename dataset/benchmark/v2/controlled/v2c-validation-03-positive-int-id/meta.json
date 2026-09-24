@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-03-positive-int-id",
+  "category": "validation",
+  "file_path": "users/repo.py",
+  "target_symbol": "get_user",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Type and sign are checked before the query.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check user_id is a positive integer",
+      "target": "user_id",
+      "condition": "user_id <= 0 or not int",
+      "expected_behavior": null
+    }
+  ]
+}

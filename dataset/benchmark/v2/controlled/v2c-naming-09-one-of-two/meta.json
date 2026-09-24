@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-naming-09-one-of-two",
+  "category": "naming",
+  "file_path": "finance/interest.py",
+  "target_symbol": "simple_interest",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "a became amount; r was not renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename a to amount",
+      "target": "a",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename r to rate",
+      "target": "r",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

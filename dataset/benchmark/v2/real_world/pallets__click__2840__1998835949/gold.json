@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2840__1998835949",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Drop the throw-away dummy function: apply help_option to self and pop the option from self.params (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/core.py:1029-1031: help_option(*help_option_names)(self); return self.params.pop()",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

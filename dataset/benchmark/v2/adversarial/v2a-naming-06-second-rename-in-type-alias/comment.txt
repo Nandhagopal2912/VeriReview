@@ -1,0 +1,1 @@
+Rename `pts` to `points` and `d` to `distance`.

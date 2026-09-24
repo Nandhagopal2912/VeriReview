@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__13598__3747238083",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Only compute the normalized decimal places when the raw count exceeds the limit (nested if, suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pydantic/_internal/_validators.py:392-398: if decimal_places_ > decimal_places: normalize, then the nested check",
+    "confidence": "high",
+    "notes": "The author replied with a question, but the final code is the suggestion (its broken indentation fixed)."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-01-json-decode",
+  "category": "error_handling",
+  "file_path": "config/parse.py",
+  "target_symbol": "parse",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "JSONDecodeError is caught and {} returned.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch JSONDecodeError and return {}",
+      "target": "json.loads",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "returns {}"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-02-flask-400-missing-field",
+  "category": "api_behavior",
+  "file_path": "web/comments.py",
+  "target_symbol": "add_comment",
+  "comment_line": 8,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A missing text returns a JSON error with status 400.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 if text is missing",
+      "target": "add_comment",
+      "condition": "text missing",
+      "expected_behavior": "HTTP 400"
+    }
+  ]
+}

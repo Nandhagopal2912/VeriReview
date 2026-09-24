@@ -1,0 +1,2232 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#174407/3656594773",
+  "repository": "home-assistant/core",
+  "pull_number": 174407,
+  "pull_title": "Add a new integration for Theben Conexa smartmeter gateway",
+  "base_sha": "bb7b66c37461ef58665d014ace4760e287f20be6",
+  "head_sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+  "thread": {
+    "root_comment_id": 3656594773,
+    "path": "tests/components/theben_conexa/test_config_flow.py",
+    "line": null,
+    "original_line": 80,
+    "start_line": null,
+    "original_start_line": 77,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -0,0 +1,235 @@\n+\"\"\"Test the Theben Conexa Smartmeter gateway config flow.\"\"\"\n+\n+from typing import Any\n+from unittest.mock import AsyncMock, patch\n+\n+import aiohttp\n+import pytest\n+\n+from homeassistant import config_entries\n+from homeassistant.components.theben_conexa.const import DOMAIN\n+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME\n+from homeassistant.core import HomeAssistant\n+from homeassistant.data_entry_flow import FlowResultType\n+\n+from tests.common import MockConfigEntry\n+\n+TEST_CONFIG_DATA = {\n+    CONF_HOST: \"1.1.1.1\",\n+    CONF_USERNAME: \"test-username\",\n+    CONF_PASSWORD: \"test-password\",\n+}\n+\n+\n+def _assert_create_entry_result(\n+    result: dict[str, Any],\n+    expected_data: dict[str, str],\n+    mock_conexa_smgw: AsyncMock,\n+) -> None:\n+    \"\"\"Assert a successful create-entry result uses the expected unique ID.\"\"\"\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"title\"] == \"Smartmeter Gateway\"\n+    assert result[\"data\"] == expected_data\n+    assert result[\"result\"].unique_id == (\n+        f\"{mock_conexa_smgw.gatewayInfo.smgwID}-{expected_data[CONF_USERNAME]}\"\n+    )\n+\n+\n+@pytest.mark.usefixtures(\"mock_setup_entry\")\n+async def test_full_flow(\n+    hass: HomeAssistant,\n+    mock_setup_entry: AsyncMock,\n+    mock_conexa_smgw: AsyncMock,\n+) -> None:\n+    \"\"\"Test full flow.\"\"\"\n+\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": config_entries.SOURCE_USER},\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"step_id\"] == \"user\"\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        TEST_CONFIG_DATA,\n+    )\n+\n+    _assert_create_entry_result(\n+        result,\n+        TEST_CONFIG_DATA,\n+        mock_conexa_smgw,\n+    )\n+    assert len(mock_setup_entry.mock_calls) == 1\n+\n+\n+@pytest.mark.usefixtures(\"mock_setup_entry\")\n+async def test_form_exceptions(\n+    hass: HomeAssistant,\n+    mock_setup_entry: AsyncMock,\n+    mock_conexa_smgw: AsyncMock,\n+) -> None:\n+    \"\"\"Test we handle invalid auth and  'unexpected' exception.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+\n+    with patch(\n+        \"homeassistant.components.theben_conexa.config_flow.ConexaSMGW.create\",\n+        side_effect=aiohttp.ClientError,\n+    ):",
+    "original_commit_sha": "72e66e5d4e30090804e9f1f45f807a3e77b58e6f",
+    "commit_sha": "72e66e5d4e30090804e9f1f45f807a3e77b58e6f",
+    "comments": [
+      {
+        "id": 3656594773,
+        "author": "reviewer",
+        "body": "if you have the fixtures grouped, you could just import it here and do `.side_effect = ...`",
+        "created_at": "2026-07-27T11:17:14Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "72e66e5d4e30090804e9f1f45f807a3e77b58e6f",
+    "end_commit_sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+    "subsequent_commits": [
+      {
+        "sha": "00ecb2fcfbeb9ffcba39d525c99541474f4b6b89",
+        "message": "Removed coments, improved wording and got rid of nested try block",
+        "authored_at": "2026-08-02T19:37:05Z",
+        "committed_at": "2026-08-02T19:37:05Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "02602e93c38c63348e4f5f9b40150d47cff63861",
+        "message": "Refactor tests/components/theben_conexa.",
+        "authored_at": "2026-08-02T20:48:31Z",
+        "committed_at": "2026-08-02T20:48:31Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "3fc04b9c449ef22ebc93d8766b1bc2a3f1385aae",
+        "message": "Improved coordinator and sensor tests for the Theben Conexa component",
+        "authored_at": "2026-08-04T17:57:29Z",
+        "committed_at": "2026-08-04T18:25:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e449d9622242d661c6fe54f452746de850e78374",
+        "message": "Rename sensor names from total power -> energy",
+        "authored_at": "2026-08-05T18:38:28Z",
+        "committed_at": "2026-08-05T18:38:28Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "42d15369c3310415ccbf80e3d3e4014942a9d62d",
+        "message": "Improvements suggested by copilot review",
+        "authored_at": "2026-08-06T19:06:35Z",
+        "committed_at": "2026-08-06T19:06:35Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "94bd14619706db6b1d90cab6ea819b2004748c82",
+        "message": "Merge branch 'dev' into theben-conexa",
+        "authored_at": "2026-08-29T14:57:27Z",
+        "committed_at": "2026-08-29T14:57:27Z",
+        "author_login": "reviewer"
+      },
+      {
+        "sha": "9fc2b225b40ced7134ef67922fc101f4ad19c524",
+        "message": "Update quality scale and tests",
+        "authored_at": "2026-09-01T18:08:57Z",
+        "committed_at": "2026-09-01T18:08:57Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "da446cdf0d6b13562fccaf1336f72f75f0f523ee",
+        "message": "Remove unnecessary patches",
+        "authored_at": "2026-09-20T07:55:34Z",
+        "committed_at": "2026-09-20T07:55:34Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "22223d2f1a0d84e48798a0d89be5f7a170711a47",
+        "message": "Split one big fixture into separate fixtures.",
+        "authored_at": "2026-09-20T08:12:13Z",
+        "committed_at": "2026-09-20T08:12:13Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "49e3f7151935e7ce284cc5718a03b48c9e9bc43b",
+        "message": "Migrate from vol to probatio.",
+        "authored_at": "2026-09-20T08:18:23Z",
+        "committed_at": "2026-09-20T08:18:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7a1ceb17c8f0d6ccfcecb768929f68930d93a9ef",
+        "message": "Merge branch 'dev' into theben-conexa",
+        "authored_at": "2026-09-20T14:41:18Z",
+        "committed_at": "2026-09-20T14:41:18Z",
+        "author_login": "reviewer"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "tests/components/theben_conexa/test_config_flow.py",
+  "before_code": "\"\"\"Test the Theben Conexa Smartmeter gateway config flow.\"\"\"\n\nfrom typing import Any\nfrom unittest.mock import AsyncMock, patch\n\nimport aiohttp\nimport pytest\n\nfrom homeassistant import config_entries\nfrom homeassistant.components.theben_conexa.const import DOMAIN\nfrom homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\n\nfrom tests.common import MockConfigEntry\n\nTEST_CONFIG_DATA = {\n    CONF_HOST: \"1.1.1.1\",\n    CONF_USERNAME: \"test-username\",\n    CONF_PASSWORD: \"test-password\",\n}\n\n\ndef _assert_create_entry_result(\n    result: dict[str, Any],\n    expected_data: dict[str, str],\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Assert a successful create-entry result uses the expected unique ID.\"\"\"\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"Smartmeter Gateway\"\n    assert result[\"data\"] == expected_data\n    assert result[\"result\"].unique_id == (\n        f\"{mock_conexa_smgw.gatewayInfo.smgwID}-{expected_data[CONF_USERNAME]}\"\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_full_flow(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Test full flow.\"\"\"\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_form_exceptions(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Test we handle invalid auth and  'unexpected' exception.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n\n    with patch(\n        \"homeassistant.components.theben_conexa.config_flow.ConexaSMGW.create\",\n        side_effect=aiohttp.ClientError,\n    ):\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            TEST_CONFIG_DATA,\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n\n    with (\n        patch(\n            \"homeassistant.components.theben_conexa.config_flow.ConexaSMGW.create\",\n            side_effect=ValueError,\n        ),\n    ):\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            TEST_CONFIG_DATA,\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"unknown\"}\n\n    # Make sure the config flow tests finish with either an\n    # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n    # we can show the config flow is able to recover from an error.\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_form_cannot_connect(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Test we handle cannot connect error.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n\n    with patch(\n        \"homeassistant.components.theben_conexa.config_flow.checkNetworkConnection\",\n        side_effect=aiohttp.ClientError,\n    ):\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            TEST_CONFIG_DATA,\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    # Make sure the config flow tests finish with either an\n    # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n    # we can show the config flow is able to recover from an error.\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_form_already_configured(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Test if integration aborts if the user tries to configure an already configured smgw.\"\"\"\n    entry = MockConfigEntry(\n        domain=DOMAIN,\n        unique_id=f\"{mock_conexa_smgw.gatewayInfo.smgwID}-test-username\",\n        data=TEST_CONFIG_DATA,\n    )\n    entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_same_gateway_different_user(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: AsyncMock,\n) -> None:\n    \"\"\"Test that same gateway with a different username can still be configured.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw,\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\n            CONF_HOST: \"1.1.1.1\",\n            CONF_USERNAME: \"test-username-2\",\n            CONF_PASSWORD: \"test-password2\",\n        },\n    )\n\n    _assert_create_entry_result(\n        result,\n        {\n            CONF_HOST: \"1.1.1.1\",\n            CONF_USERNAME: \"test-username-2\",\n            CONF_PASSWORD: \"test-password2\",\n        },\n        mock_conexa_smgw,\n    )\n    assert len(mock_setup_entry.mock_calls) == 2\n",
+  "anchor_line": 80,
+  "after_code": "\"\"\"Test the Theben Conexa Smartmeter gateway config flow.\"\"\"\n\nfrom types import SimpleNamespace\nfrom unittest.mock import AsyncMock\n\nimport aiohttp\nimport pytest\nfrom theben_conexa_smgw import ConexaSMGW\n\nfrom homeassistant import config_entries\nfrom homeassistant.components.theben_conexa.const import DOMAIN\nfrom homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\n\nfrom tests.common import MockConfigEntry\n\nTEST_CONFIG_DATA = {\n    CONF_HOST: \"1.1.1.1\",\n    CONF_USERNAME: \"test-username\",\n    CONF_PASSWORD: \"test-password\",\n}\n\n\ndef _assert_create_entry_result(\n    result: config_entries.ConfigFlowResult,\n    expected_data: dict[str, str],\n    mock_conexa_client: ConexaSMGW,\n) -> None:\n    \"\"\"Assert a successful create-entry result uses the expected unique ID.\"\"\"\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"Smartmeter Gateway\"\n    assert result[\"data\"] == expected_data\n    assert result[\"result\"].unique_id == (\n        f\"{mock_conexa_client.gatewayInfo.smgwID}-{expected_data[CONF_USERNAME]}\"\n    )\n\n\nasync def test_full_flow(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: SimpleNamespace,\n) -> None:\n    \"\"\"Test full flow.\"\"\"\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw.client,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\n@pytest.mark.parametrize(\n    (\"side_effect\", \"expected_error\"),\n    [\n        pytest.param(aiohttp.ClientError, \"invalid_auth\", id=\"invalid-auth\"),\n        pytest.param(ValueError, \"unknown\", id=\"unknown\"),\n    ],\n)\nasync def test_form_exceptions(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: SimpleNamespace,\n    side_effect: type[Exception],\n    expected_error: str,\n) -> None:\n    \"\"\"Test we handle exceptions from client creation.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n\n    mock_conexa_smgw.network.side_effect = None\n    mock_conexa_smgw.create.side_effect = side_effect\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": expected_error}\n\n    mock_conexa_smgw.create.side_effect = None\n    mock_conexa_smgw.create.return_value = mock_conexa_smgw.client\n\n    # Make sure the config flow tests finish with either an\n    # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n    # we can show the config flow is able to recover from an error.\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw.client,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\nasync def test_form_cannot_connect(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: SimpleNamespace,\n) -> None:\n    \"\"\"Test we handle cannot connect error.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n\n    mock_conexa_smgw.network.side_effect = aiohttp.ClientError\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_conexa_smgw.network.side_effect = None\n\n    # Make sure the config flow tests finish with either an\n    # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n    # we can show the config flow is able to recover from an error.\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw.client,\n    )\n    assert len(mock_setup_entry.mock_calls) == 1\n\n\nasync def test_form_already_configured(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test if integration aborts if the user tries to configure an already configured smgw.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\nasync def test_same_gateway_different_user(\n    hass: HomeAssistant,\n    mock_setup_entry: AsyncMock,\n    mock_conexa_smgw: SimpleNamespace,\n) -> None:\n    \"\"\"Test that same gateway with a different username can still be configured.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        TEST_CONFIG_DATA,\n    )\n\n    _assert_create_entry_result(\n        result,\n        TEST_CONFIG_DATA,\n        mock_conexa_smgw.client,\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\n            CONF_HOST: \"1.1.1.1\",\n            CONF_USERNAME: \"test-username-2\",\n            CONF_PASSWORD: \"test-password2\",\n        },\n    )\n\n    _assert_create_entry_result(\n        result,\n        {\n            CONF_HOST: \"1.1.1.1\",\n            CONF_USERNAME: \"test-username-2\",\n            CONF_PASSWORD: \"test-password2\",\n        },\n        mock_conexa_smgw.client,\n    )\n    assert len(mock_setup_entry.mock_calls) == 2\n",
+  "unified_diff": "--- a/tests/components/theben_conexa/test_config_flow.py\n+++ b/tests/components/theben_conexa/test_config_flow.py\n@@ -1,10 +1,11 @@\n \"\"\"Test the Theben Conexa Smartmeter gateway config flow.\"\"\"\n \n-from typing import Any\n-from unittest.mock import AsyncMock, patch\n+from types import SimpleNamespace\n+from unittest.mock import AsyncMock\n \n import aiohttp\n import pytest\n+from theben_conexa_smgw import ConexaSMGW\n \n from homeassistant import config_entries\n from homeassistant.components.theben_conexa.const import DOMAIN\n@@ -22,24 +23,23 @@\n \n \n def _assert_create_entry_result(\n-    result: dict[str, Any],\n+    result: config_entries.ConfigFlowResult,\n     expected_data: dict[str, str],\n-    mock_conexa_smgw: AsyncMock,\n+    mock_conexa_client: ConexaSMGW,\n ) -> None:\n     \"\"\"Assert a successful create-entry result uses the expected unique ID.\"\"\"\n     assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n     assert result[\"title\"] == \"Smartmeter Gateway\"\n     assert result[\"data\"] == expected_data\n     assert result[\"result\"].unique_id == (\n-        f\"{mock_conexa_smgw.gatewayInfo.smgwID}-{expected_data[CONF_USERNAME]}\"\n-    )\n-\n-\n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n+        f\"{mock_conexa_client.gatewayInfo.smgwID}-{expected_data[CONF_USERNAME]}\"\n+    )\n+\n+\n async def test_full_flow(\n     hass: HomeAssistant,\n     mock_setup_entry: AsyncMock,\n-    mock_conexa_smgw: AsyncMock,\n+    mock_conexa_smgw: SimpleNamespace,\n ) -> None:\n     \"\"\"Test full flow.\"\"\"\n \n@@ -58,47 +58,42 @@\n     _assert_create_entry_result(\n         result,\n         TEST_CONFIG_DATA,\n-        mock_conexa_smgw,\n+        mock_conexa_smgw.client,\n     )\n     assert len(mock_setup_entry.mock_calls) == 1\n \n \n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n+@pytest.mark.parametrize(\n+    (\"side_effect\", \"expected_error\"),\n+    [\n+        pytest.param(aiohttp.ClientError, \"invalid_auth\", id=\"invalid-auth\"),\n+        pytest.param(ValueError, \"unknown\", id=\"unknown\"),\n+    ],\n+)\n async def test_form_exceptions(\n     hass: HomeAssistant,\n     mock_setup_entry: AsyncMock,\n-    mock_conexa_smgw: AsyncMock,\n-) -> None:\n-    \"\"\"Test we handle invalid auth and  'unexpected' exception.\"\"\"\n-    result = await hass.config_entries.flow.async_init(\n-        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-    )\n-\n-    with patch(\n-        \"homeassistant.components.theben_conexa.config_flow.ConexaSMGW.create\",\n-        side_effect=aiohttp.ClientError,\n-    ):\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            TEST_CONFIG_DATA,\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n-\n-    with (\n-        patch(\n-            \"homeassistant.components.theben_conexa.config_flow.ConexaSMGW.create\",\n-            side_effect=ValueError,\n-        ),\n-    ):\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            TEST_CONFIG_DATA,\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"unknown\"}\n+    mock_conexa_smgw: SimpleNamespace,\n+    side_effect: type[Exception],\n+    expected_error: str,\n+) -> None:\n+    \"\"\"Test we handle exceptions from client creation.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+\n+    mock_conexa_smgw.network.side_effect = None\n+    mock_conexa_smgw.create.side_effect = side_effect\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        TEST_CONFIG_DATA,\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {\"base\": expected_error}\n+\n+    mock_conexa_smgw.create.side_effect = None\n+    mock_conexa_smgw.create.return_value = mock_conexa_smgw.client\n \n     # Make sure the config flow tests finish with either an\n     # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n@@ -111,33 +106,31 @@\n     _assert_create_entry_result(\n         result,\n         TEST_CONFIG_DATA,\n-        mock_conexa_smgw,\n+        mock_conexa_smgw.client,\n     )\n     assert len(mock_setup_entry.mock_calls) == 1\n \n \n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n async def test_form_cannot_connect(\n     hass: HomeAssistant,\n     mock_setup_entry: AsyncMock,\n-    mock_conexa_smgw: AsyncMock,\n+    mock_conexa_smgw: SimpleNamespace,\n ) -> None:\n     \"\"\"Test we handle cannot connect error.\"\"\"\n     result = await hass.config_entries.flow.async_init(\n         DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n     )\n \n-    with patch(\n-        \"homeassistant.components.theben_conexa.config_flow.checkNetworkConnection\",\n-        side_effect=aiohttp.ClientError,\n-    ):\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            TEST_CONFIG_DATA,\n-        )\n+    mock_conexa_smgw.network.side_effect = aiohttp.ClientError\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        TEST_CONFIG_DATA,\n+    )\n \n     assert result[\"type\"] is FlowResultType.FORM\n     assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n+\n+    mock_conexa_smgw.network.side_effect = None\n \n     # Make sure the config flow tests finish with either an\n     # FlowResultType.CREATE_ENTRY or FlowResultType.ABORT so\n@@ -150,24 +143,17 @@\n     _assert_create_entry_result(\n         result,\n         TEST_CONFIG_DATA,\n-        mock_conexa_smgw,\n+        mock_conexa_smgw.client,\n     )\n     assert len(mock_setup_entry.mock_calls) == 1\n \n \n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n async def test_form_already_configured(\n     hass: HomeAssistant,\n-    mock_setup_entry: AsyncMock,\n-    mock_conexa_smgw: AsyncMock,\n+    mock_config_entry: MockConfigEntry,\n ) -> None:\n     \"\"\"Test if integration aborts if the user tries to configure an already configured smgw.\"\"\"\n-    entry = MockConfigEntry(\n-        domain=DOMAIN,\n-        unique_id=f\"{mock_conexa_smgw.gatewayInfo.smgwID}-test-username\",\n-        data=TEST_CONFIG_DATA,\n-    )\n-    entry.add_to_hass(hass)\n+    mock_config_entry.add_to_hass(hass)\n \n     result = await hass.config_entries.flow.async_init(\n         DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n@@ -184,11 +170,10 @@\n     assert result[\"reason\"] == \"already_configured\"\n \n \n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n async def test_same_gateway_different_user(\n     hass: HomeAssistant,\n     mock_setup_entry: AsyncMock,\n-    mock_conexa_smgw: AsyncMock,\n+    mock_conexa_smgw: SimpleNamespace,\n ) -> None:\n     \"\"\"Test that same gateway with a different username can still be configured.\"\"\"\n     result = await hass.config_entries.flow.async_init(\n@@ -205,7 +190,7 @@\n     _assert_create_entry_result(\n         result,\n         TEST_CONFIG_DATA,\n-        mock_conexa_smgw,\n+        mock_conexa_smgw.client,\n     )\n \n     result = await hass.config_entries.flow.async_init(\n@@ -230,6 +215,6 @@\n             CONF_USERNAME: \"test-username-2\",\n             CONF_PASSWORD: \"test-password2\",\n         },\n-        mock_conexa_smgw,\n+        mock_conexa_smgw.client,\n     )\n     assert len(mock_setup_entry.mock_calls) == 2\n",
+  "changed_files": [
+    {
+      "path": ".claude/agents/quality-scale-rule-verifier.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/scripts/resolve_dependency.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/github-pr-reviewer/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-merge-queue/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-comment-audit/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-reviewer/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-quality-scale-verify/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-review/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/review/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".core_files.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitattributes",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/cache-apt-packages/action.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/restore-or-build-venv/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/setup-uv-python/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/assets/screenshot-integrations.png",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/aw/actions-lock.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/instructions/integrations.instructions.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/renovate.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/aw.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/builder.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements-deterministic.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/e2e-tests.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/translations.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".prettierignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".yamllint",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AI_POLICY.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "Dockerfile.dev",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/jwt_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/totp.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/command_line.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/homeassistant.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/trusted_networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/bootstrap.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/fireavert.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/geosphere_austria.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/google.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/gree.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/microsoft.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/midea.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/mitsubishi.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/samsung.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/solaredge.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/ubiquiti.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/vlc.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/__init__.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/const.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/manifest.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/switch.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/hub.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/cover.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/http.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/media_source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/task.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/condition.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/helpers.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airpatrol/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airq/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch4/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airtouch5/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airvisual_pro/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/water_heater.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone_cloud/water_heater.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aladdin_connect/api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:15:30.989711Z"
+}

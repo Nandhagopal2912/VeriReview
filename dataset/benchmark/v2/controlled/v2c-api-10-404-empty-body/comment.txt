@@ -1,0 +1,1 @@
+Return 404 with an error message when the file is missing.

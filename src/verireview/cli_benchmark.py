@@ -8,7 +8,7 @@
     verireview adjudication-sheet A.json B.json --batch NAME   page for the adjudicator
     verireview build-gold A.json B.json [--adjudication ADJ.json]   write gold.json files
     verireview build-gold A.json --single-source model              provisional one-annotator gold
-    verireview benchmark-freeze --version v1          write the frozen test manifest
+    verireview benchmark-freeze [--benchmark-version v2]   write the frozen test manifest
     verireview eval-benchmark --split dev             Phase 10 ablation (test: --final-test-run)
 
 Mining only works for repositories listed in ``dataset/benchmark/repositories.json``, which records
@@ -20,7 +20,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from verireview.benchmark import (
     CALIBRATION_CASES,
@@ -32,15 +32,19 @@ from verireview.benchmark import (
     iter_real_world,
 )
 from verireview.benchmark.agreement import Kappa, single_annotator_gold
-from verireview.benchmark.manifest import MANIFEST, FreezeError, freeze, stats
+
+if TYPE_CHECKING:
+    from verireview.evaluation.benchmark import Interval
+from verireview.benchmark.manifest import FreezeError, freeze, stats
 from verireview.benchmark.mining import (
     Candidate,
     LicenseNotAllowedError,
     collect,
     find_candidates,
+    used_pulls,
 )
 from verireview.benchmark.sheet import Mode, render_sheet, sheet_case
-from verireview.benchmark.store import REAL_WORLD, write_gold
+from verireview.benchmark.store import CURRENT_VERSION, VERSIONS, get_version, write_gold
 from verireview.config import get_settings
 from verireview.dataset import load_fixture
 from verireview.gh.api import GitHubApi, RepoRef
@@ -60,6 +64,7 @@ COMMANDS = (
     "build-gold",
     "benchmark-freeze",
     "eval-benchmark",
+    "compare-reports",
 )
 
 
@@ -123,19 +128,49 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p.add_argument("--dataset", type=Path, default=DATASET)
     p.add_argument("--out", type=Path)
 
+    p = sub.add_parser(
+        "compare-reports",
+        help="paired bootstrap of one system across two reports (e.g. old vs new rules)",
+    )
+    p.add_argument("baseline", type=Path, help="report of the reference run (e.g. old rules)")
+    p.add_argument("candidate", type=Path, help="report of the compared run (e.g. new rules)")
+    p.add_argument("--system", default="F", help="system in both reports (default F)")
+    p.add_argument("--resamples", type=int, default=2000)
+    p.add_argument("--out", type=Path)
+
     p = sub.add_parser("benchmark-freeze", help="write the frozen test-split manifest")
-    p.add_argument("--version", required=True)
     p.add_argument("--dataset", type=Path, default=DATASET)
+    _add_version_arguments(sub)
+
+
+def _add_version_arguments(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> None:
+    for name in (
+        "benchmark-stats",
+        "collect-cases",
+        "annotation-sheet",
+        "adjudication-sheet",
+        "build-gold",
+        "benchmark-freeze",
+        "eval-benchmark",
+    ):
+        sub.choices[name].add_argument(
+            "--benchmark-version",
+            choices=sorted(VERSIONS),
+            default=CURRENT_VERSION,
+            help=f"benchmark version (default: {CURRENT_VERSION})",
+        )
 
 
 def run(args: argparse.Namespace) -> int:
     command = args.command
     if command == "benchmark-stats":
-        return _stats(args.dataset)
+        return _stats(args.dataset, args.benchmark_version)
     if command in ("mine-candidates", "collect-cases"):
         return _network(args)
     if command == "annotation-sheet":
-        return _annotation_sheet(args.batch, args.calibration, args.dataset, args.out)
+        return _annotation_sheet(
+            args.batch, args.calibration, args.dataset, args.out, args.benchmark_version
+        )
     if command == "agreement":
         return _agreement(_annotations(args.a), _annotations(args.b), args.out)
     if command == "adjudication-sheet":
@@ -144,11 +179,88 @@ def run(args: argparse.Namespace) -> int:
         return _build_gold(args)
     if command == "eval-benchmark":
         return _eval_benchmark(args)
-    return _freeze(args.version, args.dataset)
+    if command == "compare-reports":
+        return _compare_reports(args)
+    return _freeze(args.benchmark_version, args.dataset)
 
 
-def _stats(dataset: Path) -> int:
-    s = stats(dataset)
+def _compare_reports(args: argparse.Namespace) -> int:
+    """Candidate minus baseline for one system, on exactly the same cases and gold labels.
+
+    The two reports may come from different commits (Phase 10.1: the Phase 10 rules run from a
+    worktree at their commit, the new rules from the working tree), so the cases are matched by
+    id and their expected verdicts must agree.
+    """
+    from verireview.evaluation.benchmark import STATISTICS, paired_difference
+    from verireview.evaluation.systems import BenchmarkReport
+
+    reports = [
+        BenchmarkReport.model_validate_json(path.read_text(encoding="utf-8"))
+        for path in (args.baseline, args.candidate)
+    ]
+    records = []
+    for path, report in zip((args.baseline, args.candidate), reports, strict=True):
+        system = next((s for s in report.systems if s.system == args.system), None)
+        if system is None:
+            print(f"error: no system {args.system!r} in {path}", file=sys.stderr)
+            return 2
+        records.append({r.case_id: r for r in system.cases})
+    base, cand = records
+    if set(base) != set(cand):
+        print(
+            f"error: the reports cover different cases ({len(set(base) ^ set(cand))} differ)",
+            file=sys.stderr,
+        )
+        return 2
+    relabelled = sorted(i for i in base if base[i].expected != cand[i].expected)
+    if relabelled:
+        print(f"error: gold labels differ for {relabelled[:5]}", file=sys.stderr)
+        return 2
+
+    slices = {"pooled": sorted(base)} | {
+        source: sorted(i for i in base if base[i].source == source)
+        for source in sorted({r.source for r in base.values()})
+    }
+    result: dict[str, dict[str, dict[str, float | None]]] = {}
+    print(
+        f"{args.system}: {args.candidate} minus {args.baseline} "
+        f"(paired bootstrap {args.resamples}x, {len(base)} cases)"
+    )
+    for name, ids in slices.items():
+        result[name] = {}
+        line = f"  {name:12} n={len(ids):3}"
+        for stat, label in _COMPARED.items():
+            interval = paired_difference(
+                [cand[i] for i in ids], [base[i] for i in ids], STATISTICS[stat], args.resamples
+            )
+            result[name][stat] = interval.model_dump()
+            line += f"  {label} {_fmt_interval(interval)}"
+        print(line)
+    if args.out is not None:
+        args.out.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8", newline="\n")
+        print(f"wrote {args.out}")
+    return 0
+
+
+_COMPARED = {
+    "accuracy": "acc",
+    "false_acceptance_rate": "FAR",
+    "false_blocking_rate": "FBR",
+    "coverage": "cov",
+}
+
+
+def _fmt_interval(interval: "Interval") -> str:
+    if interval.estimate is None:
+        return "n/a"
+    if interval.low is None or interval.high is None:
+        return f"{interval.estimate:+.3f}"
+    return f"{interval.estimate:+.3f} [{interval.low:+.2f}, {interval.high:+.2f}]"
+
+
+def _stats(dataset: Path, version: str) -> int:
+    s = stats(dataset, version)
+    print(f"benchmark {version}")
     print("case sets:        " + ", ".join(f"{k} {v}" for k, v in s.by_set.items()))
     print("source/split:     " + ", ".join(f"{k} {v}" for k, v in s.by_source_split.items()))
     print("test by category: " + ", ".join(f"{k} {v}" for k, v in s.test_by_category.items()))
@@ -184,11 +296,24 @@ def _network(args: argparse.Namespace) -> int:
                 for line in path.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
-            report = collect(api, candidates, args.n, args.seed, args.dataset, args.test_fraction)
+            layout = get_version(args.benchmark_version)
+            report = collect(
+                api,
+                candidates,
+                args.n,
+                args.seed,
+                args.dataset,
+                args.test_fraction,
+                real_world=layout.real_world,
+                exclude_pulls=used_pulls(
+                    args.dataset,
+                    [v.real_world for v in VERSIONS.values() if v.name != layout.name],
+                ),
+            )
     except (GitHubError, LicenseNotAllowedError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    print(f"collected {len(report.written)} case(s) into {args.dataset / REAL_WORLD}")
+    print(f"collected {len(report.written)} case(s) into {args.dataset / layout.real_world}")
     for key, reason in report.skipped.items():
         print(f"  skipped {key}: {reason}")
     return 0
@@ -221,7 +346,9 @@ def approved_repositories(dataset: Path) -> set[str]:
     return {r.lower() for r in json.loads(path.read_text(encoding="utf-8"))["repositories"]}
 
 
-def _annotation_sheet(batch: str, calibration: bool, dataset: Path, out: Path | None) -> int:
+def _annotation_sheet(
+    batch: str, calibration: bool, dataset: Path, out: Path | None, version: str
+) -> int:
     if calibration:
         cases = []
         for name in CALIBRATION_CASES:
@@ -237,7 +364,7 @@ def _annotation_sheet(batch: str, calibration: bool, dataset: Path, out: Path | 
             cases.append(sheet_case(name, fixture.case, reference))
         mode: Mode = "calibration"
     else:
-        root = dataset / REAL_WORLD
+        root = dataset / get_version(version).real_world
         pending = [rw for rw in iter_real_world(root) if rw.gold is None] if root.is_dir() else []
         cases = [sheet_case(rw.case_id, rw.case) for rw in pending]
         mode = "annotate"
@@ -274,7 +401,7 @@ def _agreement(a: AnnotationFile, b: AnnotationFile, out: Path | None) -> int:
 def _adjudication_sheet(args: argparse.Namespace) -> int:
     a, b = _annotations(args.a), _annotations(args.b)
     disputed = [d.case_id for d in agreement(a, b).disagreements]
-    root = args.dataset / REAL_WORLD
+    root = args.dataset / get_version(args.benchmark_version).real_world
     cases = [
         sheet_case(rw.case_id, rw.case) for rw in iter_real_world(root) if rw.case_id in disputed
     ]
@@ -306,7 +433,7 @@ def _build_gold(args: argparse.Namespace) -> int:
         except PendingAdjudicationError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1
-    root = args.dataset / REAL_WORLD
+    root = args.dataset / get_version(args.benchmark_version).real_world
     existing = {rw.case_id: rw for rw in iter_real_world(root)}
     unknown = sorted(set(gold) - set(existing))
     if unknown:
@@ -333,7 +460,7 @@ def _freeze(version: str, dataset: Path) -> int:
     except FreezeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    out = dataset / MANIFEST
+    out = dataset / get_version(version).manifest
     _write(out, manifest.model_dump_json(indent=2) + "\n")
     print(
         f"froze {version}: {len(manifest.test_sets)} test set(s), "
@@ -373,9 +500,11 @@ def _eval_benchmark(args: argparse.Namespace) -> int:
     systems = [s for s in systems if s.name not in skipped]
 
     split = Split(args.split)
-    dev = list(iter_benchmark(args.dataset, Split.DEV))
-    cases = dev if split == Split.DEV else list(iter_benchmark(args.dataset, Split.TEST))
-    manifest_path = args.dataset / MANIFEST
+    version = args.benchmark_version
+    layout = get_version(version)
+    dev = list(iter_benchmark(args.dataset, Split.DEV, version))
+    cases = dev if split == Split.DEV else list(iter_benchmark(args.dataset, Split.TEST, version))
+    manifest_path = args.dataset / layout.manifest
     manifest = (
         Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
         if manifest_path.is_file()
@@ -389,7 +518,9 @@ def _eval_benchmark(args: argparse.Namespace) -> int:
         protocol_sha256=hashlib.sha256(args.protocol.read_bytes()).hexdigest()
         if args.protocol.is_file()
         else "missing",
-        dataset_hashes=_split_hashes(args.dataset, cases, dataset_hash, real_world_test_hash),
+        dataset_hashes=_split_hashes(
+            args.dataset, cases, layout, dataset_hash, real_world_test_hash
+        ),
         resamples=args.resamples,
         bootstrap_seed=BOOTSTRAP_SEED,
         n_cases=len(cases),
@@ -404,18 +535,19 @@ def _eval_benchmark(args: argparse.Namespace) -> int:
     return 0
 
 
-def _split_hashes(dataset: Path, cases: list, dataset_hash: Any, rw_hash: Any) -> dict[str, str]:  # type: ignore[type-arg]
-    from verireview.benchmark import CASE_SETS
-
+def _split_hashes(
+    dataset: Path, cases: list[Any], layout: Any, dataset_hash: Any, rw_hash: Any
+) -> dict[str, str]:
     used = {c.case_set for c in cases}
-    hashes = {
-        s.name: dataset_hash(dataset / s.path)
-        for s in CASE_SETS
-        if s.name in used and s.name != "real-world"
-    }
-    rw_ids = [c.fixture.meta.case_id for c in cases if c.case_set == "real-world"]
-    if rw_ids:
-        hashes["real-world (included cases)"] = rw_hash(dataset, rw_ids)
+    hashes: dict[str, str] = {}
+    for s in layout.case_sets:
+        if s.name not in used:
+            continue
+        if s.source.value != "real_world":
+            hashes[s.name] = dataset_hash(dataset / s.path)
+            continue
+        ids = [c.fixture.meta.case_id for c in cases if c.case_set == s.name]
+        hashes[f"{s.name} (included cases)"] = rw_hash(dataset, ids, s.path)
     return hashes
 
 

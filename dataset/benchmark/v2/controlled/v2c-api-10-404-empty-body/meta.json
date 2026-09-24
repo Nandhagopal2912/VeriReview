@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-api-10-404-empty-body",
+  "category": "api_behavior",
+  "file_path": "api/files.py",
+  "target_symbol": "get_file",
+  "comment_line": 9,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A missing file returns 404, but with an empty body instead of an error message.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the file is missing",
+      "target": "get_file",
+      "condition": "name not in FILES",
+      "expected_behavior": "HTTP 404"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Include an error message in the 404 response",
+      "target": "get_file",
+      "condition": "name not in FILES",
+      "expected_behavior": "error message"
+    }
+  ]
+}

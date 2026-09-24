@@ -6,12 +6,23 @@ For the variable(s) the request names, the code after the change must contain a 
 3. rejects: its branch raises or returns (a check that only logs changes nothing), and
 4. runs before the guarded operation (the commented statement) when that can be located.
 ADR-001: a matching guard that already existed before the comment → satisfied, already present.
+
+Phase 10.1: a range check must use the requested bound ("at least 1" is not `x < 0`, "positive"
+is not `x < 0`); a check in `__post_init__` or another method is not "too late" for a field it
+guards; a pydantic model built from the value (`Model(amount=amount)` with
+`amount: float = Field(gt=0)`, a constrained type or a field validator) is a delegated check.
 """
 
 import re
 
 from verireview.contracts import Evidence, Requirement
-from verireview.rules.analysis import Guard, Scope, call_arguments, function_parameters
+from verireview.rules.analysis import (
+    Guard,
+    Scope,
+    call_arguments,
+    function_parameters,
+    model_constraint,
+)
 from verireview.rules.base import (
     RuleContext,
     RuleOutcome,
@@ -57,8 +68,14 @@ def validation_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
     evidence = []
     missing: list[str] = []
     chosen: list[Guard] = []
+    wrong_bounds: list[Guard] = []
     for kind in kinds:
-        guard = next((g for g in on_target if g.rejects and _is_kind(g, kind)), None)
+        candidates = [g for g in on_target if g.rejects and _is_kind(g, kind)]
+        if kind == "range":
+            fitting = [g for g in candidates if _bounds_ok(g.condition.text, text)]
+            wrong_bounds += [g for g in candidates if g not in fitting]
+            candidates = fitting
+        guard = candidates[0] if candidates else None
         if guard is None:
             missing.append(kind)
             continue
@@ -85,6 +102,18 @@ def validation_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
                 evidence + delegated.evidence,
                 already_present=delegated.already_present,
             )
+        evidence += [
+            located(
+                requirement,
+                "validation.wrong_bound",
+                False,
+                f"`{g.condition.text}` checks `{names[0]}` against the wrong bound for "
+                f'"{requirement.description}".',
+                ctx.file,
+                g.line,
+            )
+            for g in wrong_bounds
+        ]
         evidence += _explain_missing(requirement, ctx, names, missing, on_target)
         return RuleOutcome(
             RuleStatus.NOT_SATISFIED,
@@ -93,7 +122,13 @@ def validation_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
         )
 
     operation = ctx.guarded_line
-    late = [g for g in chosen if operation is not None and g.line > operation]
+    late = [
+        g
+        for g in chosen
+        if operation is not None
+        and g.line > operation
+        and _enclosing_function(ctx, g.line) == _enclosing_function(ctx, operation)
+    ]
     if late:
         evidence.append(
             located(
@@ -147,6 +182,28 @@ def _delegated(
             continue
         callee = call.callee.split(".")[-1]
         helper = ctx.after_file.function(callee)
+        model = ctx.after_file.class_definition(callee)
+        if model is not None:
+            fields = {key for key, value in args if key and value in names}
+            constraint = next(
+                (c for f in fields if (c := model_constraint(model, f)) is not None), None
+            )
+            if constraint is not None:
+                return RuleOutcome(
+                    RuleStatus.SATISFIED,
+                    f"`{callee}` validates `{names[0]}` when it is built.",
+                    [
+                        located(
+                            requirement,
+                            "validation.checked_by_model",
+                            True,
+                            f"`{call.text}` (line {call.line}) builds `{callee}`, whose field "
+                            f"is constrained by `{constraint}`.",
+                            ctx.file,
+                            call.line,
+                        )
+                    ],
+                )
         if helper is not None:
             params = function_parameters(helper)
             checked = {
@@ -196,6 +253,53 @@ def _delegated(
                 ],
             )
     return None
+
+
+_NUMBER = re.compile(r"(?<![\w.`])-?\d+(?:\.\d+)?(?![\w`])")
+_NUM = r"-?\d+(?:\.\d+)?"
+# "x < 5" and "5 > x": each literal with the operator that compares it to the variable.
+_VAR_OP_NUM = re.compile(rf"(<=|>=|<|>|==|!=)\s*({_NUM})(?![\w.])")
+_NUM_OP_VAR = re.compile(rf"(?<![\w.])({_NUM})\s*(<=|>=|<|>|==|!=)")
+_FLIP = {"<": ">", ">": "<", "<=": ">=", ">=": "<=", "==": "==", "!=": "!="}
+
+
+def _comparisons(condition: str) -> set[tuple[str, float]]:
+    """(operator, literal) with the variable on the left: `1 <= x` → (">=", 1.0)."""
+    pairs = {(op, float(n)) for op, n in _VAR_OP_NUM.findall(condition)}
+    pairs |= {(_FLIP[op], float(n)) for n, op in _NUM_OP_VAR.findall(condition)}
+    return pairs
+
+
+def _bounds_ok(condition: str, request: str) -> bool:
+    """The rejecting condition uses the requested bound (or its integer equivalent).
+
+    "at least 1": `x < 1` or `x <= 0`, not `x < 0`. "positive": rejects 0 too (`x <= 0` /
+    `x < 1`). "between 1 and 65535": both numbers. Requests without a bound are not checked.
+    """
+    pairs = _comparisons(condition)
+    plain = re.sub(r"`[^`]*`", " ", request)
+    wanted = [float(v) for v in _NUMBER.findall(plain)]
+    if wanted:
+        return all(_uses(n, pairs) for n in wanted)
+    if re.search(r"\bpositive\b", plain, re.I):
+        return bool(pairs & {("<=", 0.0), (">", 0.0), ("<", 1.0), (">=", 1.0)})
+    return True
+
+
+def _uses(bound: float, pairs: set[tuple[str, float]]) -> bool:
+    """`bound` itself, or the integer next to it with the operator that means the same."""
+    if any(value == bound for _, value in pairs):
+        return True
+    below = {("<=", bound - 1), (">", bound - 1)}
+    above = {(">=", bound + 1), ("<", bound + 1)}
+    return bool(pairs & (below | above))
+
+
+def _enclosing_function(ctx: RuleContext, line: int) -> int | None:
+    """Start line of the innermost function around ``line`` (None at class/module level)."""
+    spans = ctx.after_file.function_spans()
+    inside = [(start, end) for start, end in spans if start <= line <= end]
+    return max(inside)[0] if inside else None
 
 
 def _is_kind(guard: Guard, kind: str) -> bool:

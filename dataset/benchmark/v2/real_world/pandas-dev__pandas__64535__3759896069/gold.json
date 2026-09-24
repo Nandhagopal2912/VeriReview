@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3759896069",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Replace the skip_if_no_matplotlib helper method with skip / filterwarnings handling that needs no method (class decorators suggested)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/extension/base/plotting.py: skip_if_no_matplotlib is removed; tests run inside mpl_cleanup_context(), which importorskips matplotlib",
+    "confidence": "low",
+    "notes": "The suggested class decorators did not work (author showed the error, reviewer accepted); the method was later removed another way. Satisfied in intent, not in the suggested form. Human check advised."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

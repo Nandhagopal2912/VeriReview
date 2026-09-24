@@ -1,0 +1,468 @@
+{
+  "schema_version": "3",
+  "case_id": "encode/httpx#2879/1353991206",
+  "repository": "encode/httpx",
+  "pull_number": 2879,
+  "pull_title": "Add the 'proxy' parameter and deprecate 'proxies'.",
+  "base_sha": "b471f01d668b9ef730e8843531b07b1c21b74c47",
+  "head_sha": "c7971ce17c1ef7c257d3835c4ab06391f74b7913",
+  "thread": {
+    "root_comment_id": 1353991206,
+    "path": "httpx/_transports/default.py",
+    "line": 50,
+    "original_line": 52,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -47,7 +49,7 @@\n     WriteTimeout,\n )\n from .._models import Request, Response\n-from .._types import AsyncByteStream, CertTypes, SyncByteStream, VerifyTypes\n+from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes",
+    "original_commit_sha": "88eb99b25c353aafcf1aa103d63c1a9081f7c6e9",
+    "commit_sha": "c7971ce17c1ef7c257d3835c4ab06391f74b7913",
+    "comments": [
+      {
+        "id": 1353991206,
+        "author": "reviewer",
+        "body": "```suggestion\r\nfrom .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes\r\nfrom .._urls import URL\r\n```",
+        "created_at": "2023-10-11T04:16:34Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "participant-1",
+    "is_outdated": false
+  },
+  "window": {
+    "start_commit_sha": "88eb99b25c353aafcf1aa103d63c1a9081f7c6e9",
+    "end_commit_sha": "c7971ce17c1ef7c257d3835c4ab06391f74b7913",
+    "subsequent_commits": [
+      {
+        "sha": "11bec0880eeb51fb09e9fcbadb6f86159ec0bbc4",
+        "message": "Update httpx/_transports/default.py\n\nCo-authored-by: T-256 <<email>>",
+        "authored_at": "2023-10-11T08:35:00Z",
+        "committed_at": "2023-10-11T08:35:00Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "fad66cfd5929a1819276d94a51f9329dd3801991",
+        "message": "Update httpx/_transports/default.py\n\nCo-authored-by: T-256 <<email>>",
+        "authored_at": "2023-10-11T08:35:08Z",
+        "committed_at": "2023-10-11T08:35:08Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "d16f9f3c3fcb284f7c8bc4ad3902145585961c71",
+        "message": "Drop unneeded noqa",
+        "authored_at": "2023-10-11T11:27:08Z",
+        "committed_at": "2023-10-11T11:27:08Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "64a4596ef0938d821a3468c272a33889145e2ad6",
+        "message": "Changelog",
+        "authored_at": "2023-10-11T11:31:34Z",
+        "committed_at": "2023-10-11T11:31:34Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "541cc31c5c2c4180c76bfbdabf37d4dd59ce4f1c",
+        "message": "update documentation",
+        "authored_at": "2023-10-12T06:49:12Z",
+        "committed_at": "2023-10-12T06:49:12Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "812a70b594a646bd92e37104cff73f9307743a38",
+        "message": "Allow None in mounts",
+        "authored_at": "2023-10-12T07:18:27Z",
+        "committed_at": "2023-10-12T07:18:27Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ccf180387ff1f9164b9f69515dc260804d75b90b",
+        "message": "typos",
+        "authored_at": "2023-10-12T07:27:16Z",
+        "committed_at": "2023-10-12T07:27:16Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "bacd8b26a5715eba40f6c711bb4ea71e121f1fad",
+        "message": "Update httpx/_types.py",
+        "authored_at": "2023-10-12T08:03:44Z",
+        "committed_at": "2023-10-12T08:03:44Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d5fa2b0844010d5dd881bd6490f5b27bc66d1775",
+        "message": "Changes proxies to proxy in CLI app",
+        "authored_at": "2023-10-12T08:50:00Z",
+        "committed_at": "2023-10-12T08:50:00Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "17c6cdef84a75efd1abcd8062fb2bfdcecea51df",
+        "message": "Add proxy to request function",
+        "authored_at": "2023-10-12T08:57:34Z",
+        "committed_at": "2023-10-12T08:57:34Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5aed92eea05867256b4a62a5e0611be453094f5f",
+        "message": "Merge branch 'drop-proxies' of github.com:karosis88/httpx into drop-proxies",
+        "authored_at": "2023-10-12T08:58:39Z",
+        "committed_at": "2023-10-12T08:58:39Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "6e5e4ac8dce19f2e65861e55b3e7fc2a75215483",
+        "message": "Merge branch 'master' into drop-proxies",
+        "authored_at": "2023-10-29T08:43:01Z",
+        "committed_at": "2023-10-29T08:43:01Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2672d8ab523fb257e0d363c00558cddb601a4236",
+        "message": "Merge branch 'master' into drop-proxies",
+        "authored_at": "2023-11-02T14:44:25Z",
+        "committed_at": "2023-11-02T14:44:25Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "fffa4542c5967750ed55112138bff714d414d4b8",
+        "message": "Merge branch 'master' into drop-proxies",
+        "authored_at": "2023-11-17T13:54:25Z",
+        "committed_at": "2023-11-17T13:54:25Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "4deebb87322451612e0c712ada3cd2b8f8e1fd9c",
+        "message": "Merge branch 'master' into drop-proxies",
+        "authored_at": "2023-11-17T14:00:01Z",
+        "committed_at": "2023-11-17T14:00:01Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "0b738175e4a74c73d2c01a70645b2ee5d774ec14",
+        "message": "Update CHANGELOG.md\n\nCo-authored-by: Tom Christie <<email>>",
+        "authored_at": "2023-12-11T12:11:45Z",
+        "committed_at": "2023-12-11T12:11:45Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "1e3bf1ebb326668f18f8d0cb1837cd99442459da",
+        "message": "Update docs/troubleshooting.md\n\nCo-authored-by: Tom Christie <<email>>",
+        "authored_at": "2023-12-11T12:13:06Z",
+        "committed_at": "2023-12-11T12:13:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "725a32e607c9f6017bbb5d76a902d317f27ef374",
+        "message": "Update docs/troubleshooting.md\n\nCo-authored-by: Tom Christie <<email>>",
+        "authored_at": "2023-12-11T12:13:17Z",
+        "committed_at": "2023-12-11T12:13:17Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "cbd63daacde03c7b3cc15594f75bee33f417deb6",
+        "message": "Merge branch 'master' into drop-proxies",
+        "authored_at": "2023-12-11T12:14:21Z",
+        "committed_at": "2023-12-11T12:14:21Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c7971ce17c1ef7c257d3835c4ab06391f74b7913",
+        "message": "Lint",
+        "authored_at": "2023-12-11T12:38:07Z",
+        "committed_at": "2023-12-11T12:38:07Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "httpx/_transports/default.py",
+  "before_code": "\"\"\"\nCustom transports, with nicely configured defaults.\n\nThe following additional keyword arguments are currently supported by httpcore...\n\n* uds: str\n* local_address: str\n* retries: int\n\nExample usages...\n\n# Disable HTTP/2 on a single specific domain.\nmounts = {\n    \"all://\": httpx.HTTPTransport(http2=True),\n    \"all://*example.org\": httpx.HTTPTransport()\n}\n\n# Using advanced httpcore configuration, with connection retries.\ntransport = httpx.HTTPTransport(retries=1)\nclient = httpx.Client(transport=transport)\n\n# Using advanced httpcore configuration, with unix domain sockets.\ntransport = httpx.HTTPTransport(uds=\"socket.uds\")\nclient = httpx.Client(transport=transport)\n\"\"\"\nimport contextlib\nimport typing\nfrom types import TracebackType\n\nimport httpcore\n\nfrom httpx import URL\n\nfrom .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context\nfrom .._exceptions import (\n    ConnectError,\n    ConnectTimeout,\n    LocalProtocolError,\n    NetworkError,\n    PoolTimeout,\n    ProtocolError,\n    ProxyError,\n    ReadError,\n    ReadTimeout,\n    RemoteProtocolError,\n    TimeoutException,\n    UnsupportedProtocol,\n    WriteError,\n    WriteTimeout,\n)\nfrom .._models import Request, Response\nfrom .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes\nfrom .base import AsyncBaseTransport, BaseTransport\n\nT = typing.TypeVar(\"T\", bound=\"HTTPTransport\")\nA = typing.TypeVar(\"A\", bound=\"AsyncHTTPTransport\")\n\nSOCKET_OPTION = typing.Union[\n    typing.Tuple[int, int, int],\n    typing.Tuple[int, int, typing.Union[bytes, bytearray]],\n    typing.Tuple[int, int, None, int],\n]\n\n\n@contextlib.contextmanager\ndef map_httpcore_exceptions() -> typing.Iterator[None]:\n    try:\n        yield\n    except Exception as exc:  # noqa: PIE-786\n        mapped_exc = None\n\n        for from_exc, to_exc in HTTPCORE_EXC_MAP.items():\n            if not isinstance(exc, from_exc):\n                continue\n            # We want to map to the most specific exception we can find.\n            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to\n            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.\n            if mapped_exc is None or issubclass(to_exc, mapped_exc):\n                mapped_exc = to_exc\n\n        if mapped_exc is None:  # pragma: no cover\n            raise\n\n        message = str(exc)\n        raise mapped_exc(message) from exc\n\n\nHTTPCORE_EXC_MAP = {\n    httpcore.TimeoutException: TimeoutException,\n    httpcore.ConnectTimeout: ConnectTimeout,\n    httpcore.ReadTimeout: ReadTimeout,\n    httpcore.WriteTimeout: WriteTimeout,\n    httpcore.PoolTimeout: PoolTimeout,\n    httpcore.NetworkError: NetworkError,\n    httpcore.ConnectError: ConnectError,\n    httpcore.ReadError: ReadError,\n    httpcore.WriteError: WriteError,\n    httpcore.ProxyError: ProxyError,\n    httpcore.UnsupportedProtocol: UnsupportedProtocol,\n    httpcore.ProtocolError: ProtocolError,\n    httpcore.LocalProtocolError: LocalProtocolError,\n    httpcore.RemoteProtocolError: RemoteProtocolError,\n}\n\n\nclass ResponseStream(SyncByteStream):\n    def __init__(self, httpcore_stream: typing.Iterable[bytes]):\n        self._httpcore_stream = httpcore_stream\n\n    def __iter__(self) -> typing.Iterator[bytes]:\n        with map_httpcore_exceptions():\n            for part in self._httpcore_stream:\n                yield part\n\n    def close(self) -> None:\n        if hasattr(self._httpcore_stream, \"close\"):\n            self._httpcore_stream.close()\n\n\nclass HTTPTransport(BaseTransport):\n    def __init__(\n        self,\n        verify: VerifyTypes = True,\n        cert: typing.Optional[CertTypes] = None,\n        http1: bool = True,\n        http2: bool = False,\n        limits: Limits = DEFAULT_LIMITS,\n        trust_env: bool = True,\n        proxy: typing.Optional[ProxyTypes] = None,\n        uds: typing.Optional[str] = None,\n        local_address: typing.Optional[str] = None,\n        retries: int = 0,\n        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,\n    ) -> None:\n        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)\n        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy\n\n        if proxy is None:\n            self._pool = httpcore.ConnectionPool(\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                uds=uds,\n                local_address=local_address,\n                retries=retries,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme in (\"http\", \"https\"):\n            self._pool = httpcore.HTTPProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                proxy_headers=proxy.headers.raw,\n                ssl_context=ssl_context,\n                proxy_ssl_context=proxy.ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme == \"socks5\":\n            try:\n                import socksio  # noqa\n            except ImportError:  # pragma: no cover\n                raise ImportError(\n                    \"Using SOCKS proxy, but the 'socksio' package is not installed. \"\n                    \"Make sure to install httpx using `pip install httpx[socks]`.\"\n                ) from None\n\n            self._pool = httpcore.SOCKSProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n            )\n        else:  # pragma: no cover\n            raise ValueError(\n                f\"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}.\"\n            )\n\n    def __enter__(self: T) -> T:  # Use generics for subclass support.\n        self._pool.__enter__()\n        return self\n\n    def __exit__(\n        self,\n        exc_type: typing.Optional[typing.Type[BaseException]] = None,\n        exc_value: typing.Optional[BaseException] = None,\n        traceback: typing.Optional[TracebackType] = None,\n    ) -> None:\n        with map_httpcore_exceptions():\n            self._pool.__exit__(exc_type, exc_value, traceback)\n\n    def handle_request(\n        self,\n        request: Request,\n    ) -> Response:\n        assert isinstance(request.stream, SyncByteStream)\n\n        req = httpcore.Request(\n            method=request.method,\n            url=httpcore.URL(\n                scheme=request.url.raw_scheme,\n                host=request.url.raw_host,\n                port=request.url.port,\n                target=request.url.raw_path,\n            ),\n            headers=request.headers.raw,\n            content=request.stream,\n            extensions=request.extensions,\n        )\n        with map_httpcore_exceptions():\n            resp = self._pool.handle_request(req)\n\n        assert isinstance(resp.stream, typing.Iterable)\n\n        return Response(\n            status_code=resp.status,\n            headers=resp.headers,\n            stream=ResponseStream(resp.stream),\n            extensions=resp.extensions,\n        )\n\n    def close(self) -> None:\n        self._pool.close()\n\n\nclass AsyncResponseStream(AsyncByteStream):\n    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]):\n        self._httpcore_stream = httpcore_stream\n\n    async def __aiter__(self) -> typing.AsyncIterator[bytes]:\n        with map_httpcore_exceptions():\n            async for part in self._httpcore_stream:\n                yield part\n\n    async def aclose(self) -> None:\n        if hasattr(self._httpcore_stream, \"aclose\"):\n            await self._httpcore_stream.aclose()\n\n\nclass AsyncHTTPTransport(AsyncBaseTransport):\n    def __init__(\n        self,\n        verify: VerifyTypes = True,\n        cert: typing.Optional[CertTypes] = None,\n        http1: bool = True,\n        http2: bool = False,\n        limits: Limits = DEFAULT_LIMITS,\n        trust_env: bool = True,\n        proxy: typing.Optional[ProxyTypes] = None,\n        uds: typing.Optional[str] = None,\n        local_address: typing.Optional[str] = None,\n        retries: int = 0,\n        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,\n    ) -> None:\n        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)\n        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy\n\n        if proxy is None:\n            self._pool = httpcore.AsyncConnectionPool(\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                uds=uds,\n                local_address=local_address,\n                retries=retries,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme in (\"http\", \"https\"):\n            self._pool = httpcore.AsyncHTTPProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                proxy_headers=proxy.headers.raw,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme == \"socks5\":\n            try:\n                import socksio  # noqa\n            except ImportError:  # pragma: no cover\n                raise ImportError(\n                    \"Using SOCKS proxy, but the 'socksio' package is not installed. \"\n                    \"Make sure to install httpx using `pip install httpx[socks]`.\"\n                ) from None\n\n            self._pool = httpcore.AsyncSOCKSProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n            )\n        else:  # pragma: no cover\n            raise ValueError(\n                f\"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}.\"\n            )\n\n    async def __aenter__(self: A) -> A:  # Use generics for subclass support.\n        await self._pool.__aenter__()\n        return self\n\n    async def __aexit__(\n        self,\n        exc_type: typing.Optional[typing.Type[BaseException]] = None,\n        exc_value: typing.Optional[BaseException] = None,\n        traceback: typing.Optional[TracebackType] = None,\n    ) -> None:\n        with map_httpcore_exceptions():\n            await self._pool.__aexit__(exc_type, exc_value, traceback)\n\n    async def handle_async_request(\n        self,\n        request: Request,\n    ) -> Response:\n        assert isinstance(request.stream, AsyncByteStream)\n\n        req = httpcore.Request(\n            method=request.method,\n            url=httpcore.URL(\n                scheme=request.url.raw_scheme,\n                host=request.url.raw_host,\n                port=request.url.port,\n                target=request.url.raw_path,\n            ),\n            headers=request.headers.raw,\n            content=request.stream,\n            extensions=request.extensions,\n        )\n        with map_httpcore_exceptions():\n            resp = await self._pool.handle_async_request(req)\n\n        assert isinstance(resp.stream, typing.AsyncIterable)\n\n        return Response(\n            status_code=resp.status,\n            headers=resp.headers,\n            stream=AsyncResponseStream(resp.stream),\n            extensions=resp.extensions,\n        )\n\n    async def aclose(self) -> None:\n        await self._pool.aclose()\n",
+  "anchor_line": 52,
+  "after_code": "\"\"\"\nCustom transports, with nicely configured defaults.\n\nThe following additional keyword arguments are currently supported by httpcore...\n\n* uds: str\n* local_address: str\n* retries: int\n\nExample usages...\n\n# Disable HTTP/2 on a single specific domain.\nmounts = {\n    \"all://\": httpx.HTTPTransport(http2=True),\n    \"all://*example.org\": httpx.HTTPTransport()\n}\n\n# Using advanced httpcore configuration, with connection retries.\ntransport = httpx.HTTPTransport(retries=1)\nclient = httpx.Client(transport=transport)\n\n# Using advanced httpcore configuration, with unix domain sockets.\ntransport = httpx.HTTPTransport(uds=\"socket.uds\")\nclient = httpx.Client(transport=transport)\n\"\"\"\nimport contextlib\nimport typing\nfrom types import TracebackType\n\nimport httpcore\n\nfrom .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context\nfrom .._exceptions import (\n    ConnectError,\n    ConnectTimeout,\n    LocalProtocolError,\n    NetworkError,\n    PoolTimeout,\n    ProtocolError,\n    ProxyError,\n    ReadError,\n    ReadTimeout,\n    RemoteProtocolError,\n    TimeoutException,\n    UnsupportedProtocol,\n    WriteError,\n    WriteTimeout,\n)\nfrom .._models import Request, Response\nfrom .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes\nfrom .._urls import URL\nfrom .base import AsyncBaseTransport, BaseTransport\n\nT = typing.TypeVar(\"T\", bound=\"HTTPTransport\")\nA = typing.TypeVar(\"A\", bound=\"AsyncHTTPTransport\")\n\nSOCKET_OPTION = typing.Union[\n    typing.Tuple[int, int, int],\n    typing.Tuple[int, int, typing.Union[bytes, bytearray]],\n    typing.Tuple[int, int, None, int],\n]\n\n\n@contextlib.contextmanager\ndef map_httpcore_exceptions() -> typing.Iterator[None]:\n    try:\n        yield\n    except Exception as exc:\n        mapped_exc = None\n\n        for from_exc, to_exc in HTTPCORE_EXC_MAP.items():\n            if not isinstance(exc, from_exc):\n                continue\n            # We want to map to the most specific exception we can find.\n            # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to\n            # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.\n            if mapped_exc is None or issubclass(to_exc, mapped_exc):\n                mapped_exc = to_exc\n\n        if mapped_exc is None:  # pragma: no cover\n            raise\n\n        message = str(exc)\n        raise mapped_exc(message) from exc\n\n\nHTTPCORE_EXC_MAP = {\n    httpcore.TimeoutException: TimeoutException,\n    httpcore.ConnectTimeout: ConnectTimeout,\n    httpcore.ReadTimeout: ReadTimeout,\n    httpcore.WriteTimeout: WriteTimeout,\n    httpcore.PoolTimeout: PoolTimeout,\n    httpcore.NetworkError: NetworkError,\n    httpcore.ConnectError: ConnectError,\n    httpcore.ReadError: ReadError,\n    httpcore.WriteError: WriteError,\n    httpcore.ProxyError: ProxyError,\n    httpcore.UnsupportedProtocol: UnsupportedProtocol,\n    httpcore.ProtocolError: ProtocolError,\n    httpcore.LocalProtocolError: LocalProtocolError,\n    httpcore.RemoteProtocolError: RemoteProtocolError,\n}\n\n\nclass ResponseStream(SyncByteStream):\n    def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:\n        self._httpcore_stream = httpcore_stream\n\n    def __iter__(self) -> typing.Iterator[bytes]:\n        with map_httpcore_exceptions():\n            for part in self._httpcore_stream:\n                yield part\n\n    def close(self) -> None:\n        if hasattr(self._httpcore_stream, \"close\"):\n            self._httpcore_stream.close()\n\n\nclass HTTPTransport(BaseTransport):\n    def __init__(\n        self,\n        verify: VerifyTypes = True,\n        cert: typing.Optional[CertTypes] = None,\n        http1: bool = True,\n        http2: bool = False,\n        limits: Limits = DEFAULT_LIMITS,\n        trust_env: bool = True,\n        proxy: typing.Optional[ProxyTypes] = None,\n        uds: typing.Optional[str] = None,\n        local_address: typing.Optional[str] = None,\n        retries: int = 0,\n        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,\n    ) -> None:\n        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)\n        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy\n\n        if proxy is None:\n            self._pool = httpcore.ConnectionPool(\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                uds=uds,\n                local_address=local_address,\n                retries=retries,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme in (\"http\", \"https\"):\n            self._pool = httpcore.HTTPProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                proxy_headers=proxy.headers.raw,\n                ssl_context=ssl_context,\n                proxy_ssl_context=proxy.ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme == \"socks5\":\n            try:\n                import socksio  # noqa\n            except ImportError:  # pragma: no cover\n                raise ImportError(\n                    \"Using SOCKS proxy, but the 'socksio' package is not installed. \"\n                    \"Make sure to install httpx using `pip install httpx[socks]`.\"\n                ) from None\n\n            self._pool = httpcore.SOCKSProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n            )\n        else:  # pragma: no cover\n            raise ValueError(\n                \"Proxy protocol must be either 'http', 'https', or 'socks5',\"\n                f\" but got {proxy.url.scheme!r}.\"\n            )\n\n    def __enter__(self: T) -> T:  # Use generics for subclass support.\n        self._pool.__enter__()\n        return self\n\n    def __exit__(\n        self,\n        exc_type: typing.Optional[typing.Type[BaseException]] = None,\n        exc_value: typing.Optional[BaseException] = None,\n        traceback: typing.Optional[TracebackType] = None,\n    ) -> None:\n        with map_httpcore_exceptions():\n            self._pool.__exit__(exc_type, exc_value, traceback)\n\n    def handle_request(\n        self,\n        request: Request,\n    ) -> Response:\n        assert isinstance(request.stream, SyncByteStream)\n\n        req = httpcore.Request(\n            method=request.method,\n            url=httpcore.URL(\n                scheme=request.url.raw_scheme,\n                host=request.url.raw_host,\n                port=request.url.port,\n                target=request.url.raw_path,\n            ),\n            headers=request.headers.raw,\n            content=request.stream,\n            extensions=request.extensions,\n        )\n        with map_httpcore_exceptions():\n            resp = self._pool.handle_request(req)\n\n        assert isinstance(resp.stream, typing.Iterable)\n\n        return Response(\n            status_code=resp.status,\n            headers=resp.headers,\n            stream=ResponseStream(resp.stream),\n            extensions=resp.extensions,\n        )\n\n    def close(self) -> None:\n        self._pool.close()\n\n\nclass AsyncResponseStream(AsyncByteStream):\n    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]) -> None:\n        self._httpcore_stream = httpcore_stream\n\n    async def __aiter__(self) -> typing.AsyncIterator[bytes]:\n        with map_httpcore_exceptions():\n            async for part in self._httpcore_stream:\n                yield part\n\n    async def aclose(self) -> None:\n        if hasattr(self._httpcore_stream, \"aclose\"):\n            await self._httpcore_stream.aclose()\n\n\nclass AsyncHTTPTransport(AsyncBaseTransport):\n    def __init__(\n        self,\n        verify: VerifyTypes = True,\n        cert: typing.Optional[CertTypes] = None,\n        http1: bool = True,\n        http2: bool = False,\n        limits: Limits = DEFAULT_LIMITS,\n        trust_env: bool = True,\n        proxy: typing.Optional[ProxyTypes] = None,\n        uds: typing.Optional[str] = None,\n        local_address: typing.Optional[str] = None,\n        retries: int = 0,\n        socket_options: typing.Optional[typing.Iterable[SOCKET_OPTION]] = None,\n    ) -> None:\n        ssl_context = create_ssl_context(verify=verify, cert=cert, trust_env=trust_env)\n        proxy = Proxy(url=proxy) if isinstance(proxy, (str, URL)) else proxy\n\n        if proxy is None:\n            self._pool = httpcore.AsyncConnectionPool(\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                uds=uds,\n                local_address=local_address,\n                retries=retries,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme in (\"http\", \"https\"):\n            self._pool = httpcore.AsyncHTTPProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                proxy_headers=proxy.headers.raw,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n                socket_options=socket_options,\n            )\n        elif proxy.url.scheme == \"socks5\":\n            try:\n                import socksio  # noqa\n            except ImportError:  # pragma: no cover\n                raise ImportError(\n                    \"Using SOCKS proxy, but the 'socksio' package is not installed. \"\n                    \"Make sure to install httpx using `pip install httpx[socks]`.\"\n                ) from None\n\n            self._pool = httpcore.AsyncSOCKSProxy(\n                proxy_url=httpcore.URL(\n                    scheme=proxy.url.raw_scheme,\n                    host=proxy.url.raw_host,\n                    port=proxy.url.port,\n                    target=proxy.url.raw_path,\n                ),\n                proxy_auth=proxy.raw_auth,\n                ssl_context=ssl_context,\n                max_connections=limits.max_connections,\n                max_keepalive_connections=limits.max_keepalive_connections,\n                keepalive_expiry=limits.keepalive_expiry,\n                http1=http1,\n                http2=http2,\n            )\n        else:  # pragma: no cover\n            raise ValueError(\n                \"Proxy protocol must be either 'http', 'https', or 'socks5',\"\n                \" but got {proxy.url.scheme!r}.\"\n            )\n\n    async def __aenter__(self: A) -> A:  # Use generics for subclass support.\n        await self._pool.__aenter__()\n        return self\n\n    async def __aexit__(\n        self,\n        exc_type: typing.Optional[typing.Type[BaseException]] = None,\n        exc_value: typing.Optional[BaseException] = None,\n        traceback: typing.Optional[TracebackType] = None,\n    ) -> None:\n        with map_httpcore_exceptions():\n            await self._pool.__aexit__(exc_type, exc_value, traceback)\n\n    async def handle_async_request(\n        self,\n        request: Request,\n    ) -> Response:\n        assert isinstance(request.stream, AsyncByteStream)\n\n        req = httpcore.Request(\n            method=request.method,\n            url=httpcore.URL(\n                scheme=request.url.raw_scheme,\n                host=request.url.raw_host,\n                port=request.url.port,\n                target=request.url.raw_path,\n            ),\n            headers=request.headers.raw,\n            content=request.stream,\n            extensions=request.extensions,\n        )\n        with map_httpcore_exceptions():\n            resp = await self._pool.handle_async_request(req)\n\n        assert isinstance(resp.stream, typing.AsyncIterable)\n\n        return Response(\n            status_code=resp.status,\n            headers=resp.headers,\n            stream=AsyncResponseStream(resp.stream),\n            extensions=resp.extensions,\n        )\n\n    async def aclose(self) -> None:\n        await self._pool.aclose()\n",
+  "unified_diff": "--- a/httpx/_transports/default.py\n+++ b/httpx/_transports/default.py\n@@ -28,8 +28,6 @@\n from types import TracebackType\n \n import httpcore\n-\n-from httpx import URL\n \n from .._config import DEFAULT_LIMITS, Limits, Proxy, create_ssl_context\n from .._exceptions import (\n@@ -50,6 +48,7 @@\n )\n from .._models import Request, Response\n from .._types import AsyncByteStream, CertTypes, ProxyTypes, SyncByteStream, VerifyTypes\n+from .._urls import URL\n from .base import AsyncBaseTransport, BaseTransport\n \n T = typing.TypeVar(\"T\", bound=\"HTTPTransport\")\n@@ -66,7 +65,7 @@\n def map_httpcore_exceptions() -> typing.Iterator[None]:\n     try:\n         yield\n-    except Exception as exc:  # noqa: PIE-786\n+    except Exception as exc:\n         mapped_exc = None\n \n         for from_exc, to_exc in HTTPCORE_EXC_MAP.items():\n@@ -104,7 +103,7 @@\n \n \n class ResponseStream(SyncByteStream):\n-    def __init__(self, httpcore_stream: typing.Iterable[bytes]):\n+    def __init__(self, httpcore_stream: typing.Iterable[bytes]) -> None:\n         self._httpcore_stream = httpcore_stream\n \n     def __iter__(self) -> typing.Iterator[bytes]:\n@@ -193,7 +192,8 @@\n             )\n         else:  # pragma: no cover\n             raise ValueError(\n-                f\"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}.\"\n+                \"Proxy protocol must be either 'http', 'https', or 'socks5',\"\n+                f\" but got {proxy.url.scheme!r}.\"\n             )\n \n     def __enter__(self: T) -> T:  # Use generics for subclass support.\n@@ -244,7 +244,7 @@\n \n \n class AsyncResponseStream(AsyncByteStream):\n-    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]):\n+    def __init__(self, httpcore_stream: typing.AsyncIterable[bytes]) -> None:\n         self._httpcore_stream = httpcore_stream\n \n     async def __aiter__(self) -> typing.AsyncIterator[bytes]:\n@@ -332,7 +332,8 @@\n             )\n         else:  # pragma: no cover\n             raise ValueError(\n-                f\"Proxy protocol must be either 'http', 'https', or 'socks5', but got {proxy.url.scheme!r}.\"\n+                \"Proxy protocol must be either 'http', 'https', or 'socks5',\"\n+                \" but got {proxy.url.scheme!r}.\"\n             )\n \n     async def __aenter__(self: A) -> A:  # Use generics for subclass support.\n",
+  "changed_files": [
+    {
+      "path": "CHANGELOG.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/advanced.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/compatibility.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/contributing.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/js/chat.js",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/js/sidecar-1.5.0.js",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/third_party_packages.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/troubleshooting.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/__version__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_auth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_content.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_decoders.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_exceptions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_multipart.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_transports/default.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_urlparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_urls.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "httpx/_utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "mkdocs.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pyproject.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "scripts/check",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "scripts/lint",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_async_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_auth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/client/test_client.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_cookies.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/models/test_url.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_decoders.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_multipart.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_urlparse.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:17:55.650602Z"
+}

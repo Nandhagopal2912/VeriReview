@@ -1,0 +1,1 @@
+Return a 404 when the product does not exist.

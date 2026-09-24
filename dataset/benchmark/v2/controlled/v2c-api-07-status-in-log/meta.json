@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-07-status-in-log",
+  "category": "api_behavior",
+  "file_path": "web/login.py",
+  "target_symbol": "login",
+  "comment_line": 13,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "401 appears only in a log message; the response status is still 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 401 on a wrong password",
+      "target": "login",
+      "condition": "not ok",
+      "expected_behavior": "HTTP 401"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14127__2702559297",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Drop the '# Check each identifier in the expression.' comment (it adds little)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/mark/__init__.py:290-291: the comment is gone",
+    "confidence": "medium",
+    "notes": "Hedged, same reviewer remark as the neighbouring thread."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

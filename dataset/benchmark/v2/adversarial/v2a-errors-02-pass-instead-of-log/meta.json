@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-errors-02-pass-instead-of-log",
+  "category": "error_handling",
+  "file_path": "app/settings_io.py",
+  "target_symbol": "load_settings",
+  "comment_line": 10,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "The error is swallowed: nothing is logged and None (not {}) is returned.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log an invalid settings file",
+      "target": "json.load",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "logged"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Fall back to {}",
+      "target": "json.load",
+      "condition": "json.JSONDecodeError",
+      "expected_behavior": "returns {}"
+    }
+  ]
+}

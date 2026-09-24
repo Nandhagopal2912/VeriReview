@@ -1,0 +1,1 @@
+If the settings file is invalid, log it and fall back to {}.

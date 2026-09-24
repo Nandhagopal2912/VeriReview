@@ -1,0 +1,1 @@
+Return 404 when the note does not exist.

@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3139__1518813076",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "A curiosity question ('feel free to not answer it'), answered in the thread; nothing is asked of the author."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

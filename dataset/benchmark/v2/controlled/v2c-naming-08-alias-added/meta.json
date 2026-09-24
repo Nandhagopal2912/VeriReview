@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-08-alias-added",
+  "category": "naming",
+  "file_path": "mail/outbox.py",
+  "target_symbol": "retry",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "An unused alias `pending` was added; the code still uses tmp_list.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename tmp_list to pending",
+      "target": "tmp_list",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

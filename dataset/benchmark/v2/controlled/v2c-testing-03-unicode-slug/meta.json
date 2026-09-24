@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-03-unicode-slug",
+  "category": "testing",
+  "file_path": "text/slug.py",
+  "target_symbol": "slug",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test checks slug('Café Latte') == 'cafe-latte'.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test with non-ASCII input",
+      "target": "slug",
+      "condition": "non-ASCII title",
+      "expected_behavior": null
+    }
+  ]
+}

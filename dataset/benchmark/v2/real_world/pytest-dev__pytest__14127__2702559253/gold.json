@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14127__2702559253",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Drop the '# Get registered markers from the ini configuration.' comment (it adds little)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/mark/__init__.py:288-289: the comment is gone (the block became one set comprehension)",
+    "confidence": "medium",
+    "notes": "Hedged ('but OK if it helps'); the author agrees to remove such comments."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-testing-02-not-collected-file",
+  "category": "testing",
+  "file_path": "net/port.py",
+  "target_symbol": "parse_port",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The test lives in tests/port_checks.py, whose name pytest does not collect (no test_ prefix).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that an out-of-range port raises ValueError",
+      "target": "parse_port",
+      "condition": "port >= 65536",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

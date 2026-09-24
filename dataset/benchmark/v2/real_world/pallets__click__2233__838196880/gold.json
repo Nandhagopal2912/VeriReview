@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2233__838196880",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Type the Group.command overload's positional parameter as t.Callable[..., t.Any] instead of Command (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/core.py:1813: def command(self, __func: t.Callable[..., t.Any]) -> Command",
+    "confidence": "medium",
+    "notes": "History was rewritten (no separate later commit); the window diff still shows the suggestion applied."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

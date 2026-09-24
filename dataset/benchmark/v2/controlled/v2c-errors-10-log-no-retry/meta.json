@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-errors-10-log-no-retry",
+  "category": "error_handling",
+  "file_path": "sync/push.py",
+  "target_symbol": "push",
+  "comment_line": 7,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The failure is logged, but there is no retry.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Retry once on ConnectionError",
+      "target": "remote.send",
+      "condition": "ConnectionError",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log the failure",
+      "target": "remote.send",
+      "condition": "ConnectionError",
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-validation-06-second-check-debug-only",
+  "category": "validation",
+  "file_path": "bank/transfer.py",
+  "target_symbol": "transfer",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The amount check is effective; the source/target check only runs when DEBUG is on (never, by default).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate amount is positive",
+      "target": "amount",
+      "condition": "amount <= 0",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Validate source differs from target",
+      "target": "source",
+      "condition": "source is target",
+      "expected_behavior": null
+    }
+  ]
+}

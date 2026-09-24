@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-naming-03-commented-signature",
+  "category": "naming",
+  "file_path": "shop/unit.py",
+  "target_symbol": "unit_price",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "commented_out",
+  "rationale": "The renamed signature exists only as a comment.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename pr to price",
+      "target": "pr",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

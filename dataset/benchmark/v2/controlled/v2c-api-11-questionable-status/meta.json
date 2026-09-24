@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-11-questionable-status",
+  "category": "api_behavior",
+  "file_path": "web/ping.py",
+  "target_symbol": "ping",
+  "comment_line": 8,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The reviewer does not say which status is right; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Fix the status code",
+      "target": "ping",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

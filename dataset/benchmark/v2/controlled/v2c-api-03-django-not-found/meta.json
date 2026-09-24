@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-03-django-not-found",
+  "category": "api_behavior",
+  "file_path": "shop/views.py",
+  "target_symbol": "product_detail",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A missing product returns HttpResponseNotFound (404).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the product does not exist",
+      "target": "product_detail",
+      "condition": "product is None",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

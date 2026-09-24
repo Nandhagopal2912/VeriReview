@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-06-wrong-parameter",
+  "category": "validation",
+  "file_path": "api/paging.py",
+  "target_symbol": "page",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "limit is checked, offset is not.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate offset is not negative",
+      "target": "offset",
+      "condition": "offset < 0",
+      "expected_behavior": null
+    }
+  ]
+}

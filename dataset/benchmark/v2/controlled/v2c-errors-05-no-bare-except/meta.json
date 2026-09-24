@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-05-no-bare-except",
+  "category": "error_handling",
+  "file_path": "files/cleanup.py",
+  "target_symbol": "remove_quietly",
+  "comment_line": 7,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The bare except is narrowed to OSError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch OSError instead of a bare except",
+      "target": "os.remove",
+      "condition": "OSError",
+      "expected_behavior": null
+    }
+  ]
+}

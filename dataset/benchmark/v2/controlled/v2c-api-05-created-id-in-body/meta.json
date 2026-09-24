@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-api-05-created-id-in-body",
+  "category": "api_behavior",
+  "file_path": "api/accounts.py",
+  "target_symbol": "create_account",
+  "comment_line": 10,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The response now contains the new id.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return the new account id in the response",
+      "target": "create_account",
+      "condition": null,
+      "expected_behavior": "id in body"
+    }
+  ]
+}

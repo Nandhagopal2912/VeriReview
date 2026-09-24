@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3039629583",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Show the generated keys as description placeholders instead of editable form inputs, so edited keys cannot be used",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "config_flow.py:121-127: async_show_form(description_placeholders={public_key, private_key}), no data_schema; user_input is no longer read",
+    "confidence": "medium",
+    "notes": "Phrased as a question; the author's reply and the change treat it as a request."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

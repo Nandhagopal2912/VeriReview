@@ -1,0 +1,1 @@
+Check that `path` exists before opening it, with a clear error.

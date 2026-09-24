@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-naming-05-rename-with-getattr-string",
+  "category": "naming",
+  "file_path": "plugins/registry.py",
+  "target_symbol": "Plugin.hndl",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "The method and its string-based lookup are both renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename hndl to handler, including the lookup by name",
+      "target": "hndl",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

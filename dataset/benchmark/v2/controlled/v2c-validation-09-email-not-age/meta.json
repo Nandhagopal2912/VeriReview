@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-validation-09-email-not-age",
+  "category": "validation",
+  "file_path": "signup/form.py",
+  "target_symbol": "register",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The email check exists; age is not checked.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate email is present",
+      "target": "email",
+      "condition": "not email",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Validate age is at least 18",
+      "target": "age",
+      "condition": "age < 18",
+      "expected_behavior": null
+    }
+  ]
+}

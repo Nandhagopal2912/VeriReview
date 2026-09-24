@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-04-raise-not-found",
+  "category": "error_handling",
+  "file_path": "catalog/find.py",
+  "target_symbol": "index_of",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The -1 return is replaced by raising NotFoundError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Raise NotFoundError instead of returning -1",
+      "target": "index_of",
+      "condition": "not found",
+      "expected_behavior": "NotFoundError"
+    }
+  ]
+}

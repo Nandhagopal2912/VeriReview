@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-05-empty-config",
+  "category": "testing",
+  "file_path": "app/merge.py",
+  "target_symbol": "merge",
+  "comment_line": 3,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test checks merge(defaults, {}) returns the defaults.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an empty override dict",
+      "target": "merge",
+      "condition": "overrides == {}",
+      "expected_behavior": null
+    }
+  ]
+}

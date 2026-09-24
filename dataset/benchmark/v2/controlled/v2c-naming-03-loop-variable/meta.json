@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-03-loop-variable",
+  "category": "naming",
+  "file_path": "shop/stock.py",
+  "target_symbol": "reserved",
+  "comment_line": 3,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The loop variable and its uses are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename loop variable x to order",
+      "target": "x",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

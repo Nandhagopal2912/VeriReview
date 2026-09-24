@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-07-half-renamed",
+  "category": "naming",
+  "file_path": "mail/outbox.py",
+  "target_symbol": "flush",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The last use still refers to tmp_list, which no longer exists; the rename is incomplete (and breaks the function).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename tmp_list to pending",
+      "target": "tmp_list",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2854__1330167002",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "high",
+    "notes": "A question ('Why are you removing 3.8 conditionals?') answered in the thread; no line anchor and no later commits."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

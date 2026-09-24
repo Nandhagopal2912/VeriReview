@@ -7,10 +7,10 @@ from verireview.rules.base import (
     RuleContext,
     RuleOutcome,
     RuleStatus,
-    inconclusive,
 )
 from verireview.rules.errors import error_handling_rule
 from verireview.rules.naming import naming_rule
+from verireview.rules.other import other_rule, suggestion_rule
 from verireview.rules.testing import testing_rule
 from verireview.rules.validation import validation_rule
 
@@ -24,12 +24,12 @@ RULES: dict[RequirementCategory, Rule] = {
 
 
 def check_requirement(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
-    rule = RULES.get(requirement.category)
-    if rule is None:
-        return inconclusive(
-            requirement, f"No verification rule exists for category '{requirement.category}'."
-        )
-    return rule(requirement, ctx)
+    """A GitHub suggestion is checked against its exact code, and that result is final: when the
+    code changed some other way, a rename or other reading guessed from the suggestion's tokens
+    is not reliable enough to decide (real-world dev case pydantic#9459)."""
+    if requirement.suggested_code is not None:
+        return suggestion_rule(requirement, ctx)
+    return RULES.get(requirement.category, other_rule)(requirement, ctx)
 
 
 __all__ = [

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-naming-02-fstring-only",
+  "category": "naming",
+  "file_path": "shop/unit.py",
+  "target_symbol": "unit_price",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "'price' appears only in an f-string; the parameter is still pr.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename pr to price",
+      "target": "pr",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

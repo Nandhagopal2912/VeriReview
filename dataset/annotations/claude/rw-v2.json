@@ -1,0 +1,1014 @@
+{
+  "annotator": "claude",
+  "batch": "rw-v2",
+  "sheet_version": "phase9-sheet-1",
+  "annotations": [
+    {
+      "case_id": "home-assistant__core__165993__3024038116",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Only set up subentries of the expected type, using entry.get_subentries_of_type",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/threema/notify.py:24: for subentry in entry.get_subentries_of_type(SUBENTRY_TYPE_RECIPIENT)",
+      "confidence": "high",
+      "notes": "The author's reply proposed a manual filter first; the final code uses the requested helper."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024046975",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Store the client in the entity instead of the whole config entry",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "notify.py __init__: self._client = entry.runtime_data; async_send_message uses self._client",
+      "confidence": "high",
+      "notes": "Phrased as a question, but it is a request."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024075382",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the `await hass.async_block_till_done()` line (empty suggestion block = delete)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/threema/test_config_flow.py test_user_flow_existing_gateway: the line is gone",
+      "confidence": "medium",
+      "notes": "Empty suggestion block means delete the commented line; the test was rewritten, the call is absent."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024076236",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Also assert the unique id of the created entry in the test",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "test_config_flow.py:71: assert result[\"result\"].unique_id == MOCK_GATEWAY_ID",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039619973",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Keep only the statements that can raise inside the try block",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "config_flow.py:111-119: only the executor call is inside try; the assignment moved after the except",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039629583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Show the generated keys as description placeholders instead of editable form inputs, so edited keys cannot be used",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "config_flow.py:121-127: async_show_form(description_placeholders={public_key, private_key}), no data_schema; user_input is no longer read",
+      "confidence": "medium",
+      "notes": "Phrased as a question; the author's reply and the change treat it as a request."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039647302",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Use the mock_config_entry fixture instead of building a MockConfigEntry in the test",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/threema/test_notify.py:94-103: the test takes mock_config_entry and adds it to hass",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__174407__3452221153",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the setup (connectivity and authentication checks) into the coordinator's _async_setup",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "theben_conexa/__init__.py: the checks are gone from async_setup_entry, but coordinator.py is not in the case, so where they went cannot be seen",
+      "confidence": "low",
+      "notes": "Only the commented file is available; the code may have moved to the coordinator, or been dropped. Coordinator construction itself stays in __init__."
+    },
+    {
+      "case_id": "home-assistant__core__174407__3656594773",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Use the grouped mock fixture and set .side_effect on it instead of patch(...)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/theben_conexa/test_config_flow.py:85-86: mock_conexa_smgw.create.side_effect = side_effect, no patch",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__181382__3976371899",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the token persistence logic out of the integration layer into the API library",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "cookidoo/coordinator.py: persist_auth_data decorator and _AuthDataHolder removed; the library's on_auth_data_update callback is used",
+      "confidence": "medium",
+      "notes": "Phrased as a question; the long thread ends with the author doing it upstream. Storage stays in HA by design (config entry), which the reviewer's point allows."
+    },
+    {
+      "case_id": "encode__httpx__2854__1330167002",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "A question ('Why are you removing 3.8 conditionals?') answered in the thread; no line anchor and no later commits."
+    },
+    {
+      "case_id": "encode__httpx__2879__1353991206",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Import URL from .._urls next to the other relative imports (suggestion) instead of `from httpx import URL`",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_transports/default.py:51: from .._urls import URL; the `from httpx import URL` line is removed",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__2909__1376184439",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Generate the boundary with os.urandom(16).hex() (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_multipart.py:202: boundary = os.urandom(16).hex().encode(\"ascii\")",
+      "confidence": "medium",
+      "notes": "Adds .encode('ascii') to the suggestion because boundary must be bytes (it is .decode()d below); the intent is met."
+    },
+    {
+      "case_id": "encode__httpx__2990__1421694231",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Build the result with string += instead of parts.append / join",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "httpx/_urlparse.py quote(): still parts.append(...) and \"\".join(parts)",
+      "confidence": "high",
+      "notes": "Declined by the author for performance reasons; not satisfied as written (guide: judge the request, not whether declining was fine)."
+    },
+    {
+      "case_id": "encode__httpx__3022__1789290923",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Include trust_env in SSLContext.__repr__ (suggestion)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "httpx/_config.py:134: __repr__ still returns only verify=...; trust_env was removed from SSLContext instead",
+      "confidence": "low",
+      "notes": "Superseded: the author removed the trust_env attribute, so the suggestion no longer applies. Not done as written; a human decides whether superseded counts as satisfied."
+    },
+    {
+      "case_id": "encode__httpx__3022__1789295895",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Pass trust_env to SSLContext in HTTPTransport.__init__ (suggestion)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "httpx/_transports/default.py:140: still SSLContext() (SSLContext no longer takes trust_env)",
+      "confidence": "low",
+      "notes": "Superseded by removing trust_env from SSLContext (same PR). Not done as written; human check advised."
+    },
+    {
+      "case_id": "encode__httpx__3022__1790219159",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the unused `app` parameter from AsyncClient._init_transport (empty suggestion = delete)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_client.py:1389-1396: the app parameter is gone",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790223381",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Use `import typing` instead of `import typing as t` (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_config.py:2: import typing; the t.Any usage became typing.Any",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790231357",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Put the transport parameter before trust_env in Client._init_transport (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_client.py:690-691: transport: BaseTransport | None = None, then trust_env: bool = True",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3139__1518813076",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "A curiosity question ('feel free to not answer it'), answered in the thread; nothing is asked of the author."
+    },
+    {
+      "case_id": "pallets__click__2233__838196880",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Type the Group.command overload's positional parameter as t.Callable[..., t.Any] instead of Command (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1813: def command(self, __func: t.Callable[..., t.Any]) -> Command",
+      "confidence": "medium",
+      "notes": "History was rewritten (no separate later commit); the window diff still shows the suggestion applied."
+    },
+    {
+      "case_id": "pallets__click__2233__838668489",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename the command overload parameter __name to __func, as in core.py (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/decorators.py:129: __func: t.Callable[..., t.Any]",
+      "confidence": "medium",
+      "notes": "Rewritten history; the change is visible in the window diff."
+    },
+    {
+      "case_id": "pallets__click__2233__838669013",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename the group overload parameter __name to __func (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/decorators.py:231: __func: t.Callable",
+      "confidence": "medium",
+      "notes": "Rewritten history; the change is visible in the window diff."
+    },
+    {
+      "case_id": "pallets__click__2421__1186943308",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Do not clear the pre-defined shells for good: save _available_shells, clear, run, then restore (ideally with a yield fixture)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_shell_completion.py:349-356: _restore_available_shells fixture copies, clears, yields, restores; both tests use it",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2462__1189061605",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "high",
+      "notes": "A question ('Is there a specific reason not to use os.environ ...?') with no reply and no change; per guide §3 a question is not a requirement."
+    },
+    {
+      "case_id": "pallets__click__2509__1186767930",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add a comment in the test explaining what it checks",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_termui.py:458-459: comment 'Confirm that the default value is not included in the output when show_default is False'",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2818__1886678659",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reword the catch_exceptions docstring to 'any exceptions other than' (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/testing.py:230: ':param catch_exceptions: Whether to catch any exceptions other than'",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2840__1998835949",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Drop the throw-away dummy function: apply help_option to self and pop the option from self.params (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1029-1031: help_option(*help_option_names)(self); return self.params.pop()",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2840__1998839852",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reword the get_help_option docstring to 'Skipped if :attr:`add_help_option` is ``False``.' (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1019: the suggested sentence",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2940__2105687974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Read input with next(text_input) and turn StopIteration into EOFError (raise ... from e) instead of checking the input size",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/testing.py:355-358 (visible_input) and hidden_input: try: next(text_input) except StopIteration as e: raise EOFError() from e; text_input_size removed",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3005136419",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Handle the datetimetz type through the plottable ExtensionDtype mechanism (plottable_ea_dtypes) instead of listing it here",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "pandas/plotting/_matplotlib/converter.py plottable_types: 'datetimetz' is gone and EA pairs are added from plottable_ea_pairs(), but Timestamp is still listed explicitly",
+      "confidence": "low",
+      "notes": "An observation more than a request, resolved in an offline discussion ('as we discussed last week'); whether the final code is what the reviewer meant cannot be told from the case."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3011187583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Let _get_plot_converter signal 'not plottable' itself so the separate _is_plottable attribute is not needed",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/dtypes/base.py:476-497: _get_plot_converter returns [] by default (not plottable); _is_plottable is no longer documented or used",
+      "confidence": "medium",
+      "notes": "Phrased as a question; the author treats it as a suggestion and implements it (returns an empty list rather than None)."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3546215362",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Update the ExtensionDtype docstring: _is_plottable was replaced by _get_plot_converter",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/dtypes/base.py:91: the `* _is_plottable` line is removed",
+      "confidence": "medium",
+      "notes": "Question that the author confirms and fixes."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555873359",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Do not include the builtin `object` in the scatter include types, since it matches every dtype",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/plotting/_matplotlib/core.py:715: include_type.extend([np.object_, CategoricalDtypeType, str])",
+      "confidence": "medium",
+      "notes": "Question-form concern; the author replaces object with np.object_ as discussed. The reviewer's last reply is skeptical but asks the author, so the final code is judged."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555961427",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Set the include_bool flag for boolean dtypes in the base plotting test instead of in the masked-array override",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/extension/test_masked.py: the include_bool kwargs block is gone; at the same PR head, base/plotting.py _plot sets include_bool for bool dtypes (lines 99-101, visible in the sibling case ...3759896069)",
+      "confidence": "medium",
+      "notes": "Phrased as a question, agreed by the author ('will change it'). The base file is not in this case's own test files; judged from the PR head."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3574519955",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "In the categorical test, replace the xfail on test_plot_on_y_axis with pytest.raises(...)",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Do the same for the other dtypes whose plot test is xfailed for an expected error",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "test_categorical.py:183-187: with pytest.raises(TypeError, match='no numeric data to plot'); at the PR head json, interval, numpy-object, period and string overrides also use pytest.raises (sibling case ...3759896069)",
+      "confidence": "medium",
+      "notes": "The second requirement is only visible through the other test files at the same PR head. The remaining datetime xfail is for a different, genuine failure (AssertionError on the x axis)."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759896069",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Replace the skip_if_no_matplotlib helper method with skip / filterwarnings handling that needs no method (class decorators suggested)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/extension/base/plotting.py: skip_if_no_matplotlib is removed; tests run inside mpl_cleanup_context(), which importorskips matplotlib",
+      "confidence": "low",
+      "notes": "The suggested class decorators did not work (author showed the error, reviewer accepted); the method was later removed another way. Satisfied in intent, not in the suggested form. Human check advised."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759903875",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Turn the _get_plot_df helper into a pytest fixture (plot_data on BasePlottingTests)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/extension/base/plotting.py:126-131: @pytest.fixture(params=[True, False]) def plot_data(self, data, request); tests take plot_data",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68005__3934920872",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Fix the typo: assign the indexed expected frame to df_out (df_out = df_out.set_index(\"a\")) (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/groupby/test_reductions.py:1642: df_out = df_out.set_index(\"a\")",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68702__4057026062",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Simplify the line-break loop: start P with the first line and add a LineBreak before each further line (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/io/excel/_odswriter.py:155-159: the suggested code, verbatim",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13505__3719304974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the commented-out `# pos: Position` line (empty suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/types/test_namedtuple.py:34-35: the comment line is gone",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13523__3677536114",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the commented blank line (empty suggestion)",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "tests/benchmarks/test_model_schema_generation.py: unchanged in the window; the function is already followed by the usual two blank lines",
+      "confidence": "low",
+      "notes": "Outdated thread on a blank line: the extra blank line the suggestion targeted may not exist at the window start, so whether anything was left to do cannot be told."
+    },
+    {
+      "case_id": "pydantic__pydantic__13598__3747240164",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Fix the indentation of the `if decimal_places_ > decimal_places:` line (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:392: the line is indented inside the try block",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747175053",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the commented blank line after the new test (empty suggestion)",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "tests/test_pipeline.py: the test is followed by two blank lines both before and after the window",
+      "confidence": "low",
+      "notes": "Outdated thread on a blank line; the extra blank line from the reviewer's diff is not visible at the window start, so the outcome cannot be told."
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747176318",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Remove the Cyrillic homoglyph assertion from the test (empty suggestion on that line)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_pipeline.py:35-36: the `with pytest.raises(...)` block for 'аdmin' is removed (both lines)",
+      "confidence": "medium",
+      "notes": "The suggestion deletes the call line; the author removed its now-empty `with` line too, which the intent requires."
+    },
+    {
+      "case_id": "pydantic__pydantic__13623__3802616258",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Map collections.abc.Mapping to frozendict for defaultdict default factories",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:438: on Python >= 3.15, _defaultdict_allowed_default_types[collections.abc.Mapping] = frozendict",
+      "confidence": "medium",
+      "notes": "Question form; the author first deferred it to a later release but did it in this PR (only where frozendict exists, Python 3.15+)."
+    },
+    {
+      "case_id": "pydantic__pydantic__13690__3842248596",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Replace the test docstring with 'Regression test for .../pull/13573.' (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/types/test_list.py:295: the suggested docstring",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13537__3674583864",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Encode both secret values with 'utf-8', errors='surrogatepass' before compare_digest (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/types.py:1892-1895: the suggested call, verbatim",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13598__3747238083",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Only compute the normalized decimal places when the raw count exceeds the limit (nested if, suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:392-398: if decimal_places_ > decimal_places: normalize, then the nested check",
+      "confidence": "high",
+      "notes": "The author replied with a question, but the final code is the suggestion (its broken indentation fixed)."
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747171293",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the explanatory comment block on lines 654-658 (empty multi-line suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/experimental/pipeline.py:651-654: the five comment lines are gone; s['pattern'] = constraint remains",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559253",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Drop the '# Get registered markers from the ini configuration.' comment (it adds little)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/mark/__init__.py:288-289: the comment is gone (the block became one set comprehension)",
+      "confidence": "medium",
+      "notes": "Hedged ('but OK if it helps'); the author agrees to remove such comments."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559297",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Drop the '# Check each identifier in the expression.' comment (it adds little)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/mark/__init__.py:290-291: the comment is gone",
+      "confidence": "medium",
+      "notes": "Hedged, same reviewer remark as the neighbouring thread."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702561507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Shorten the idents() docstring to 'Return the set of all identifiers which appear in the expression.', dropping the marker/keyword mention (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/mark/expression.py:347: the suggested one-line docstring",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2714516856",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Document the RegisteredMarker fields with #: comments above each member instead of :param: in the docstring (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/__init__.py:1048-1056: docstring shortened; #: comments above name, signature, description",
+      "confidence": "high",
+      "notes": "Marked 'minor', but done as suggested."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14791__3663366753",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Turn invalid ini values into UsageError inside getini by default instead of wrapping each call site",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/tmpdir.py:101: the local try/except -> UsageError is removed; testing/test_config.py now expects UsageError from getini for invalid types",
+      "confidence": "medium",
+      "notes": "getini itself (config/__init__.py) is not in this case; the change is judged from the removed wrapper and the updated getini tests."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14807__3696472652",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Rename CONFIG_SUFFIXES to a clearer name such as CONFIG_LOADERS_SUFFIX_FALLBACK",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/findpaths.py: the constant is now CONFIG_LOADERS_BY_SUFFIX (next to CONFIG_LOADERS_BY_NAME)",
+      "confidence": "high",
+      "notes": "'or similar' allows a different name."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14824__3871709270",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the `e.__cause__ is not None` assert, or give it a debugging message",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/__init__.py:188: assert e.__cause__ is not None, f\"{e!r} must be raised `from` the original error\"",
+      "confidence": "high",
+      "notes": "The reviewer allowed either option; the second was taken."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14865__3774173657",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the st_ino / file-ID explanation from the docstring into a code comment",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/pathlib.py:1093-1103: docstring back to two sentences; the explanation is a # comment above the zero check",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14865__3789364254",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Write the check as `s1.st_ino == 0 or s2.st_ino == 0` (suggestion)",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/pathlib.py:1104: if s1.st_ino == 0 or s2.st_ino == 0:",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14875__3776696299",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Also add the phase note for xfails in the setup phase, not only teardown",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/terminal.py:1332-1335: any phase other than call is reported as 'at {rep.when} of {nodeid}'",
+      "confidence": "high",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-api-09-401-not-403",
+  "category": "api_behavior",
+  "file_path": "web/admin.py",
+  "target_symbol": "stats",
+  "comment_line": 8,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "No token gives 401; non-admins are not rejected with 403.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 401 without a token",
+      "target": "stats",
+      "condition": "user is None",
+      "expected_behavior": "HTTP 401"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return 403 for non-admins",
+      "target": "stats",
+      "condition": "not user.is_admin",
+      "expected_behavior": "HTTP 403"
+    }
+  ]
+}

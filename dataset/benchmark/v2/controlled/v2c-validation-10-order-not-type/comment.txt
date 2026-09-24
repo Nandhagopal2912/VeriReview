@@ -1,0 +1,1 @@
+Check that `start` is before `end`, and that both are dates.

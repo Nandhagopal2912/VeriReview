@@ -33,7 +33,11 @@ from verireview.syntax import enclosing_symbol, extract_facts, index_symbols, pa
 
 Category = RequirementCategory
 
-_MODAL = re.compile(r"\b(should|must|needs? to|has to|have to|ought to)\b", re.I)
+_MODAL = re.compile(
+    r"\b(should|must|needs? to|has to|have to|ought to|(?:we|you) need|"
+    r"needs? (?:a|an|some|more))\b",
+    re.I,
+)
 # Modal plus the next few words: "should probably cache" has its verb two words later.
 _MODAL_VERB = re.compile(
     r"\b(?:should|must|needs? to|has to|have to|ought to)\s+((?:[\w-]+\s+){0,2}[\w-]+)", re.I
@@ -46,11 +50,19 @@ _BACKTICK_IDENT = re.compile(r"`\.?([A-Za-z_][\w.]*)(?:\([^`]*\))?`")
 _WORD = re.compile(r"[A-Za-z_]\w*")
 # Only the verb is case-insensitive: with re.I, [A-Z] would also match "raise *it*".
 _RAISED = re.compile(r"\b(?i:raise|throw)s?\s+(?:an?\s+)?`?([A-Z]\w*)")
-_TEST_OBJECTS = re.compile(r"\btests?\b.*?\bfor\s+(?:both\s+)?(.+)$", re.I)
+_TEST_OBJECTS = re.compile(r"\btests?\b.*?\b(?:for|that)\s+(?:both\s+)?(.+)$", re.I)
 _TEST_ITEM_SPLIT = re.compile(
     r"\s*,\s*(?:and\s+)?|\s+(?:and|or)\s+(?:one\s+)?(?:for\s+)?(?:the\s+)?", re.I
 )
 _VALIDATE_VERBS = frozenset({"validate", "check", "verify", "guard"})
+_CATCH_VERBS = frozenset({"catch", "handle"})
+_AND_THAT = re.compile(r",?\s+and\s+that\s+", re.I)
+# "Return 400 for a missing `name` and 422 for an invalid `age`": one status per situation.
+_STATUS_FOR = re.compile(
+    r"\b(\d{3})\s+(?:for|when|if|on)\b\s*(.+?)"
+    r"(?=\s*(?:,\s*)?(?:and\s+)?\b\d{3}\s+(?:for|when|if|on)\b|$)",
+    re.I,
+)
 _CODE_TOKEN = re.compile(r"[A-Za-z_]\w*|\S")
 _CONSTANTS = frozenset({"None", "True", "False"})
 
@@ -167,7 +179,11 @@ def classify_sentence(sentence: str, masked: Masked) -> Utterance:
         for m in _MODAL_VERB.finditer(sentence)
         for word in m.group(1).split()
     )
-    modal_cue = _MODAL.search(sentence) is not None and categorize(text, None) is not None
+    modal_cue = (
+        (_MODAL.search(sentence) is not None and categorize(text, None) is not None)
+        or lx.SOFT_RENAME.search(text) is not None
+        or lx.NOUN_PLEASE.match(text) is not None
+    )
     hedged = lx.HEDGES.search(sentence) is not None
 
     if lx.CHIT_CHAT.match(text) and not (has_request or arrow):
@@ -198,9 +214,14 @@ def _sentence_drafts(sentence: str, masked: Masked) -> list[_Draft]:
     else:
         whole = False
 
+    if not whole:
+        clauses = [part for c in clauses for part in _that_clauses(c)]
+    requests = [c for c in clauses if whole or leading_verb(c)]
+
     drafts: list[_Draft] = []
     pending_condition: str | None = None
     previous: Category | None = None
+    previous_verb: str | None = None
     for clause in clauses:
         verb = leading_verb(clause)
         if verb is None and not whole:
@@ -208,16 +229,52 @@ def _sentence_drafts(sentence: str, masked: Masked) -> list[_Draft]:
             if _CONDITION_START.match(clause):
                 pending_condition = masked.restore(clause)
             continue
+        if verb == "handle" and len(requests) > 1 and _is_header(clause, sentence):
+            # "Handle the `ConnectionError` properly: log it and re-raise." The clauses after
+            # the colon are the requirements; the header only names the failure.
+            continue
         text = masked.restore(clause)
+        if (
+            verb == "return"
+            and previous == Category.ERROR_HANDLING
+            and previous_verb in _CATCH_VERBS
+            and drafts
+            and not lx.API.search(text)
+        ):
+            # "Catch `Timeout` and return None": the return is how the failure is handled.
+            last = drafts[-1]
+            drafts[-1] = _Draft(
+                f"{last.description} and {strip_fillers(text)}",
+                last.category,
+                last.target_hint,
+                last.condition,
+            )
+            continue
         condition = pending_condition or _in_clause_condition(text)
         # Only a *separate* condition clause adds text; an in-clause one is already in `text`
         # (counting it twice skewed categories: live in api-003 and held-out h18).
         cue_text = f"{pending_condition} {text}" if pending_condition else text
         pending_condition = None
         category = categorize(cue_text, verb) or previous or Category.OTHER
-        previous = category
+        previous, previous_verb = category, verb
         drafts += _expand(text, category, verb, condition)
     return drafts
+
+
+def _that_clauses(clause: str) -> list[str]:
+    """ "Check that `a` is set, and that `a <= b`" → the second "that" is a request of its own."""
+    verb = leading_verb(clause)
+    if verb is None:
+        return [clause]
+    head, *rest = _AND_THAT.split(clause)
+    return [head, *(f"{verb} that {part}" for part in rest)]
+
+
+def _is_header(clause: str, sentence: str) -> bool:
+    """The clause ends at a colon: it introduces the clauses after it."""
+    position = sentence.find(clause.strip())
+    tail = sentence[position + len(clause.strip()) :] if position >= 0 else ""
+    return tail.lstrip().startswith(":")
 
 
 # ---------------------------------------------------------------- categories
@@ -232,8 +289,17 @@ def categorize(text: str, verb: str | None) -> Category | None:
     """
     if lx.TESTING.search(text) or verb == "test":
         return Category.TESTING
-    if verb == "rename" or lx.RENAME_ARROW.search(text) or lx.NAMING.search(_unquote(text)):
+    if (
+        verb == "rename"
+        or lx.RENAME_ARROW.search(text)
+        or lx.NAMING.search(_unquote(text))
+        or lx.SOFT_RENAME.search(text)
+    ):
         return Category.NAMING
+    if (verb is None or verb in lx.DOCS_VERBS) and lx.DOCS.search(_unquote(text)):
+        return Category.OTHER
+    if lx.RETURN_VALUE.search(text):
+        return Category.API_BEHAVIOR
 
     raised = {m.group(1) for m in _RAISED.finditer(text)}
     exceptions = set(lx.EXCEPTION_NAME.findall(text))
@@ -246,7 +312,8 @@ def categorize(text: str, verb: str | None) -> Category | None:
     }
     best = max(scores.values())
     if best == 0:
-        return None
+        # "`name` can be empty here; reject it.": the verb alone says what kind of change.
+        return Category.VALIDATION if verb in _VALIDATE_VERBS | {"reject"} else None
     for category in (Category.API_BEHAVIOR, Category.ERROR_HANDLING, Category.VALIDATION):
         if scores[category] == best:
             return category
@@ -271,6 +338,15 @@ def _expand(text: str, category: Category, verb: str | None, condition: str | No
             return [_Draft(f"Rename `{a}` to `{b}`", category, a, condition) for a, b in pairs]
         if pairs:
             return [_Draft(base, category, pairs[0][0], condition)]
+
+    if category == Category.API_BEHAVIOR:
+        statuses = _STATUS_FOR.findall(base)
+        if len({code for code, _ in statuses}) >= 2:
+            head = "Return" if verb in (None, "return") else verb.capitalize()
+            return [
+                _Draft(f"{head} {code} for {situation.strip(' ,.')}", category, None, None)
+                for code, situation in statuses
+            ]
 
     if category == Category.TESTING:
         match = _TEST_OBJECTS.search(base)

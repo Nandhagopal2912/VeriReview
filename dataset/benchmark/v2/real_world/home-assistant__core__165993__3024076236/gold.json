@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__165993__3024076236",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Also assert the unique id of the created entry in the test",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "test_config_flow.py:71: assert result[\"result\"].unique_id == MOCK_GATEWAY_ID",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

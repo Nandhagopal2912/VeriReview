@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-api-02-exception-not-raised",
+  "category": "api_behavior",
+  "file_path": "api/notes.py",
+  "target_symbol": "read_note",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The HTTPException is created but never raised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 when the note does not exist",
+      "target": "read_note",
+      "condition": "note missing",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

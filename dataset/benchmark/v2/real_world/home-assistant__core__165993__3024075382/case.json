@@ -1,0 +1,2386 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#165993/3024075382",
+  "repository": "home-assistant/core",
+  "pull_number": 165993,
+  "pull_title": "New: Threema Integration",
+  "base_sha": "7709e2e08570cd0f3de24c01319147dc855bf314",
+  "head_sha": "b16a62e56322b5769b44ebed68bad85592750780",
+  "thread": {
+    "root_comment_id": 3024075382,
+    "path": "tests/components/threema/test_config_flow.py",
+    "line": null,
+    "original_line": 63,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -0,0 +1,574 @@\n+\"\"\"Test the Threema Gateway config flow.\"\"\"\n+\n+from __future__ import annotations\n+\n+from unittest.mock import AsyncMock, MagicMock, patch\n+\n+import pytest\n+from threema.gateway import GatewayError\n+from threema.gateway.exception import GatewayServerError\n+\n+from homeassistant import config_entries\n+from homeassistant.components.threema.client import ThreemaAuthError\n+from homeassistant.components.threema.const import (\n+    CONF_API_SECRET,\n+    CONF_GATEWAY_ID,\n+    CONF_PRIVATE_KEY,\n+    CONF_PUBLIC_KEY,\n+    CONF_RECIPIENT,\n+    DOMAIN,\n+    SUBENTRY_TYPE_RECIPIENT,\n+)\n+from homeassistant.core import HomeAssistant\n+from homeassistant.data_entry_flow import FlowResultType\n+\n+from .conftest import MOCK_API_SECRET, MOCK_GATEWAY_ID, MOCK_PRIVATE_KEY\n+\n+from tests.common import MockConfigEntry\n+\n+\n+@pytest.fixture(autouse=True)\n+def mock_setup_entry():\n+    \"\"\"Patch async_setup_entry to avoid full setup during flow tests.\"\"\"\n+    with patch(\"homeassistant.components.threema.async_setup_entry\", return_value=True):\n+        yield\n+\n+\n+async def test_user_flow_existing_gateway(\n+    hass: HomeAssistant, mock_connection: MagicMock\n+) -> None:\n+    \"\"\"Test user flow with existing gateway credentials.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"step_id\"] == \"user\"\n+\n+    # Choose existing gateway\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\"setup_type\": \"add_gateway\"},\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"step_id\"] == \"credentials\"\n+\n+    # Enter credentials\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n+    await hass.async_block_till_done()",
+    "original_commit_sha": "e683d7bad6e4baee40a52402002067c8faafa4f6",
+    "commit_sha": "e546ae734d5a7f74391e9d36c1a2db0bc7f82bab",
+    "comments": [
+      {
+        "id": 3024075382,
+        "author": "reviewer",
+        "body": "```suggestion\n```\nIt's not blocking",
+        "created_at": "2026-04-01T19:06:06Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "e683d7bad6e4baee40a52402002067c8faafa4f6",
+    "end_commit_sha": "b16a62e56322b5769b44ebed68bad85592750780",
+    "subsequent_commits": [
+      {
+        "sha": "9b3aaa9608b74e346a8c5b44ae1dadd71fdfed64",
+        "message": "One push to rule them all.",
+        "authored_at": "2026-04-02T07:25:49Z",
+        "committed_at": "2026-04-02T07:25:49Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "1b376aa5eb0251ecca23dcf9729405ee9ef66075",
+        "message": "Fix failing tests",
+        "authored_at": "2026-04-02T07:51:17Z",
+        "committed_at": "2026-04-02T07:51:17Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "566b9a83444a1fd5a9aa8eaeeae6d2db532c9fed",
+        "message": "stripped reauth for now",
+        "authored_at": "2026-04-02T10:45:44Z",
+        "committed_at": "2026-04-02T10:45:44Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "9854c566099bb63a6d0b66a7df6510555299594b",
+        "message": "Improved testing further",
+        "authored_at": "2026-04-02T10:58:09Z",
+        "committed_at": "2026-04-02T10:58:09Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "4bd3a43e413692440ff7faf715ed3302e57c6a0b",
+        "message": "full invalid journey in tests",
+        "authored_at": "2026-04-02T11:00:11Z",
+        "committed_at": "2026-04-02T11:00:11Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "783a641dca49f9ca19e568ce6f5a8bec1be2b0ad",
+        "message": "closed 100% configflow codecov",
+        "authored_at": "2026-04-02T11:07:32Z",
+        "committed_at": "2026-04-02T11:07:32Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "7b87a19181c6a7f7f14b158a52a6bebefeea9d82",
+        "message": "corrected test",
+        "authored_at": "2026-04-02T11:27:36Z",
+        "committed_at": "2026-04-02T11:27:36Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "dd133d9b604bad3ed09155a1a6b03770ceb8f185",
+        "message": "deleted remote",
+        "authored_at": "2026-04-07T06:48:07Z",
+        "committed_at": "2026-04-07T06:48:07Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "21671ee3354b88f8eaff48b8e82c2cee0c31d3ab",
+        "message": "updated exceptions",
+        "authored_at": "2026-04-08T07:29:42Z",
+        "committed_at": "2026-04-08T07:29:42Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e546ae734d5a7f74391e9d36c1a2db0bc7f82bab",
+        "message": "removed key editing in setup phase",
+        "authored_at": "2026-04-08T09:03:51Z",
+        "committed_at": "2026-04-08T09:03:51Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e403c0ab2b47fe1223992d8c97bf59cca7fbbb38",
+        "message": "updated testing",
+        "authored_at": "2026-04-08T09:34:56Z",
+        "committed_at": "2026-04-08T09:34:56Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c088ce9ef782ce2bf76853d790bf37e50db399bd",
+        "message": "Merge branch 'dev' into feature/threema",
+        "authored_at": "2026-04-09T22:28:09Z",
+        "committed_at": "2026-04-09T22:28:09Z",
+        "author_login": "reviewer"
+      },
+      {
+        "sha": "409c22640c03f4581fa0d7fad6ff34e72b471074",
+        "message": "Fix",
+        "authored_at": "2026-04-09T22:31:41Z",
+        "committed_at": "2026-04-09T22:31:41Z",
+        "author_login": "reviewer"
+      },
+      {
+        "sha": "f7d4e45feef5538a128b9d5e0ab5b44a13759972",
+        "message": "Replace threema.gateway SDK with native pynacl + aiohttp implementation\n\nDrops the unmaintained threema.gateway (which depends on the also-unmaintained\nlibnacl) in favour of a direct Threema Gateway API implementation using\nPyNaCl (already a core dependency) and HA's shared aiohttp session.\n\n- Implements simple and E2E text message sending per the Threema protocol spec\n- Generates key pairs via nacl.public.PrivateKey.generate()\n- Aligns PyNaCl requirement to the version already used by mobile_app/owntracks\n- Rewrites all mocks to use method-level patches instead of SDK class patches\n- Adds test_client.py with unit tests covering all HTTP paths and crypto logic\n\nCo-Authored-By: Claude Sonnet 4.6 <<email>>",
+        "authored_at": "2026-08-21T13:36:04Z",
+        "committed_at": "2026-08-21T13:36:04Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e1c4d2d2de7a6b5f13d18ea271ab7426bc3d1440",
+        "message": "Address Copilot review: password selectors, key clearing, strings cleanup\n\n- Mask api_secret and private_key with TextSelector PASSWORD type\n- Always overwrite self._private_key/public_key from form input so clearing\n  a key field on re-entry after an error takes effect\n- Update key data_description to reflect plain hex format (drop stale\n  'private:' / 'public:' prefix hints from old SDK)\n- Clarify setup_new description: keys are already hex, no prefix to strip\n\nCo-Authored-By: Claude Sonnet 4.6 <<email>>",
+        "authored_at": "2026-08-21T22:25:57Z",
+        "committed_at": "2026-08-21T22:25:57Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "fc0bce76023f8de1b9cf1c46ea624a534ed9d342",
+        "message": "Remove requirements_test_all.txt — deleted from upstream dev\n\nUpstream home-assistant/core removed this file. Drop it from our branch\nto resolve the delete/modify conflict in the PR.\n\nCo-Authored-By: Claude Sonnet 4.6 <<email>>",
+        "authored_at": "2026-08-22T14:38:01Z",
+        "committed_at": "2026-08-22T14:38:01Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "1c28062c304c0366eaca8056162a1d7377c68b71",
+        "message": "Merge branch 'dev' into feature/threema",
+        "authored_at": "2026-08-23T10:57:06Z",
+        "committed_at": "2026-08-23T10:57:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "9ad274a3ec76bb722bf8fc32b7ccf79e43c31e8a",
+        "message": "Address Copilot review: reauth flow, hex pubkey decode, E2E fix, silver quality scale\n\n- Fix critical bug: /pubkeys endpoint returns hex not base64; all E2E sends\n  were failing with a PyNaCl key-length error\n- Add async_step_reauth + async_step_reauth_confirm so users can fix expired\n  credentials without deleting the config entry\n- notify.py: call entry.async_start_reauth() on ThreemaAuthError so HA\n  surfaces the reauth UI on runtime auth failures; map to invalid_auth key\n- notify.py: consolidate duplicate except blocks into one handler\n- config_flow.py: remove CONF_PUBLIC_KEY from credentials form and entry data\n  (public key is shown in setup_new for copy but never needed at runtime)\n- manifest.json: quality_scale bronze -> silver\n- quality_scale.yaml: reauthentication-flow and strict-typing marked done\n- tests: add reauth flow tests (success + 3 error cases), auth-error-triggers-\n  reauth test in notify, fix pubkey mock from base64 to hex\n\nCo-Authored-By: Claude Sonnet 4.6 <<email>>\nClaude-Session: https://claude.ai/code/session_01EAZnrsMgdMQnTzEqUhuCnD",
+        "authored_at": "2026-08-22T16:44:13Z",
+        "committed_at": "2026-08-23T11:03:17Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "28dd85e593427cd4577d8d5271c4de569cf6ce68",
+        "message": "Normalize translations/en.json formatting (hassfest)\n\nCo-Authored-By: Claude Sonnet 5 <<email>>\nClaude-Session: https://claude.ai/code/session_01EAZnrsMgdMQnTzEqUhuCnD",
+        "authored_at": "2026-08-23T10:53:02Z",
+        "committed_at": "2026-08-23T11:03:17Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "dc28eb0a20782903060233d50a75c031c58fca90",
+        "message": "Updated CI findings",
+        "authored_at": "2026-08-23T11:28:08Z",
+        "committed_at": "2026-08-23T11:28:08Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "60c7d30e1ec10f0a7f199c0ccb4ddd726fc997da",
+        "message": "fixed codecov",
+        "authored_at": "2026-08-23T13:16:19Z",
+        "committed_at": "2026-08-23T13:16:19Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ee7b8a44baf9eaafb3986ee0c6b342f069a7523d",
+        "message": "Updated UI flow and key mechanism",
+        "authored_at": "2026-09-04T13:08:43Z",
+        "committed_at": "2026-09-04T13:08:43Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b05e38ae9ae0e2bd944147a923133147b6d4179c",
+        "message": "Copilot Fixes",
+        "authored_at": "2026-09-04T13:49:32Z",
+        "committed_at": "2026-09-04T13:49:32Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d411e2c20e7461d64b50844c9a3963032dc1895d",
+        "message": "updated acording to Copilot's recommendations.",
+        "authored_at": "2026-09-05T10:04:55Z",
+        "committed_at": "2026-09-05T10:04:55Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "72b78621d46d10ab68094825fdaa357c68f87564",
+        "message": "Updated timeout err handling",
+        "authored_at": "2026-09-05T10:46:23Z",
+        "committed_at": "2026-09-05T10:46:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ce50e0e0860cd0a95e6a2630bcac6ca81e74739f",
+        "message": "Updated client.py and strings.json",
+        "authored_at": "2026-09-05T11:05:06Z",
+        "committed_at": "2026-09-05T11:05:06Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "952e2037de39238b65cc4f54db9493bef275a752",
+        "message": "moved client into aiothreema",
+        "authored_at": "2026-09-20T11:39:29Z",
+        "committed_at": "2026-09-20T11:39:29Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "73dd2c38318cfb7a87a9e3ac7a8ded337e2f16c7",
+        "message": "Moved to aiothreema",
+        "authored_at": "2026-09-20T11:49:52Z",
+        "committed_at": "2026-09-20T11:49:52Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "f7e19415575730d739283028ce78e4a61c76e50b",
+        "message": "Remove reauth flow, defer to feature/threema-reauth\n\njoostlek requested new integrations keep reauth out to reduce review\nscope. The full implementation (config flow reauth steps, notify\nruntime trigger, tests, translations, silver quality scale) is\npreserved on feature/threema-reauth for a follow-up PR.\n\nCo-Authored-By: Claude Sonnet 5 <<email>>\nClaude-Session: https://claude.ai/code/session_01EAZnrsMgdMQnTzEqUhuCnD",
+        "authored_at": "2026-09-20T12:08:50Z",
+        "committed_at": "2026-09-20T12:08:50Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "8c4322ac92dc1af822e46049d051626344e3ed51",
+        "message": "Merge remote-tracking branch 'upstream/dev' into feature/threema",
+        "authored_at": "2026-09-20T12:40:53Z",
+        "committed_at": "2026-09-20T12:40:53Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c19b00b9129f2adb2fdf51e81033a45a54cc7678",
+        "message": "Migrate to probatio, sync with dev, simplify test_client.py\n\n- voluptuous -> probatio: dev banned direct voluptuous imports in\n  favor of the new probatio library; verified as a functional\n  drop-in (bare `import probatio`, not aliased as `vol` per the\n  new banned-aliases rule).\n- Merged upstream/dev (2139 commits) so local type-checking matches\n  what CI actually validates against (the PR's merge-ref).\n- Fixed test_notify.py's use of the now-deprecated\n  DeviceEntry.config_entries_subentries in favor of\n  config_entry_id/config_subentry_id.\n- Replaced test_client.py's full protocol test suite (duplicated\n  from aiothreema, per Copilot review) with focused tests of only\n  what ThreemaAPIClient itself does: wiring Home Assistant's shared\n  aiohttp session into the library.\n\nCo-Authored-By: Claude Sonnet 5 <<email>>\nClaude-Session: https://claude.ai/code/session_01EAZnrsMgdMQnTzEqUhuCnD",
+        "authored_at": "2026-09-20T12:51:23Z",
+        "committed_at": "2026-09-20T12:51:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "c9abd46ad7a475feacd68702abd3b258f66c0add",
+        "message": "Merge branch 'dev' into feature/threema",
+        "authored_at": "2026-09-20T14:09:16Z",
+        "committed_at": "2026-09-20T14:09:16Z",
+        "author_login": "reviewer"
+      },
+      {
+        "sha": "b16a62e56322b5769b44ebed68bad85592750780",
+        "message": "Fix",
+        "authored_at": "2026-09-20T14:42:16Z",
+        "committed_at": "2026-09-20T14:42:16Z",
+        "author_login": "reviewer"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "tests/components/threema/test_config_flow.py",
+  "before_code": "\"\"\"Test the Threema Gateway config flow.\"\"\"\n\nfrom __future__ import annotations\n\nfrom unittest.mock import AsyncMock, MagicMock, patch\n\nimport pytest\nfrom threema.gateway import GatewayError\nfrom threema.gateway.exception import GatewayServerError\n\nfrom homeassistant import config_entries\nfrom homeassistant.components.threema.client import ThreemaAuthError\nfrom homeassistant.components.threema.const import (\n    CONF_API_SECRET,\n    CONF_GATEWAY_ID,\n    CONF_PRIVATE_KEY,\n    CONF_PUBLIC_KEY,\n    CONF_RECIPIENT,\n    DOMAIN,\n    SUBENTRY_TYPE_RECIPIENT,\n)\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\n\nfrom .conftest import MOCK_API_SECRET, MOCK_GATEWAY_ID, MOCK_PRIVATE_KEY\n\nfrom tests.common import MockConfigEntry\n\n\n@pytest.fixture(autouse=True)\ndef mock_setup_entry():\n    \"\"\"Patch async_setup_entry to avoid full setup during flow tests.\"\"\"\n    with patch(\"homeassistant.components.threema.async_setup_entry\", return_value=True):\n        yield\n\n\nasync def test_user_flow_existing_gateway(\n    hass: HomeAssistant, mock_connection: MagicMock\n) -> None:\n    \"\"\"Test user flow with existing gateway credentials.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    # Choose existing gateway\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\"setup_type\": \"add_gateway\"},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"credentials\"\n\n    # Enter credentials\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == f\"Threema {MOCK_GATEWAY_ID}\"\n    assert result[\"data\"] == {\n        CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n        CONF_API_SECRET: MOCK_API_SECRET,\n    }\n\n\nasync def test_user_flow_existing_with_keys(\n    hass: HomeAssistant, mock_connection: MagicMock\n) -> None:\n    \"\"\"Test user flow with existing gateway including optional keys.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\"setup_type\": \"add_gateway\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"private:abcdef1234567890\",\n            CONF_PUBLIC_KEY: \"public:1234567890abcdef\",\n        },\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"data\"][CONF_PRIVATE_KEY] == \"private:abcdef1234567890\"\n    assert result[\"data\"][CONF_PUBLIC_KEY] == \"public:1234567890abcdef\"\n\n\nasync def test_user_flow_new_gateway(\n    hass: HomeAssistant, mock_connection: MagicMock\n) -> None:\n    \"\"\"Test user flow with new gateway (key generation).\"\"\"\n    mock_private = \"private:generated_private_key_hex\"\n    mock_public = \"public:generated_public_key_hex\"\n\n    with patch(\n        \"homeassistant.components.threema.config_flow.generate_key_pair\",\n        return_value=(mock_private, mock_public),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n\n        # Choose new gateway\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"generate_keys\"},\n        )\n        assert result[\"type\"] is FlowResultType.FORM\n        assert result[\"step_id\"] == \"setup_new\"\n\n        # Confirm keys and proceed\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                \"public_key\": mock_public,\n                \"private_key\": mock_private,\n            },\n        )\n        assert result[\"type\"] is FlowResultType.FORM\n        assert result[\"step_id\"] == \"credentials\"\n\n        # Enter gateway credentials\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n            },\n        )\n        await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"data\"][CONF_PRIVATE_KEY] == mock_private\n    assert result[\"data\"][CONF_PUBLIC_KEY] == mock_public\n\n\nasync def test_user_flow_key_generation_failure(hass: HomeAssistant) -> None:\n    \"\"\"Test user flow aborts when key generation fails.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.config_flow.generate_key_pair\",\n        side_effect=RuntimeError(\"Key generation failed\"),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"generate_keys\"},\n        )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"key_generation_failed\"\n\n\nasync def test_credentials_invalid_gateway_id(\n    hass: HomeAssistant, mock_connection: MagicMock\n) -> None:\n    \"\"\"Test credentials step with invalid Gateway ID.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\"setup_type\": \"add_gateway\"},\n    )\n\n    # Gateway ID not starting with *\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: \"TESTGWY1\",\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n\n    # Gateway ID wrong length\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: \"*TEST\",\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n\n\nasync def test_credentials_already_configured(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_connection: MagicMock,\n) -> None:\n    \"\"\"Test credentials step when gateway is already configured.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\"setup_type\": \"add_gateway\"},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\nasync def test_credentials_cannot_connect(hass: HomeAssistant) -> None:\n    \"\"\"Test credentials step when connection fails.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.client.Connection\", autospec=True\n    ) as connection_class:\n        connection = MagicMock()\n        connection.__aenter__ = AsyncMock(return_value=connection)\n        connection.__aexit__ = AsyncMock(return_value=None)\n        connection.get_credits = AsyncMock(\n            side_effect=GatewayError(\"Connection refused\")\n        )\n        connection_class.return_value = connection\n\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"add_gateway\"},\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n\nasync def test_credentials_server_error_non_auth(hass: HomeAssistant) -> None:\n    \"\"\"Test credentials step with non-401 server error.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.client.Connection\", autospec=True\n    ) as connection_class:\n        connection = MagicMock()\n        connection.__aenter__ = AsyncMock(return_value=connection)\n        connection.__aexit__ = AsyncMock(return_value=None)\n        connection.get_credits = AsyncMock(side_effect=GatewayServerError(status=500))\n        connection_class.return_value = connection\n\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"add_gateway\"},\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n\nasync def test_credentials_invalid_auth(hass: HomeAssistant) -> None:\n    \"\"\"Test credentials step with invalid authentication.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n        side_effect=ThreemaAuthError(\"Invalid credentials\"),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"add_gateway\"},\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n\n\nasync def test_credentials_unknown_error(hass: HomeAssistant) -> None:\n    \"\"\"Test credentials step with unexpected error.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n        side_effect=RuntimeError(\"Unexpected\"),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\"setup_type\": \"add_gateway\"},\n        )\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"unknown\"}\n\n\nasync def test_reauth_flow_invalid_auth(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reauth flow with invalid credentials.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    with patch(\n        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n        side_effect=ThreemaAuthError(\"Invalid credentials\"),\n    ):\n        result = await mock_config_entry.start_reauth_flow(hass)\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_API_SECRET: \"wrong_secret\",\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n\n\nasync def test_reauth_flow_success(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_connection: MagicMock,\n) -> None:\n    \"\"\"Test reauth flow succeeds with valid credentials.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await mock_config_entry.start_reauth_flow(hass)\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"reauth_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_API_SECRET: \"new_secret\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reauth_successful\"\n    assert mock_config_entry.data[CONF_API_SECRET] == \"new_secret\"\n\n\nasync def test_reauth_flow_preserves_private_key(\n    hass: HomeAssistant,\n    mock_config_entry_with_keys: MockConfigEntry,\n    mock_connection: MagicMock,\n) -> None:\n    \"\"\"Test reauth flow preserves existing private key when not provided.\"\"\"\n    mock_config_entry_with_keys.add_to_hass(hass)\n\n    result = await mock_config_entry_with_keys.start_reauth_flow(hass)\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"reauth_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_API_SECRET: \"new_secret\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reauth_successful\"\n    assert mock_config_entry_with_keys.data[CONF_API_SECRET] == \"new_secret\"\n    assert mock_config_entry_with_keys.data[CONF_PRIVATE_KEY] == MOCK_PRIVATE_KEY\n\n\nasync def test_reauth_flow_cannot_connect(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reauth flow with connection failure.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    with patch(\n        \"homeassistant.components.threema.client.Connection\", autospec=True\n    ) as connection_class:\n        connection = MagicMock()\n        connection.__aenter__ = AsyncMock(return_value=connection)\n        connection.__aexit__ = AsyncMock(return_value=None)\n        connection.get_credits = AsyncMock(\n            side_effect=GatewayError(\"Connection refused\")\n        )\n        connection_class.return_value = connection\n\n        result = await mock_config_entry.start_reauth_flow(hass)\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_API_SECRET: \"new_secret\",\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n\nasync def test_reauth_flow_unknown_error(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reauth flow with unexpected error.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    with patch(\n        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n        side_effect=RuntimeError(\"Unexpected\"),\n    ):\n        result = await mock_config_entry.start_reauth_flow(hass)\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_API_SECRET: \"new_secret\",\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"unknown\"}\n\n\nasync def test_reauth_flow_updates_private_key(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_connection: MagicMock,\n) -> None:\n    \"\"\"Test reauth flow updates private key when provided.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await mock_config_entry.start_reauth_flow(hass)\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_API_SECRET: \"new_secret\",\n            CONF_PRIVATE_KEY: \"private:newkey123\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reauth_successful\"\n    assert mock_config_entry.data[CONF_PRIVATE_KEY] == \"private:newkey123\"\n\n\nasync def test_subentry_add_recipient(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_connection: MagicMock,\n    mock_send: MagicMock,\n) -> None:\n    \"\"\"Test adding a recipient via subentry flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"ABCD1234\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"ABCD1234\"\n    assert result[\"data\"] == {CONF_RECIPIENT: \"ABCD1234\"}\n\n\nasync def test_subentry_invalid_recipient_id(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_connection: MagicMock,\n    mock_send: MagicMock,\n) -> None:\n    \"\"\"Test subentry flow rejects invalid Threema ID.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n\n    # Too short\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"ABC\"},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_recipient_id\"}\n\n    # Special characters\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"ABCD!@#$\"},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_recipient_id\"}\n\n\nasync def test_subentry_duplicate_recipient(\n    hass: HomeAssistant,\n    mock_config_entry_with_subentry: MockConfigEntry,\n    mock_connection: MagicMock,\n    mock_send: MagicMock,\n) -> None:\n    \"\"\"Test subentry flow rejects duplicate recipient.\"\"\"\n    mock_config_entry_with_subentry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry_with_subentry.entry_id)\n    await hass.async_block_till_done()\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry_with_subentry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"ABCD1234\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n",
+  "anchor_line": 63,
+  "after_code": "\"\"\"Test the Threema Gateway config flow.\"\"\"\n\nfrom __future__ import annotations\n\nfrom collections.abc import Generator\nfrom unittest.mock import AsyncMock, patch\n\nimport probatio\nimport pytest\n\nfrom homeassistant import config_entries\nfrom homeassistant.components.threema.client import (\n    ThreemaAuthError,\n    ThreemaConnectionError,\n    derive_public_key,\n)\nfrom homeassistant.components.threema.config_flow import _CONF_PUBLIC_KEY\nfrom homeassistant.components.threema.const import (\n    CONF_API_SECRET,\n    CONF_GATEWAY_ID,\n    CONF_PRIVATE_KEY,\n    DOMAIN,\n    SUBENTRY_TYPE_RECIPIENT,\n)\nfrom homeassistant.const import CONF_NAME, CONF_RECIPIENT\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\n\nfrom .conftest import MOCK_API_SECRET, MOCK_GATEWAY_ID, MOCK_RECIPIENT_ID\n\nfrom tests.common import MockConfigEntry\n\n\n@pytest.fixture(autouse=True)\ndef mock_setup_entry() -> Generator[None]:\n    \"\"\"Patch async_setup_entry to avoid full setup during flow tests.\"\"\"\n    with patch(\"homeassistant.components.threema.async_setup_entry\", return_value=True):\n        yield\n\n\nasync def test_user_flow_existing_gateway(\n    hass: HomeAssistant, mock_credentials: AsyncMock\n) -> None:\n    \"\"\"Test user flow with existing gateway credentials.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"credentials\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == f\"Threema {MOCK_GATEWAY_ID}\"\n    assert result[\"data\"] == {\n        CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n        CONF_API_SECRET: MOCK_API_SECRET,\n    }\n    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n\n\nasync def test_user_flow_existing_with_keys(\n    hass: HomeAssistant, mock_credentials: AsyncMock\n) -> None:\n    \"\"\"Test user flow with existing gateway including optional private key.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert (\n        result[\"data\"][CONF_PRIVATE_KEY]\n        == \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n    )\n    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n\n\nasync def test_user_flow_new_gateway(\n    hass: HomeAssistant, mock_credentials: AsyncMock\n) -> None:\n    \"\"\"Test user flow with new gateway (key generation).\"\"\"\n    generated_private_key = \"0\" * 64\n    generated_public_key = \"f\" * 64\n\n    with patch(\n        \"homeassistant.components.threema.config_flow.generate_key_pair\",\n        return_value=(generated_private_key, generated_public_key),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        assert result[\"type\"] is FlowResultType.MENU\n\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            {\"next_step_id\": \"setup_new\"},\n        )\n        assert result[\"type\"] is FlowResultType.FORM\n        assert result[\"step_id\"] == \"setup_new\"\n\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={},\n        )\n        assert result[\"type\"] is FlowResultType.FORM\n        assert result[\"step_id\"] == \"credentials\"\n\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            user_input={\n                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                CONF_API_SECRET: MOCK_API_SECRET,\n                CONF_PRIVATE_KEY: generated_private_key,\n            },\n        )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"data\"][CONF_PRIVATE_KEY] == generated_private_key\n    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n\n\nasync def test_user_flow_key_generation_failure(hass: HomeAssistant) -> None:\n    \"\"\"Test user flow aborts when key generation fails.\"\"\"\n    with patch(\n        \"homeassistant.components.threema.config_flow.generate_key_pair\",\n        side_effect=RuntimeError(\"Key generation failed\"),\n    ):\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n        )\n        assert result[\"type\"] is FlowResultType.MENU\n\n        result = await hass.config_entries.flow.async_configure(\n            result[\"flow_id\"],\n            {\"next_step_id\": \"setup_new\"},\n        )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"key_generation_failed\"\n\n\nasync def test_credentials_invalid_gateway_id(\n    hass: HomeAssistant, mock_credentials: AsyncMock\n) -> None:\n    \"\"\"Test credentials step with invalid Gateway ID.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    # Gateway ID not starting with *\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: \"TESTGWY1\",\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n\n    # Gateway ID wrong length\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: \"*TEST\",\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n\n    # Right length and prefix, but invalid characters\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: \"*!!!!!!!\",\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n\n    # Valid Gateway ID — recover and create entry\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n\n\n@pytest.mark.parametrize(\n    \"invalid_key\",\n    [\"0123456789abcdef\", \"g\" * 64],\n    ids=[\"wrong_length\", \"non_hex\"],\n)\nasync def test_credentials_invalid_private_key(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n    invalid_key: str,\n) -> None:\n    \"\"\"Test credentials step rejects a malformed private key.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: invalid_key,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n\n    # Recover by clearing the invalid key (the field defaults to the\n    # previous, invalid value, so it must be explicitly cleared)\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    \"prefixed_key\",\n    [\n        \"private:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n        \"PRIVATE:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n    ],\n    ids=[\"lower\", \"upper\"],\n)\nasync def test_credentials_private_key_prefix_stripped(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n    prefixed_key: str,\n) -> None:\n    \"\"\"Test a 'private:'-prefixed key (as exported by Threema's tools) is accepted.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: prefixed_key,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert (\n        result[\"data\"][CONF_PRIVATE_KEY]\n        == \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n    )\n\n\nasync def test_credentials_public_key_in_private_key_field_rejected(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a 'public:'-prefixed key pasted into the private-key field is rejected.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: f\"public:{'a' * 64}\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"a\" * 64,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_credentials_private_key_in_public_key_field_rejected(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a 'private:'-prefixed key pasted into the public-key field is rejected.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"a\" * 64,\n            _CONF_PUBLIC_KEY: f\"private:{'b' * 64}\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"invalid_key\"}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"a\" * 64,\n            _CONF_PUBLIC_KEY: \"\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_credentials_public_key_without_private_key_rejected(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a public key given alone (no private key) is rejected, not discarded.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            _CONF_PUBLIC_KEY: \"a\" * 64,\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"public_key_requires_private_key\"}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            _CONF_PUBLIC_KEY: \"\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_credentials_public_key_matches(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a public key matching the private key is accepted and not stored.\"\"\"\n    private_key = \"1\" * 64\n    matching_public_key = derive_public_key(private_key)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: private_key,\n            _CONF_PUBLIC_KEY: f\"public:{matching_public_key}\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"data\"][CONF_PRIVATE_KEY] == private_key\n    assert _CONF_PUBLIC_KEY not in result[\"data\"]\n\n\nasync def test_credentials_public_key_mismatch(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a public key that does not match the private key is rejected.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"1\" * 64,\n            _CONF_PUBLIC_KEY: \"f\" * 64,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"key_mismatch\"}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"1\" * 64,\n            _CONF_PUBLIC_KEY: \"\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_credentials_public_key_invalid_hex(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test a malformed public key is rejected.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"1\" * 64,\n            _CONF_PUBLIC_KEY: \"not-a-valid-key\",\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"invalid_key\"}\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"1\" * 64,\n            _CONF_PUBLIC_KEY: \"\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_credentials_invalid_private_key_preserves_other_fields(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test gateway ID and API secret stay filled in after an invalid key error.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n            CONF_PRIVATE_KEY: \"not-a-valid-key\",\n        },\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n\n    defaults = {\n        schema_key: schema_key.default()\n        for schema_key in result[\"data_schema\"].schema\n        if schema_key.default is not probatio.UNDEFINED\n    }\n    assert defaults[CONF_GATEWAY_ID] == MOCK_GATEWAY_ID\n    assert defaults[CONF_API_SECRET] == MOCK_API_SECRET\n\n\nasync def test_credentials_already_configured(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test credentials step when gateway is already configured.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.parametrize(\n    (\"side_effect\", \"expected_error\"),\n    [\n        (ThreemaConnectionError(\"Connection refused\"), \"cannot_connect\"),\n        (ThreemaConnectionError(\"Server error\"), \"cannot_connect\"),\n        (ThreemaAuthError(\"Invalid credentials\"), \"invalid_auth\"),\n        (RuntimeError(\"Unexpected\"), \"unknown\"),\n    ],\n    ids=[\"cannot_connect\", \"server_error_non_auth\", \"invalid_auth\", \"unknown_error\"],\n)\nasync def test_credentials_error(\n    hass: HomeAssistant,\n    mock_credentials: AsyncMock,\n    side_effect: Exception,\n    expected_error: str,\n) -> None:\n    \"\"\"Test credentials step with various errors.\"\"\"\n    mock_credentials.side_effect = side_effect\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n    )\n    assert result[\"type\"] is FlowResultType.MENU\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {\"next_step_id\": \"credentials\"},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": expected_error}\n\n    mock_credentials.side_effect = None\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        user_input={\n            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n            CONF_API_SECRET: MOCK_API_SECRET,\n        },\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_subentry_add_recipient(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test adding a recipient via subentry flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"EFGH5678\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"EFGH5678\"\n    assert result[\"data\"] == {CONF_RECIPIENT: \"EFGH5678\"}\n    assert result[\"unique_id\"] == \"EFGH5678\"\n\n\nasync def test_subentry_add_recipient_with_name(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test adding a recipient with a display name.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"EFGH5678\", \"name\": \"Dad\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"Dad (EFGH5678)\"\n    assert result[\"data\"] == {CONF_RECIPIENT: \"EFGH5678\", CONF_NAME: \"Dad\"}\n    assert result[\"unique_id\"] == \"EFGH5678\"\n\n\n@pytest.mark.parametrize(\n    \"invalid_id\",\n    [\"ABC\", \"ABCD!@#$\", \"\"],\n    ids=[\"too_short\", \"special_chars\", \"empty\"],\n)\nasync def test_subentry_invalid_recipient_id(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_credentials: AsyncMock,\n    invalid_id: str,\n) -> None:\n    \"\"\"Test subentry flow rejects invalid Threema ID with an inline form error.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: invalid_id},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {CONF_RECIPIENT: \"invalid_recipient_id\"}\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: \"EFGH5678\"},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\nasync def test_subentry_duplicate_recipient(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_credentials: AsyncMock,\n) -> None:\n    \"\"\"Test subentry flow rejects duplicate recipient.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.subentries.async_init(\n        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n        context={\"source\": config_entries.SOURCE_USER},\n    )\n\n    result = await hass.config_entries.subentries.async_configure(\n        result[\"flow_id\"],\n        user_input={CONF_RECIPIENT: MOCK_RECIPIENT_ID},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n",
+  "unified_diff": "--- a/tests/components/threema/test_config_flow.py\n+++ b/tests/components/threema/test_config_flow.py\n@@ -2,65 +2,65 @@\n \n from __future__ import annotations\n \n-from unittest.mock import AsyncMock, MagicMock, patch\n-\n+from collections.abc import Generator\n+from unittest.mock import AsyncMock, patch\n+\n+import probatio\n import pytest\n-from threema.gateway import GatewayError\n-from threema.gateway.exception import GatewayServerError\n \n from homeassistant import config_entries\n-from homeassistant.components.threema.client import ThreemaAuthError\n+from homeassistant.components.threema.client import (\n+    ThreemaAuthError,\n+    ThreemaConnectionError,\n+    derive_public_key,\n+)\n+from homeassistant.components.threema.config_flow import _CONF_PUBLIC_KEY\n from homeassistant.components.threema.const import (\n     CONF_API_SECRET,\n     CONF_GATEWAY_ID,\n     CONF_PRIVATE_KEY,\n-    CONF_PUBLIC_KEY,\n-    CONF_RECIPIENT,\n     DOMAIN,\n     SUBENTRY_TYPE_RECIPIENT,\n )\n+from homeassistant.const import CONF_NAME, CONF_RECIPIENT\n from homeassistant.core import HomeAssistant\n from homeassistant.data_entry_flow import FlowResultType\n \n-from .conftest import MOCK_API_SECRET, MOCK_GATEWAY_ID, MOCK_PRIVATE_KEY\n+from .conftest import MOCK_API_SECRET, MOCK_GATEWAY_ID, MOCK_RECIPIENT_ID\n \n from tests.common import MockConfigEntry\n \n \n @pytest.fixture(autouse=True)\n-def mock_setup_entry():\n+def mock_setup_entry() -> Generator[None]:\n     \"\"\"Patch async_setup_entry to avoid full setup during flow tests.\"\"\"\n     with patch(\"homeassistant.components.threema.async_setup_entry\", return_value=True):\n         yield\n \n \n async def test_user_flow_existing_gateway(\n-    hass: HomeAssistant, mock_connection: MagicMock\n+    hass: HomeAssistant, mock_credentials: AsyncMock\n ) -> None:\n     \"\"\"Test user flow with existing gateway credentials.\"\"\"\n     result = await hass.config_entries.flow.async_init(\n         DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n     )\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"step_id\"] == \"user\"\n-\n-    # Choose existing gateway\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\"setup_type\": \"add_gateway\"},\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n     )\n     assert result[\"type\"] is FlowResultType.FORM\n     assert result[\"step_id\"] == \"credentials\"\n \n-    # Enter credentials\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\n-            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-            CONF_API_SECRET: MOCK_API_SECRET,\n-        },\n-    )\n-    await hass.async_block_till_done()\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n \n     assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n     assert result[\"title\"] == f\"Threema {MOCK_GATEWAY_ID}\"\n@@ -68,84 +68,82 @@\n         CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n         CONF_API_SECRET: MOCK_API_SECRET,\n     }\n+    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n \n \n async def test_user_flow_existing_with_keys(\n-    hass: HomeAssistant, mock_connection: MagicMock\n-) -> None:\n-    \"\"\"Test user flow with existing gateway including optional keys.\"\"\"\n-    result = await hass.config_entries.flow.async_init(\n-        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-    )\n-\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\"setup_type\": \"add_gateway\"},\n-    )\n-\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\n-            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-            CONF_API_SECRET: MOCK_API_SECRET,\n-            CONF_PRIVATE_KEY: \"private:abcdef1234567890\",\n-            CONF_PUBLIC_KEY: \"public:1234567890abcdef\",\n-        },\n-    )\n-    await hass.async_block_till_done()\n-\n-    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n-    assert result[\"data\"][CONF_PRIVATE_KEY] == \"private:abcdef1234567890\"\n-    assert result[\"data\"][CONF_PUBLIC_KEY] == \"public:1234567890abcdef\"\n+    hass: HomeAssistant, mock_credentials: AsyncMock\n+) -> None:\n+    \"\"\"Test user flow with existing gateway including optional private key.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert (\n+        result[\"data\"][CONF_PRIVATE_KEY]\n+        == \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n+    )\n+    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n \n \n async def test_user_flow_new_gateway(\n-    hass: HomeAssistant, mock_connection: MagicMock\n+    hass: HomeAssistant, mock_credentials: AsyncMock\n ) -> None:\n     \"\"\"Test user flow with new gateway (key generation).\"\"\"\n-    mock_private = \"private:generated_private_key_hex\"\n-    mock_public = \"public:generated_public_key_hex\"\n+    generated_private_key = \"0\" * 64\n+    generated_public_key = \"f\" * 64\n \n     with patch(\n         \"homeassistant.components.threema.config_flow.generate_key_pair\",\n-        return_value=(mock_private, mock_public),\n+        return_value=(generated_private_key, generated_public_key),\n     ):\n         result = await hass.config_entries.flow.async_init(\n             DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n         )\n-\n-        # Choose new gateway\n+        assert result[\"type\"] is FlowResultType.MENU\n+\n         result = await hass.config_entries.flow.async_configure(\n             result[\"flow_id\"],\n-            user_input={\"setup_type\": \"generate_keys\"},\n+            {\"next_step_id\": \"setup_new\"},\n         )\n         assert result[\"type\"] is FlowResultType.FORM\n         assert result[\"step_id\"] == \"setup_new\"\n \n-        # Confirm keys and proceed\n         result = await hass.config_entries.flow.async_configure(\n             result[\"flow_id\"],\n-            user_input={\n-                \"public_key\": mock_public,\n-                \"private_key\": mock_private,\n-            },\n+            user_input={},\n         )\n         assert result[\"type\"] is FlowResultType.FORM\n         assert result[\"step_id\"] == \"credentials\"\n \n-        # Enter gateway credentials\n         result = await hass.config_entries.flow.async_configure(\n             result[\"flow_id\"],\n             user_input={\n                 CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n                 CONF_API_SECRET: MOCK_API_SECRET,\n+                CONF_PRIVATE_KEY: generated_private_key,\n             },\n         )\n-        await hass.async_block_till_done()\n-\n-    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n-    assert result[\"data\"][CONF_PRIVATE_KEY] == mock_private\n-    assert result[\"data\"][CONF_PUBLIC_KEY] == mock_public\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"data\"][CONF_PRIVATE_KEY] == generated_private_key\n+    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n \n \n async def test_user_flow_key_generation_failure(hass: HomeAssistant) -> None:\n@@ -157,10 +155,11 @@\n         result = await hass.config_entries.flow.async_init(\n             DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n         )\n+        assert result[\"type\"] is FlowResultType.MENU\n \n         result = await hass.config_entries.flow.async_configure(\n             result[\"flow_id\"],\n-            user_input={\"setup_type\": \"generate_keys\"},\n+            {\"next_step_id\": \"setup_new\"},\n         )\n \n     assert result[\"type\"] is FlowResultType.ABORT\n@@ -168,15 +167,17 @@\n \n \n async def test_credentials_invalid_gateway_id(\n-    hass: HomeAssistant, mock_connection: MagicMock\n+    hass: HomeAssistant, mock_credentials: AsyncMock\n ) -> None:\n     \"\"\"Test credentials step with invalid Gateway ID.\"\"\"\n     result = await hass.config_entries.flow.async_init(\n         DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n     )\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\"setup_type\": \"add_gateway\"},\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n     )\n \n     # Gateway ID not starting with *\n@@ -201,11 +202,379 @@\n     assert result[\"type\"] is FlowResultType.FORM\n     assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n \n+    # Right length and prefix, but invalid characters\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: \"*!!!!!!!\",\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {\"base\": \"invalid_gateway_id\"}\n+\n+    # Valid Gateway ID — recover and create entry\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"result\"].unique_id == MOCK_GATEWAY_ID\n+\n+\n+@pytest.mark.parametrize(\n+    \"invalid_key\",\n+    [\"0123456789abcdef\", \"g\" * 64],\n+    ids=[\"wrong_length\", \"non_hex\"],\n+)\n+async def test_credentials_invalid_private_key(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+    invalid_key: str,\n+) -> None:\n+    \"\"\"Test credentials step rejects a malformed private key.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: invalid_key,\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n+\n+    # Recover by clearing the invalid key (the field defaults to the\n+    # previous, invalid value, so it must be explicitly cleared)\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+@pytest.mark.parametrize(\n+    \"prefixed_key\",\n+    [\n+        \"private:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n+        \"PRIVATE:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\",\n+    ],\n+    ids=[\"lower\", \"upper\"],\n+)\n+async def test_credentials_private_key_prefix_stripped(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+    prefixed_key: str,\n+) -> None:\n+    \"\"\"Test a 'private:'-prefixed key (as exported by Threema's tools) is accepted.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: prefixed_key,\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert (\n+        result[\"data\"][CONF_PRIVATE_KEY]\n+        == \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\"\n+    )\n+\n+\n+async def test_credentials_public_key_in_private_key_field_rejected(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a 'public:'-prefixed key pasted into the private-key field is rejected.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: f\"public:{'a' * 64}\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"a\" * 64,\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_credentials_private_key_in_public_key_field_rejected(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a 'private:'-prefixed key pasted into the public-key field is rejected.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"a\" * 64,\n+            _CONF_PUBLIC_KEY: f\"private:{'b' * 64}\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"invalid_key\"}\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"a\" * 64,\n+            _CONF_PUBLIC_KEY: \"\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_credentials_public_key_without_private_key_rejected(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a public key given alone (no private key) is rejected, not discarded.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            _CONF_PUBLIC_KEY: \"a\" * 64,\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"public_key_requires_private_key\"}\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            _CONF_PUBLIC_KEY: \"\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_credentials_public_key_matches(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a public key matching the private key is accepted and not stored.\"\"\"\n+    private_key = \"1\" * 64\n+    matching_public_key = derive_public_key(private_key)\n+\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: private_key,\n+            _CONF_PUBLIC_KEY: f\"public:{matching_public_key}\",\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"data\"][CONF_PRIVATE_KEY] == private_key\n+    assert _CONF_PUBLIC_KEY not in result[\"data\"]\n+\n+\n+async def test_credentials_public_key_mismatch(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a public key that does not match the private key is rejected.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"1\" * 64,\n+            _CONF_PUBLIC_KEY: \"f\" * 64,\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"key_mismatch\"}\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"1\" * 64,\n+            _CONF_PUBLIC_KEY: \"\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_credentials_public_key_invalid_hex(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test a malformed public key is rejected.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"1\" * 64,\n+            _CONF_PUBLIC_KEY: \"not-a-valid-key\",\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {_CONF_PUBLIC_KEY: \"invalid_key\"}\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"1\" * 64,\n+            _CONF_PUBLIC_KEY: \"\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_credentials_invalid_private_key_preserves_other_fields(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test gateway ID and API secret stay filled in after an invalid key error.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+            CONF_PRIVATE_KEY: \"not-a-valid-key\",\n+        },\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {CONF_PRIVATE_KEY: \"invalid_key\"}\n+\n+    defaults = {\n+        schema_key: schema_key.default()\n+        for schema_key in result[\"data_schema\"].schema\n+        if schema_key.default is not probatio.UNDEFINED\n+    }\n+    assert defaults[CONF_GATEWAY_ID] == MOCK_GATEWAY_ID\n+    assert defaults[CONF_API_SECRET] == MOCK_API_SECRET\n+\n \n async def test_credentials_already_configured(\n     hass: HomeAssistant,\n     mock_config_entry: MockConfigEntry,\n-    mock_connection: MagicMock,\n+    mock_credentials: AsyncMock,\n ) -> None:\n     \"\"\"Test credentials step when gateway is already configured.\"\"\"\n     mock_config_entry.add_to_hass(hass)\n@@ -213,9 +582,11 @@\n     result = await hass.config_entries.flow.async_init(\n         DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n     )\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\"setup_type\": \"add_gateway\"},\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n     )\n     result = await hass.config_entries.flow.async_configure(\n         result[\"flow_id\"],\n@@ -229,275 +600,64 @@\n     assert result[\"reason\"] == \"already_configured\"\n \n \n-async def test_credentials_cannot_connect(hass: HomeAssistant) -> None:\n-    \"\"\"Test credentials step when connection fails.\"\"\"\n-    with patch(\n-        \"homeassistant.components.threema.client.Connection\", autospec=True\n-    ) as connection_class:\n-        connection = MagicMock()\n-        connection.__aenter__ = AsyncMock(return_value=connection)\n-        connection.__aexit__ = AsyncMock(return_value=None)\n-        connection.get_credits = AsyncMock(\n-            side_effect=GatewayError(\"Connection refused\")\n-        )\n-        connection_class.return_value = connection\n-\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\"setup_type\": \"add_gateway\"},\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-                CONF_API_SECRET: MOCK_API_SECRET,\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n-\n-\n-async def test_credentials_server_error_non_auth(hass: HomeAssistant) -> None:\n-    \"\"\"Test credentials step with non-401 server error.\"\"\"\n-    with patch(\n-        \"homeassistant.components.threema.client.Connection\", autospec=True\n-    ) as connection_class:\n-        connection = MagicMock()\n-        connection.__aenter__ = AsyncMock(return_value=connection)\n-        connection.__aexit__ = AsyncMock(return_value=None)\n-        connection.get_credits = AsyncMock(side_effect=GatewayServerError(status=500))\n-        connection_class.return_value = connection\n-\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\"setup_type\": \"add_gateway\"},\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-                CONF_API_SECRET: MOCK_API_SECRET,\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n-\n-\n-async def test_credentials_invalid_auth(hass: HomeAssistant) -> None:\n-    \"\"\"Test credentials step with invalid authentication.\"\"\"\n-    with patch(\n-        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n-        side_effect=ThreemaAuthError(\"Invalid credentials\"),\n-    ):\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\"setup_type\": \"add_gateway\"},\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-                CONF_API_SECRET: MOCK_API_SECRET,\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n-\n-\n-async def test_credentials_unknown_error(hass: HomeAssistant) -> None:\n-    \"\"\"Test credentials step with unexpected error.\"\"\"\n-    with patch(\n-        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n-        side_effect=RuntimeError(\"Unexpected\"),\n-    ):\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\"setup_type\": \"add_gateway\"},\n-        )\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n-                CONF_API_SECRET: MOCK_API_SECRET,\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"unknown\"}\n-\n-\n-async def test_reauth_flow_invalid_auth(\n+@pytest.mark.parametrize(\n+    (\"side_effect\", \"expected_error\"),\n+    [\n+        (ThreemaConnectionError(\"Connection refused\"), \"cannot_connect\"),\n+        (ThreemaConnectionError(\"Server error\"), \"cannot_connect\"),\n+        (ThreemaAuthError(\"Invalid credentials\"), \"invalid_auth\"),\n+        (RuntimeError(\"Unexpected\"), \"unknown\"),\n+    ],\n+    ids=[\"cannot_connect\", \"server_error_non_auth\", \"invalid_auth\", \"unknown_error\"],\n+)\n+async def test_credentials_error(\n+    hass: HomeAssistant,\n+    mock_credentials: AsyncMock,\n+    side_effect: Exception,\n+    expected_error: str,\n+) -> None:\n+    \"\"\"Test credentials step with various errors.\"\"\"\n+    mock_credentials.side_effect = side_effect\n+\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN, context={\"source\": config_entries.SOURCE_USER}\n+    )\n+    assert result[\"type\"] is FlowResultType.MENU\n+\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        {\"next_step_id\": \"credentials\"},\n+    )\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {\"base\": expected_error}\n+\n+    mock_credentials.side_effect = None\n+    result = await hass.config_entries.flow.async_configure(\n+        result[\"flow_id\"],\n+        user_input={\n+            CONF_GATEWAY_ID: MOCK_GATEWAY_ID,\n+            CONF_API_SECRET: MOCK_API_SECRET,\n+        },\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+async def test_subentry_add_recipient(\n     hass: HomeAssistant,\n     mock_config_entry: MockConfigEntry,\n-) -> None:\n-    \"\"\"Test reauth flow with invalid credentials.\"\"\"\n-    mock_config_entry.add_to_hass(hass)\n-\n-    with patch(\n-        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n-        side_effect=ThreemaAuthError(\"Invalid credentials\"),\n-    ):\n-        result = await mock_config_entry.start_reauth_flow(hass)\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_API_SECRET: \"wrong_secret\",\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"invalid_auth\"}\n-\n-\n-async def test_reauth_flow_success(\n-    hass: HomeAssistant,\n-    mock_config_entry: MockConfigEntry,\n-    mock_connection: MagicMock,\n-) -> None:\n-    \"\"\"Test reauth flow succeeds with valid credentials.\"\"\"\n-    mock_config_entry.add_to_hass(hass)\n-\n-    result = await mock_config_entry.start_reauth_flow(hass)\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"step_id\"] == \"reauth_confirm\"\n-\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\n-            CONF_API_SECRET: \"new_secret\",\n-        },\n-    )\n-\n-    assert result[\"type\"] is FlowResultType.ABORT\n-    assert result[\"reason\"] == \"reauth_successful\"\n-    assert mock_config_entry.data[CONF_API_SECRET] == \"new_secret\"\n-\n-\n-async def test_reauth_flow_preserves_private_key(\n-    hass: HomeAssistant,\n-    mock_config_entry_with_keys: MockConfigEntry,\n-    mock_connection: MagicMock,\n-) -> None:\n-    \"\"\"Test reauth flow preserves existing private key when not provided.\"\"\"\n-    mock_config_entry_with_keys.add_to_hass(hass)\n-\n-    result = await mock_config_entry_with_keys.start_reauth_flow(hass)\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"step_id\"] == \"reauth_confirm\"\n-\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\n-            CONF_API_SECRET: \"new_secret\",\n-        },\n-    )\n-\n-    assert result[\"type\"] is FlowResultType.ABORT\n-    assert result[\"reason\"] == \"reauth_successful\"\n-    assert mock_config_entry_with_keys.data[CONF_API_SECRET] == \"new_secret\"\n-    assert mock_config_entry_with_keys.data[CONF_PRIVATE_KEY] == MOCK_PRIVATE_KEY\n-\n-\n-async def test_reauth_flow_cannot_connect(\n-    hass: HomeAssistant,\n-    mock_config_entry: MockConfigEntry,\n-) -> None:\n-    \"\"\"Test reauth flow with connection failure.\"\"\"\n-    mock_config_entry.add_to_hass(hass)\n-\n-    with patch(\n-        \"homeassistant.components.threema.client.Connection\", autospec=True\n-    ) as connection_class:\n-        connection = MagicMock()\n-        connection.__aenter__ = AsyncMock(return_value=connection)\n-        connection.__aexit__ = AsyncMock(return_value=None)\n-        connection.get_credits = AsyncMock(\n-            side_effect=GatewayError(\"Connection refused\")\n-        )\n-        connection_class.return_value = connection\n-\n-        result = await mock_config_entry.start_reauth_flow(hass)\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_API_SECRET: \"new_secret\",\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n-\n-\n-async def test_reauth_flow_unknown_error(\n-    hass: HomeAssistant,\n-    mock_config_entry: MockConfigEntry,\n-) -> None:\n-    \"\"\"Test reauth flow with unexpected error.\"\"\"\n-    mock_config_entry.add_to_hass(hass)\n-\n-    with patch(\n-        \"homeassistant.components.threema.config_flow.ThreemaAPIClient.validate_credentials\",\n-        side_effect=RuntimeError(\"Unexpected\"),\n-    ):\n-        result = await mock_config_entry.start_reauth_flow(hass)\n-        result = await hass.config_entries.flow.async_configure(\n-            result[\"flow_id\"],\n-            user_input={\n-                CONF_API_SECRET: \"new_secret\",\n-            },\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"unknown\"}\n-\n-\n-async def test_reauth_flow_updates_private_key(\n-    hass: HomeAssistant,\n-    mock_config_entry: MockConfigEntry,\n-    mock_connection: MagicMock,\n-) -> None:\n-    \"\"\"Test reauth flow updates private key when provided.\"\"\"\n-    mock_config_entry.add_to_hass(hass)\n-\n-    result = await mock_config_entry.start_reauth_flow(hass)\n-    result = await hass.config_entries.flow.async_configure(\n-        result[\"flow_id\"],\n-        user_input={\n-            CONF_API_SECRET: \"new_secret\",\n-            CONF_PRIVATE_KEY: \"private:newkey123\",\n-        },\n-    )\n-\n-    assert result[\"type\"] is FlowResultType.ABORT\n-    assert result[\"reason\"] == \"reauth_successful\"\n-    assert mock_config_entry.data[CONF_PRIVATE_KEY] == \"private:newkey123\"\n-\n-\n-async def test_subentry_add_recipient(\n-    hass: HomeAssistant,\n-    mock_config_entry: MockConfigEntry,\n-    mock_connection: MagicMock,\n-    mock_send: MagicMock,\n+    mock_credentials: AsyncMock,\n ) -> None:\n     \"\"\"Test adding a recipient via subentry flow.\"\"\"\n     mock_config_entry.add_to_hass(hass)\n-    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n-    await hass.async_block_till_done()\n \n     result = await hass.config_entries.subentries.async_init(\n         (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n@@ -508,66 +668,88 @@\n \n     result = await hass.config_entries.subentries.async_configure(\n         result[\"flow_id\"],\n-        user_input={CONF_RECIPIENT: \"ABCD1234\"},\n-    )\n-\n-    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n-    assert result[\"title\"] == \"ABCD1234\"\n-    assert result[\"data\"] == {CONF_RECIPIENT: \"ABCD1234\"}\n-\n-\n-async def test_subentry_invalid_recipient_id(\n+        user_input={CONF_RECIPIENT: \"EFGH5678\"},\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"title\"] == \"EFGH5678\"\n+    assert result[\"data\"] == {CONF_RECIPIENT: \"EFGH5678\"}\n+    assert result[\"unique_id\"] == \"EFGH5678\"\n+\n+\n+async def test_subentry_add_recipient_with_name(\n     hass: HomeAssistant,\n     mock_config_entry: MockConfigEntry,\n-    mock_connection: MagicMock,\n-    mock_send: MagicMock,\n-) -> None:\n-    \"\"\"Test subentry flow rejects invalid Threema ID.\"\"\"\n+    mock_credentials: AsyncMock,\n+) -> None:\n+    \"\"\"Test adding a recipient with a display name.\"\"\"\n     mock_config_entry.add_to_hass(hass)\n-    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n-    await hass.async_block_till_done()\n \n     result = await hass.config_entries.subentries.async_init(\n         (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n         context={\"source\": config_entries.SOURCE_USER},\n     )\n \n-    # Too short\n     result = await hass.config_entries.subentries.async_configure(\n         result[\"flow_id\"],\n-        user_input={CONF_RECIPIENT: \"ABC\"},\n-    )\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"invalid_recipient_id\"}\n-\n-    # Special characters\n+        user_input={CONF_RECIPIENT: \"EFGH5678\", \"name\": \"Dad\"},\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+    assert result[\"title\"] == \"Dad (EFGH5678)\"\n+    assert result[\"data\"] == {CONF_RECIPIENT: \"EFGH5678\", CONF_NAME: \"Dad\"}\n+    assert result[\"unique_id\"] == \"EFGH5678\"\n+\n+\n+@pytest.mark.parametrize(\n+    \"invalid_id\",\n+    [\"ABC\", \"ABCD!@#$\", \"\"],\n+    ids=[\"too_short\", \"special_chars\", \"empty\"],\n+)\n+async def test_subentry_invalid_recipient_id(\n+    hass: HomeAssistant,\n+    mock_config_entry: MockConfigEntry,\n+    mock_credentials: AsyncMock,\n+    invalid_id: str,\n+) -> None:\n+    \"\"\"Test subentry flow rejects invalid Threema ID with an inline form error.\"\"\"\n+    mock_config_entry.add_to_hass(hass)\n+\n+    result = await hass.config_entries.subentries.async_init(\n+        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n+        context={\"source\": config_entries.SOURCE_USER},\n+    )\n+\n     result = await hass.config_entries.subentries.async_configure(\n         result[\"flow_id\"],\n-        user_input={CONF_RECIPIENT: \"ABCD!@#$\"},\n-    )\n-    assert result[\"type\"] is FlowResultType.FORM\n-    assert result[\"errors\"] == {\"base\": \"invalid_recipient_id\"}\n+        user_input={CONF_RECIPIENT: invalid_id},\n+    )\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"errors\"] == {CONF_RECIPIENT: \"invalid_recipient_id\"}\n+\n+    result = await hass.config_entries.subentries.async_configure(\n+        result[\"flow_id\"],\n+        user_input={CONF_RECIPIENT: \"EFGH5678\"},\n+    )\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n \n \n async def test_subentry_duplicate_recipient(\n     hass: HomeAssistant,\n-    mock_config_entry_with_subentry: MockConfigEntry,\n-    mock_connection: MagicMock,\n-    mock_send: MagicMock,\n+    mock_config_entry: MockConfigEntry,\n+    mock_credentials: AsyncMock,\n ) -> None:\n     \"\"\"Test subentry flow rejects duplicate recipient.\"\"\"\n-    mock_config_entry_with_subentry.add_to_hass(hass)\n-    await hass.config_entries.async_setup(mock_config_entry_with_subentry.entry_id)\n-    await hass.async_block_till_done()\n+    mock_config_entry.add_to_hass(hass)\n \n     result = await hass.config_entries.subentries.async_init(\n-        (mock_config_entry_with_subentry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n+        (mock_config_entry.entry_id, SUBENTRY_TYPE_RECIPIENT),\n         context={\"source\": config_entries.SOURCE_USER},\n     )\n \n     result = await hass.config_entries.subentries.async_configure(\n         result[\"flow_id\"],\n-        user_input={CONF_RECIPIENT: \"ABCD1234\"},\n+        user_input={CONF_RECIPIENT: MOCK_RECIPIENT_ID},\n     )\n \n     assert result[\"type\"] is FlowResultType.ABORT\n",
+  "changed_files": [
+    {
+      "path": ".claude/agents/quality-scale-rule-verifier.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/agents/raise-pull-request.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/bump-dependency/scripts/resolve_dependency.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/github-pr-reviewer/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-integration-knowledge/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-integration-knowledge/platform-diagnostics.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-integration-knowledge/platform-repairs.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-merge-queue/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-comment-audit/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-pr-reviewer/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-quality-scale-verify/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/ha-review/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/integrations/SKILL.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/integrations/platform-diagnostics.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".claude/skills/integrations/platform-repairs.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".core_files.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".devcontainer/devcontainer-lock.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitattributes",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE.md",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/cache-apt-packages/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/restore-or-build-venv/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/actions/setup-uv-python/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/assets/screenshot-integrations.png",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/aw/actions-lock.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/copilot-instructions.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/dependabot.yml",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/renovate.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/aw.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/builder.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements-deterministic.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.lock.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/detect-duplicate-issues.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/detect-non-english-issues.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/e2e-tests.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/restrict-task-creation.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/translations.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".gitignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".prettierignore",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".python-version",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": ".vscode/tasks.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".yamllint",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AGENTS.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AI_POLICY.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "Dockerfile",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "Dockerfile.dev",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/__main__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/auth_store.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/jwt_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/mfa_modules/totp.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/events.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/merge.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/permissions/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/command_line.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/homeassistant.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/insecure_example.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/auth/providers/trusted_networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/backup_restore.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/bootstrap.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/bega.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/denon.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/fireavert.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/geosphere_austria.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/google.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/gree.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/honeywell.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/lg.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/marantz.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/microsoft.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/midea.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/mitsubishi.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/samsung.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/sensereo.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/solaredge.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/ubiquiti.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/victron.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/vlc.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/zunzunbee.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acaia/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/system_health.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/accuweather/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/__init__.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/const.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/manifest.json",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acer_projector/switch.py",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/hub.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/acmeda/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actiontec/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/cover.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/diagnostics.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adax/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/adguard/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ads/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/advantage_air/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aemet/weather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aftership/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/agent_dvr/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/http.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/media_source.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/task.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/light.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/aidot/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/condition.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/conditions.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/trigger.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/air_quality/triggers.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airly/system_health.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airnow/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airobot/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/helpers.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airos/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-09-24T07:16:02.248723Z"
+}

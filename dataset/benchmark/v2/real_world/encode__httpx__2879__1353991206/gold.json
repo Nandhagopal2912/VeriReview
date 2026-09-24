@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2879__1353991206",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Import URL from .._urls next to the other relative imports (suggestion) instead of `from httpx import URL`",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_transports/default.py:51: from .._urls import URL; the `from httpx import URL` line is removed",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-errors-05-exitstack-cleanup",
+  "category": "error_handling",
+  "file_path": "files/merge.py",
+  "target_symbol": "merge",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "ExitStack closes every file already opened, also when a later open() or a read fails.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Close every opened file even when opening another fails",
+      "target": "open",
+      "condition": "OSError",
+      "expected_behavior": "all closed"
+    }
+  ]
+}

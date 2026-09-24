@@ -1,0 +1,1 @@
+Add a test for the timeout, and return None when it happens.

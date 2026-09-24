@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-01-method-and-self-call",
+  "category": "naming",
+  "file_path": "jobs/queue.py",
+  "target_symbol": "Queue.proc_items",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The method and its only call (self.proc_items) are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename proc_items to process_items",
+      "target": "proc_items",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+`self.cnt` -> `self.count`.

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2940__2105687974",
+    "include": true,
+    "requirements": [
+      {
+        "category": "error_handling",
+        "description": "Read input with next(text_input) and turn StopIteration into EOFError (raise ... from e) instead of checking the input size",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/testing.py:355-358 (visible_input) and hidden_input: try: next(text_input) except StopIteration as e: raise EOFError() from e; text_input_size removed",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-05-instance-attribute",
+  "category": "naming",
+  "file_path": "metrics/counter.py",
+  "target_symbol": "Counter",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The attribute is renamed in all three methods.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename attribute cnt to count",
+      "target": "cnt",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

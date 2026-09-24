@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-naming-10-rename-without-return-type",
+  "category": "naming",
+  "file_path": "finance/tax.py",
+  "target_symbol": "calc_tax",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The function is renamed; no return type hint was added.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename calc_tax to calculate_tax",
+      "target": "calc_tax",
+      "condition": null,
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "other",
+      "description": "Add a return type hint",
+      "target": "calc_tax",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

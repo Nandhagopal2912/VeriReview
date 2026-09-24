@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-08-wrong-statement",
+  "category": "error_handling",
+  "file_path": "imports/load.py",
+  "target_symbol": "load",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The try block wraps the CSV parsing, not the open() call that raises FileNotFoundError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle FileNotFoundError from open()",
+      "target": "open",
+      "condition": "FileNotFoundError",
+      "expected_behavior": null
+    }
+  ]
+}

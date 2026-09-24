@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14127__2702561507",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Shorten the idents() docstring to 'Return the set of all identifiers which appear in the expression.', dropping the marker/keyword mention (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/mark/expression.py:347: the suggested one-line docstring",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

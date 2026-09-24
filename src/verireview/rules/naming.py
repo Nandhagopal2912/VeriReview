@@ -55,6 +55,21 @@ def naming_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
 
     evidence = []
     old_after = after.identifier_lines(old)
+    # A compatibility alias (`get_user = fetch_user`) keeps the old name only as a pointer to the
+    # new one: the rename is done (Phase 10.1, adversarial a-naming-06).
+    aliases = _alias_lines(old, new, ctx)
+    if aliases:
+        old_after = [line for line in old_after if line not in aliases]
+        evidence.append(
+            located(
+                requirement,
+                "naming.compatibility_alias",
+                None,
+                f"`{old}` remains only as an alias of `{new}` (line {aliases[0]}).",
+                ctx.file,
+                aliases[0],
+            )
+        )
     if old_after:
         evidence.append(
             located(
@@ -158,6 +173,15 @@ def _rename_request(
     if new == old:
         new = None
     return old, new, strict
+
+
+def _alias_lines(old: str, new: str | None, ctx: RuleContext) -> list[int]:
+    """Lines `old = new` (or `old = deprecated(new)`) in the file after the change."""
+    if not new:
+        return []
+    pattern = re.compile(rf"^\s*{re.escape(old)}\s*=\s*.*\b{re.escape(new)}\b")
+    lines = (ctx.case.after_code or "").split("\n")
+    return [i for i, text in enumerate(lines, start=1) if pattern.match(text)]
 
 
 def _scopes(old: str, ctx: RuleContext) -> tuple[Scope, Scope]:

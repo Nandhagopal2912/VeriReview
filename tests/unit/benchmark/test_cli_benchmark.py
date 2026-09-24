@@ -12,6 +12,20 @@ from verireview.gh.client import GitHubClient
 
 DATASET = Path(__file__).resolve().parents[3] / "dataset"
 KEY = "acme__shop__7__5001"
+VERSIONED = {
+    "benchmark-stats",
+    "collect-cases",
+    "annotation-sheet",
+    "adjudication-sheet",
+    "build-gold",
+    "benchmark-freeze",
+    "eval-benchmark",
+}
+
+
+def main_v1(args: list[str]) -> int:
+    """These tests use the v1 layout (real-world cases under benchmark/real_world)."""
+    return cli.main([*args, "--benchmark-version", "v1"] if args[0] in VERSIONED else args)
 
 
 @pytest.fixture(autouse=True)
@@ -34,9 +48,9 @@ def mine_and_collect(tmp_path: Path) -> Path:
     )
     candidates = tmp_path / "candidates.jsonl"
     args = ["mine-candidates", "acme/shop", "--dataset", str(tmp_path), "--out", str(candidates)]
-    assert cli.main(args) == 0
+    assert main_v1(args) == 0
     assert (
-        cli.main(
+        main_v1(
             [
                 "collect-cases",
                 str(candidates),
@@ -73,7 +87,7 @@ def export(path: Path, annotator: str, status: str) -> Path:
 
 
 def test_benchmark_stats_on_the_real_dataset(capsys: pytest.CaptureFixture[str]) -> None:
-    assert cli.main(["benchmark-stats", "--dataset", str(DATASET)]) == 0
+    assert main_v1(["benchmark-stats", "--dataset", str(DATASET)]) == 0
 
     out = capsys.readouterr().out
     assert "controlled/test 60" in out and "adversarial/test 40" in out
@@ -83,7 +97,7 @@ def test_benchmark_stats_on_the_real_dataset(capsys: pytest.CaptureFixture[str])
 def test_mining_refuses_an_unapproved_repository(
     tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    assert cli.main(["mine-candidates", "acme/shop", "--dataset", str(tmp_path)]) == 2
+    assert main_v1(["mine-candidates", "acme/shop", "--dataset", str(tmp_path)]) == 2
     assert "not approved" in capsys.readouterr().err
 
 
@@ -91,22 +105,22 @@ def test_full_annotation_round_trip(tmp_path: Path, capsys: pytest.CaptureFixtur
     root = mine_and_collect(tmp_path)
     sheet = tmp_path / "sheet.html"
     assert (
-        cli.main(["annotation-sheet", "--batch", "rw", "--dataset", str(root), "--out", str(sheet)])
+        main_v1(["annotation-sheet", "--batch", "rw", "--dataset", str(root), "--out", str(sheet)])
         == 0
     )
     assert KEY in sheet.read_text(encoding="utf-8")
 
     a = export(tmp_path / "a.json", "ann-a", "satisfied")
     b = export(tmp_path / "b.json", "ann-b", "not_satisfied")
-    assert cli.main(["agreement", str(a), str(b), "--out", str(tmp_path / "agree.json")]) == 0
+    assert main_v1(["agreement", str(a), str(b), "--out", str(tmp_path / "agree.json")]) == 0
     assert "disagreements to adjudicate: 1" in capsys.readouterr().out
 
-    assert cli.main(["build-gold", str(a), str(b), "--dataset", str(root)]) == 1
+    assert main_v1(["build-gold", str(a), str(b), "--dataset", str(root)]) == 1
     assert "need a decision" in capsys.readouterr().err
 
     adj_sheet = tmp_path / "adj.html"
     assert (
-        cli.main(
+        main_v1(
             [
                 "adjudication-sheet",
                 str(a),
@@ -132,7 +146,7 @@ def test_full_annotation_round_trip(tmp_path: Path, capsys: pytest.CaptureFixtur
         encoding="utf-8",
     )
     assert (
-        cli.main(
+        main_v1(
             [
                 "build-gold",
                 str(a),
@@ -150,16 +164,16 @@ def test_full_annotation_round_trip(tmp_path: Path, capsys: pytest.CaptureFixtur
     )
     assert gold["label"]["verdict"] == "SATISFIED" and gold["adjudicator"] == "judge"
 
-    assert cli.main(["benchmark-freeze", "--version", "v-test", "--dataset", str(root)]) == 0
+    assert main_v1(["benchmark-freeze", "--dataset", str(root)]) == 0
     manifest = json.loads((root / "benchmark" / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["version"] == "v-test"
+    assert manifest["version"] == "v1"
 
 
 def test_calibration_sheet(tmp_path: Path) -> None:
     out = tmp_path / "cal.html"
 
     assert (
-        cli.main(
+        main_v1(
             [
                 "annotation-sheet",
                 "--batch",
@@ -185,19 +199,19 @@ def test_provisional_model_gold_never_replaces_human_gold(
     claude = export(tmp_path / "claude.json", "claude", "not_satisfied")
     gold_path = root / "benchmark" / "real_world" / KEY / "gold.json"
 
-    assert cli.main(["build-gold", str(claude), "--dataset", str(root)]) == 2  # source required
+    assert main_v1(["build-gold", str(claude), "--dataset", str(root)]) == 2  # source required
     args = ["build-gold", str(claude), "--single-source", "model", "--dataset", str(root)]
-    assert cli.main(args) == 0
+    assert main_v1(args) == 0
     gold = json.loads(gold_path.read_text(encoding="utf-8"))
     assert gold["label_source"] == "model" and gold["annotators"] == ["claude"]
-    assert cli.main(["benchmark-stats", "--dataset", str(root)]) == 0
+    assert main_v1(["benchmark-stats", "--dataset", str(root)]) == 0
     assert "provisional model 1" in capsys.readouterr().out
 
     a = export(tmp_path / "a.json", "ann-a", "satisfied")
     b = export(tmp_path / "b.json", "ann-b", "satisfied")
-    assert cli.main(["build-gold", str(a), str(b), "--dataset", str(root)]) == 0
+    assert main_v1(["build-gold", str(a), str(b), "--dataset", str(root)]) == 0
     assert json.loads(gold_path.read_text(encoding="utf-8"))["label_source"] == "human"
 
-    assert cli.main(args) == 0  # the model label comes back...
+    assert main_v1(args) == 0  # the model label comes back...
     assert "kept human gold" in capsys.readouterr().out  # ...but does not overwrite humans
     assert json.loads(gold_path.read_text(encoding="utf-8"))["label_source"] == "human"

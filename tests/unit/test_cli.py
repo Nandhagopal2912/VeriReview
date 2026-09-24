@@ -249,7 +249,7 @@ def test_eval_injection_reports_no_outcome_change(
     assert cli.main(["eval-injection", "--root", str(FIXTURES), "--out", str(out)]) == 0
 
     printed = capsys.readouterr().out
-    assert "verifier: mvp-1" in printed
+    assert "verifier: mvp-2" in printed
     report = json.loads(out.read_text(encoding="utf-8"))
     assert [len(r["flips"]) for r in report["reports"]] == [0, 0]
 

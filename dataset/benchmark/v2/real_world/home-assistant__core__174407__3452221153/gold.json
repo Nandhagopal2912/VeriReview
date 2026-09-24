@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__174407__3452221153",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the setup (connectivity and authentication checks) into the coordinator's _async_setup",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "theben_conexa/__init__.py: the checks are gone from async_setup_entry, but coordinator.py is not in the case, so where they went cannot be seen",
+    "confidence": "low",
+    "notes": "Only the commented file is available; the code may have moved to the coordinator, or been dropped. Coordinator construction itself stays in __init__."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

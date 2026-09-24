@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-04-supported-currency",
+  "category": "validation",
+  "file_path": "payments/convert.py",
+  "target_symbol": "convert",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Unsupported currencies raise before the lookup.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate currency is in SUPPORTED",
+      "target": "currency",
+      "condition": "currency not in SUPPORTED",
+      "expected_behavior": null
+    }
+  ]
+}

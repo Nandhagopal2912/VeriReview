@@ -1,0 +1,1 @@
+Log the error before re-raising it.

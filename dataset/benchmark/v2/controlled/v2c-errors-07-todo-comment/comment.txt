@@ -1,0 +1,1 @@
+This can fail with `RenderError`; handle it.

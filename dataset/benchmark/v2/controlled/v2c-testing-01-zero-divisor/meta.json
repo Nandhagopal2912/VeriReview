@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-testing-01-zero-divisor",
+  "category": "testing",
+  "file_path": "mathx/ratio.py",
+  "target_symbol": "ratio",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test calls ratio(1, 0) inside pytest.raises(ValueError).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a zero divisor raises ValueError",
+      "target": "ratio",
+      "condition": "b == 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

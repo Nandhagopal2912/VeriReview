@@ -1,5 +1,10 @@
 """Benchmark layout: which case sets exist, their source and split, and real-world storage.
 
+Benchmarks are versioned. A test split is evaluated once; afterwards its cases may only serve as
+dev data, and the next version brings a new, blind test split (docs/phase10_1_benchmark_v2.md).
+
+v1 (Phase 9, evaluated in Phase 10)::
+
     dataset/fixtures/                     controlled   dev   (Phase 2)
     dataset/heldout_fixtures/             controlled   dev   (Phase 5; no longer blind)
     dataset/benchmark/controlled/         controlled   test  (Phase 9, frozen)
@@ -11,6 +16,9 @@
                           or, provisionally, one model annotator (label_source "model")
     dataset/benchmark/LICENSES/           license texts of the mined repositories
     dataset/annotations/<annotator>/      raw exports of the annotation page (never edited)
+
+v2 (Phase 10.1): everything of v1 is dev (its test split has been used), and the new test split is
+``dataset/benchmark/v2/{controlled,adversarial,real_world}``, frozen before any rule change.
 
 A real-world case takes part in evaluation only once it has gold and is included.
 """
@@ -46,17 +54,48 @@ class CaseSet:
     name: str
     path: str  # relative to the dataset root
     source: Source
-    split: Split | None  # None: decided per case (real-world)
+    split: Split | None  # None: decided per case (real-world provenance)
 
 
-CASE_SETS = (
-    CaseSet("dev-fixtures", "fixtures", Source.CONTROLLED, Split.DEV),
-    CaseSet("dev-heldout", "heldout_fixtures", Source.CONTROLLED, Split.DEV),
-    CaseSet("controlled", "benchmark/controlled", Source.CONTROLLED, Split.TEST),
-    CaseSet("adversarial", "benchmark/adversarial", Source.ADVERSARIAL, Split.TEST),
-    CaseSet("real-world", "benchmark/real_world", Source.REAL_WORLD, None),
+@dataclass(frozen=True)
+class BenchmarkVersion:
+    name: str
+    case_sets: tuple[CaseSet, ...]
+    real_world: str  # where this version's newly collected real-world cases live
+    manifest: str
+
+
+V1 = BenchmarkVersion(
+    "v1",
+    (
+        CaseSet("dev-fixtures", "fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("dev-heldout", "heldout_fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("controlled", "benchmark/controlled", Source.CONTROLLED, Split.TEST),
+        CaseSet("adversarial", "benchmark/adversarial", Source.ADVERSARIAL, Split.TEST),
+        CaseSet("real-world", "benchmark/real_world", Source.REAL_WORLD, None),
+    ),
+    real_world="benchmark/real_world",
+    manifest="benchmark/manifest.json",
 )
-REAL_WORLD = "benchmark/real_world"
+V2 = BenchmarkVersion(
+    "v2",
+    (
+        CaseSet("dev-fixtures", "fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("dev-heldout", "heldout_fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("v1-controlled", "benchmark/controlled", Source.CONTROLLED, Split.DEV),
+        CaseSet("v1-adversarial", "benchmark/adversarial", Source.ADVERSARIAL, Split.DEV),
+        CaseSet("v1-real-world", "benchmark/real_world", Source.REAL_WORLD, Split.DEV),
+        CaseSet("controlled", "benchmark/v2/controlled", Source.CONTROLLED, Split.TEST),
+        CaseSet("adversarial", "benchmark/v2/adversarial", Source.ADVERSARIAL, Split.TEST),
+        CaseSet("real-world", "benchmark/v2/real_world", Source.REAL_WORLD, None),
+    ),
+    real_world="benchmark/v2/real_world",
+    manifest="benchmark/v2/manifest.json",
+)
+VERSIONS = {v.name: v for v in (V1, V2)}
+CURRENT_VERSION = "v2"
+CASE_SETS = V1.case_sets  # v1 layout, kept for existing callers
+REAL_WORLD = V1.real_world
 LICENSES = "benchmark/LICENSES"
 ANNOTATIONS = "annotations"
 
@@ -147,9 +186,17 @@ def iter_real_world(root: Path) -> Iterator[RealWorldCase]:
         )
 
 
-def iter_benchmark(dataset_root: Path, split: Split | None = None) -> Iterator[BenchmarkCase]:
-    """Every labelled, included case, optionally of one split."""
-    for case_set in CASE_SETS:
+def get_version(name: str) -> BenchmarkVersion:
+    if name not in VERSIONS:
+        raise ValueError(f"unknown benchmark version {name!r}; choose from {sorted(VERSIONS)}")
+    return VERSIONS[name]
+
+
+def iter_benchmark(
+    dataset_root: Path, split: Split | None = None, version: str = "v1"
+) -> Iterator[BenchmarkCase]:
+    """Every labelled, included case of a benchmark version, optionally of one split."""
+    for case_set in get_version(version).case_sets:
         root = dataset_root / case_set.path
         if not root.is_dir():
             continue
@@ -162,12 +209,13 @@ def iter_benchmark(dataset_root: Path, split: Split | None = None) -> Iterator[B
         for rw in iter_real_world(root):
             if rw.gold is None or not rw.gold.label.include:
                 continue
-            if split in (None, rw.provenance.split):
+            case_split = case_set.split or rw.provenance.split
+            if split in (None, case_split):
                 fixture = real_world_fixture(rw)
                 yield BenchmarkCase(
                     fixture,
                     Source.REAL_WORLD,
-                    rw.provenance.split,
+                    case_split,
                     case_set.name,
                     rw.gold.label_source,
                 )

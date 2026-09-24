@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14824__3871709270",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the `e.__cause__ is not None` assert, or give it a debugging message",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/config/__init__.py:188: assert e.__cause__ is not None, f\"{e!r} must be raised `from` the original error\"",
+    "confidence": "high",
+    "notes": "The reviewer allowed either option; the second was taken."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

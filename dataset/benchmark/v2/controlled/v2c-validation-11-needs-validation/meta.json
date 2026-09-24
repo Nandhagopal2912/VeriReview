@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-11-needs-validation",
+  "category": "validation",
+  "file_path": "orders/create.py",
+  "target_symbol": "create_order",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The request does not say what to validate; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Add validation",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

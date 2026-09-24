@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-11-hmm-naming",
+  "category": "naming",
+  "file_path": "search/rank.py",
+  "target_symbol": "rank",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "No target or new name is given; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Improve naming",
+      "target": null,
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2818__1886678659",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Reword the catch_exceptions docstring to 'any exceptions other than' (suggestion)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/testing.py:230: ':param catch_exceptions: Whether to catch any exceptions other than'",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

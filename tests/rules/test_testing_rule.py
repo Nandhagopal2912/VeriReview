@@ -88,7 +88,16 @@ def test_other_empty():
 def test_unchanged_existing_test_is_not_new() -> None:
     outcome = run("Add a test for `validate_username`", EXISTING)
 
-    # Existing test covers the function (no specific case asked): ADR-001 already present.
+    # No checkable case (value, case word, exception) is asked, so an existing test cannot be
+    # shown to cover it: no new test means not satisfied (Phase 10.1; was lenient before).
+    assert outcome.status == S.NOT_SATISFIED
+    assert kinds(outcome)["testing.no_new_test"] is False
+
+
+def test_existing_test_covering_a_checkable_case_is_already_present() -> None:
+    existing = EXISTING + "\n\ndef test_empty():\n    assert validate_username('') is None\n"
+    outcome = run("Add a test for the empty username case", existing, existing)
+
     assert outcome.status == S.SATISFIED
     assert outcome.already_present
 
@@ -96,9 +105,9 @@ def test_unchanged_existing_test_is_not_new() -> None:
 def test_none_negative_timeout_and_numbers() -> None:
     body = (
         "def test_x():\n"
-        "    validate_username(None)\n"
-        "    validate_username(-1)\n"
-        "    validate_username(1.0)\n"
+        "    assert validate_username(None)\n"
+        "    assert validate_username(-1)\n"
+        "    assert validate_username(1.0)\n"
     )
     assert run("Add a test with `None` input", body, None).status == S.SATISFIED
     assert run("Add a test for a negative value", body, None).status == S.SATISFIED
@@ -107,7 +116,7 @@ def test_none_negative_timeout_and_numbers() -> None:
 
 
 def test_blank_accepts_whitespace() -> None:
-    body = "def test_blank():\n    validate_username('   ')\n"
+    body = "def test_blank():\n    assert validate_username('   ')\n"
 
     assert run("Add a test for a blank name", body, None).status == S.SATISFIED
     assert run("Add a test for an empty name", body, None).status == S.NOT_SATISFIED

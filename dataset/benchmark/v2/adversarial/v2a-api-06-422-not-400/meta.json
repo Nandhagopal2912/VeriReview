@@ -1,0 +1,28 @@
+{
+  "case_id": "v2a-api-06-422-not-400",
+  "category": "api_behavior",
+  "file_path": "api/signup.py",
+  "target_symbol": "signup",
+  "comment_line": 8,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Malformed emails get 422; a missing email still returns 200.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 for a missing email",
+      "target": "signup",
+      "condition": "email missing",
+      "expected_behavior": "HTTP 400"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return 422 for a malformed email",
+      "target": "signup",
+      "condition": "email malformed",
+      "expected_behavior": "HTTP 422"
+    }
+  ]
+}

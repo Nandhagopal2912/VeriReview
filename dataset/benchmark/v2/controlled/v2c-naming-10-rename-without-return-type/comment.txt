@@ -1,0 +1,1 @@
+Rename `calc_tax` to `calculate_tax` and add a return type hint.

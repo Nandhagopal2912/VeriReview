@@ -202,21 +202,21 @@ def run_test_rule(description: str, test_code: str) -> S:
 
 
 def test_parametrize_inputs_count() -> None:
-    code = "@pytest.mark.parametrize('v', [None, -3])\ndef test_total(v):\n    total([v])\n"
+    code = "@pytest.mark.parametrize('v', [None, -3])\ndef test_total(v):\n    assert total([v])\n"
     assert run_test_rule("Add a test with `None`", code) == S.SATISFIED
     assert run_test_rule("Add a test for a negative value", code) == S.SATISFIED
 
 
 def test_empty_collection_counts_as_empty() -> None:
-    assert run_test_rule("Add a test for an empty list", "def test_e():\n    total([])\n") == (
-        S.SATISFIED
-    )
+    assert run_test_rule(
+        "Add a test for an empty list", ("def test_e():\n    assert total([])\n")
+    ) == (S.SATISFIED)
 
 
 def test_adversarial_non_empty_collection_is_not_empty() -> None:
-    assert run_test_rule("Add a test for an empty list", "def test_e():\n    total([1])\n") == (
-        S.NOT_SATISFIED
-    )
+    assert run_test_rule(
+        "Add a test for an empty list", ("def test_e():\n    assert total([1])\n")
+    ) == (S.NOT_SATISFIED)
 
 
 # ---------------------------------------------------------------- extraction gaps

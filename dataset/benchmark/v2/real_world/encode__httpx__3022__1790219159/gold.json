@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3022__1790219159",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the unused `app` parameter from AsyncClient._init_transport (empty suggestion = delete)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_client.py:1389-1396: the app parameter is gone",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

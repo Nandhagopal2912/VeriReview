@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-errors-11-more-gracefully",
+  "category": "error_handling",
+  "file_path": "jobs/run.py",
+  "target_symbol": "run",
+  "comment_line": 3,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "No failure or expected behaviour is named; ambiguous.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle failures more gracefully",
+      "target": "job",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Rename `hndl` to `handler` (it is also looked up by name).

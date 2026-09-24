@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14865__3774173657",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the st_ino / file-ID explanation from the docstring into a code comment",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/pathlib.py:1093-1103: docstring back to two sentences; the explanation is a # comment above the zero check",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

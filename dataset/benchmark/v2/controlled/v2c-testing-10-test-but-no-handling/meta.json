@@ -1,0 +1,28 @@
+{
+  "case_id": "v2c-testing-10-test-but-no-handling",
+  "category": "testing",
+  "file_path": "clients/quote.py",
+  "target_symbol": "quote",
+  "comment_line": 5,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A test for the timeout was added (expecting the exception); the function still does not return None.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the timeout",
+      "target": "quote",
+      "condition": "requests.Timeout",
+      "expected_behavior": null
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Return None on timeout",
+      "target": "quote",
+      "condition": "requests.Timeout",
+      "expected_behavior": "returns None"
+    }
+  ]
+}

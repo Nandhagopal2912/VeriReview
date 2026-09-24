@@ -22,6 +22,7 @@ ACTION_VERBS = frozenset(
         "check",
         "clean",
         "convert",
+        "cover",
         "create",
         "delete",
         "document",
@@ -33,6 +34,7 @@ ACTION_VERBS = frozenset(
         "give",
         "guard",
         "handle",
+        "ignore",
         "include",
         "keep",
         "log",
@@ -117,10 +119,25 @@ RENAME_PAIR = re.compile(r"`([A-Za-z_][\w.]*)`\s+(?:to|->|→|=>)\s+`([A-Za-z_][
 
 # ---------------------------------------------------------------- category cues
 
-TESTING = re.compile(r"\b(unit |integration )?tests?\b|\btesting\b|\bcoverage\b|\btest case", re.I)
-NAMING = re.compile(
-    r"\brenam\w*|\bnames?\b|\bnaming\b|\bcalled\b|\bdescriptive\b|snake_case|camelcase", re.I
+TESTING = re.compile(
+    r"\b(unit |integration )?tests?\b|\btesting\b|\bcoverage\b|\btest case|\bcover(s|ed)?\b", re.I
 )
+NAMING = re.compile(
+    r"\brenam\w*|\bnames?\b|\bnaming\b|\bcalled\b|\bdescriptive\b|snake_case|camelcase|"
+    r"\bcall (?:it|this|that|them)\b",
+    re.I,
+)
+# "Something like `normalized_email` would be better": a new name offered as an example.
+SOFT_RENAME = re.compile(r"\bsomething like\s+`[A-Za-z_]\w*`", re.I)
+# "Return an empty list instead of None": what an interface returns (API behaviour, not a check).
+RETURN_VALUE = re.compile(
+    r"\breturn\w*\s+(?:an?\s+)?(?:empty\s+\w+|\[\]|\{\}|None|False|True|0|`[^`]+`)\s+"
+    r"(?:instead\s+of|rather\s+than)\b",
+    re.I,
+)
+# Documentation requests ("add a docstring explaining …") are `other`, whatever else they mention.
+DOCS = re.compile(r"\bdocstrings?\b|\bdocument(?:ation|ed)?\b|\bcomments?\b|\btype hints?\b", re.I)
+DOCS_VERBS = frozenset({"add", "write", "document", "update", "include", "mention", "fix"})
 API = re.compile(
     r"\bhttp\b|\bstatus( code)?\b|\bendpoint\b|\bheaders?\b|\bidempoten\w*|"
     r"\b(200|201|202|204|301|302|304|400|401|403|404|405|409|410|415|422|429|500|502|503|504)\b"
@@ -132,12 +149,14 @@ EXCEPTION_NAME = re.compile(r"\b((?:[A-Z]\w*?)?(?:Error|Exception|Timeout|NotFou
 ERROR_HANDLING = re.compile(
     r"\b(handle[sd]?|catch|except|try/except|retry|re-?rais\w*|fall(s)? back|fallback|crash\w*|"
     r"fails?|failure|stack ?trace|traceback|swallow\w*|what happens (if|when)|malformed|"
-    r"exceptions?|error handling)\b",
+    r"exceptions?|error handling|log(s|ged|ging)?|ignor(e|es|ed|ing)|suppress\w*|"
+    r"clos(e|ed|es)|releas(e|ed|es)|even if|clean(ed)? ?up|finally)\b",
     re.I,
 )
 VALIDATION = re.compile(
     r"\b(validat\w*|check|null|none|empty|non-empty|blank|positive|negative|between|range|"
-    r"format|must be|is an? (int|str|string|integer|number)|guard|sanitiz\w*|required|missing|"
+    r"format|must be|is (?:\w+ )?an? (int|str|string|integer|number)|guard|sanitiz\w*|required|"
+    r"missing|valid|reject\w*|"
     r"return early|early return|bail out|guard clause)\b",
     re.I,
 )
@@ -172,3 +191,6 @@ PREDICATE_HEADS = re.compile(
     r"one of|valid|shorter|longer|lower|upper)",
     re.I,
 )
+
+# "docstring please." / "Type hints please": a short noun phrase + please is a request.
+NOUN_PLEASE = re.compile(r"^\s*(?:[\w`'-]+\s+){0,3}[\w`'-]+,?\s+please\s*[.!]?\s*$", re.I)

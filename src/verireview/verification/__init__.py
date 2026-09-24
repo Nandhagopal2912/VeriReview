@@ -25,9 +25,11 @@ from verireview.verification.structural import structural_aggregator
 PRELIMINARY_VERSION = "phase2-locality-1"
 STRUCTURAL_VERSION = "phase3-structure-1"
 REQUIREMENTS_VERSION = "phase4-requirements-1"
-RULES_VERSION = "phase5-rules-1"
-MVP_VERSION = "mvp-1"
-SEMANTIC_VERSION = "phase7-semantic-1"
+# Phase 10.1 changed the rules and extraction in place: the "-2" versions. The Phase 10 ("-1")
+# rules are reproducible from commit 1b530fa (used as "old F" in the v2 evaluation).
+RULES_VERSION = "phase5-rules-2"
+MVP_VERSION = "mvp-2"
+SEMANTIC_VERSION = "phase7-semantic-2"
 
 
 def preliminary_pipeline() -> Pipeline:

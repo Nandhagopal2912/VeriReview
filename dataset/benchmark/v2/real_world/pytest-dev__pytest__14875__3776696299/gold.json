@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14875__3776696299",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Also add the phase note for xfails in the setup phase, not only teardown",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/_pytest/terminal.py:1332-1335: any phase other than call is reported as 'at {rep.when} of {nodeid}'",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

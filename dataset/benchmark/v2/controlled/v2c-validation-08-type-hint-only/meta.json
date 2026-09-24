@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-validation-08-type-hint-only",
+  "category": "validation",
+  "file_path": "shop/refund.py",
+  "target_symbol": "refund",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only a type hint was added; nothing checks the value.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate amount is positive",
+      "target": "amount",
+      "condition": "amount <= 0",
+      "expected_behavior": null
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "repository": "pytest-dev/pytest",
+  "pull_number": 14875,
+  "root_comment_id": 3776696299,
+  "url": "https://github.com/pytest-dev/pytest/pull/14875#discussion_r3776696299",
+  "license_spdx": "MIT",
+  "mined_at": "2026-09-24T07:23:49.044075Z",
+  "split": "test",
+  "pseudonymised": true,
+  "collector_version": "phase9-collector-1"
+}

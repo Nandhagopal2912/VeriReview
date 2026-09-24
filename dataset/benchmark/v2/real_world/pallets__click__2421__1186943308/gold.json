@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2421__1186943308",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Do not clear the pre-defined shells for good: save _available_shells, clear, run, then restore (ideally with a yield fixture)",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_shell_completion.py:349-356: _restore_available_shells fixture copies, clears, yields, restores; both tests use it",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

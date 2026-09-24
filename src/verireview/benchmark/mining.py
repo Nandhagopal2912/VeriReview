@@ -30,6 +30,7 @@ from verireview.benchmark.store import (
     Provenance,
     Split,
     case_dir_name,
+    iter_real_world,
     write_real_world,
 )
 from verireview.gh.api import GitHubReader, RepoRef
@@ -134,10 +135,14 @@ def collect(
     dataset_root: Path,
     test_fraction: float = 0.5,
     now: datetime | None = None,
+    real_world: str = REAL_WORLD,
+    exclude_pulls: frozenset[tuple[str, int]] = frozenset(),
 ) -> CollectReport:
+    """``exclude_pulls``: (repository, PR) pairs already used by any benchmark version. A new
+    test case never shares a PR (and so its code) with an earlier, now-dev case."""
     pool = sorted(candidates, key=lambda c: (c.repository, c.pull_number, c.root_comment_id))
     random.Random(seed).shuffle(pool)  # noqa: S311 - sampling, not security
-    root = dataset_root / REAL_WORLD
+    root = dataset_root / real_world
     licenses: dict[str, str] = {}
     written: list[str] = []
     skipped: dict[str, str] = {}
@@ -147,6 +152,9 @@ def collect(
         key = case_dir_name(c.repository, c.pull_number, c.root_comment_id)
         if (root / key).exists():
             skipped[key] = "already collected"
+            continue
+        if (c.repository, c.pull_number) in exclude_pulls:
+            skipped[key] = "pull request already used by an earlier benchmark version"
             continue
         repo = RepoRef(c.repository)
         try:
@@ -177,6 +185,19 @@ def collect(
         write_real_world(root, pseudonymise(case, c.pr_author), provenance)
         written.append(key)
     return CollectReport(written=written, skipped=skipped)
+
+
+def used_pulls(dataset_root: Path, real_world_dirs: Iterable[str]) -> frozenset[tuple[str, int]]:
+    """(repository, PR) pairs of every collected real-world case under the given directories."""
+    pulls = set()
+    for directory in real_world_dirs:
+        root = dataset_root / directory
+        if root.is_dir():
+            pulls |= {
+                (rw.provenance.repository, rw.provenance.pull_number)
+                for rw in iter_real_world(root)
+            }
+    return frozenset(pulls)
 
 
 def assign_split(key: str, seed: int, test_fraction: float) -> Split:

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__64535__3555961427",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Set the include_bool flag for boolean dtypes in the base plotting test instead of in the masked-array override",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/tests/extension/test_masked.py: the include_bool kwargs block is gone; at the same PR head, base/plotting.py _plot sets include_bool for bool dtypes (lines 99-101, visible in the sibling case ...3759896069)",
+    "confidence": "medium",
+    "notes": "Phrased as a question, agreed by the author ('will change it'). The base file is not in this case's own test files; judged from the PR head."
+  },
+  "annotators": [
+    "claude"
+  ],
+  "agreed": true,
+  "label_source": "model"
+}

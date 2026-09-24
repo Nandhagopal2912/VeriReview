@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-validation-05-validate-call-decorator",
+  "category": "validation",
+  "file_path": "bank/limits.py",
+  "target_symbol": "set_limit",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "pydantic's validate_call with Field(ge=0) rejects negative limits before the body runs.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate limit is not negative",
+      "target": "limit",
+      "condition": "limit < 0",
+      "expected_behavior": null
+    }
+  ]
+}

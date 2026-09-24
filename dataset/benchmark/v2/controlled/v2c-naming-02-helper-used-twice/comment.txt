@@ -1,0 +1,1 @@
+Rename `fmt` to `format_currency`; `fmt` says nothing.

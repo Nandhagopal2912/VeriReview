@@ -1,0 +1,1 @@
+Validate that `percent` is between 0 and 100.

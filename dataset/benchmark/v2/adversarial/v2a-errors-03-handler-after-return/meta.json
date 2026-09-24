@@ -1,0 +1,20 @@
+{
+  "case_id": "v2a-errors-03-handler-after-return",
+  "category": "error_handling",
+  "file_path": "net/client.py",
+  "target_symbol": "receive",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The protected call sits after the original return and never runs; the reachable recv is unprotected.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Return None on ConnectionResetError",
+      "target": "sock.recv",
+      "condition": "ConnectionResetError",
+      "expected_behavior": "returns None"
+    }
+  ]
+}

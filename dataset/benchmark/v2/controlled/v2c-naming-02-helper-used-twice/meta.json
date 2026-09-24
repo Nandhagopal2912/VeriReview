@@ -1,0 +1,20 @@
+{
+  "case_id": "v2c-naming-02-helper-used-twice",
+  "category": "naming",
+  "file_path": "billing/format.py",
+  "target_symbol": "fmt",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The helper and both callers use the new name.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename fmt to format_currency",
+      "target": "fmt",
+      "condition": null,
+      "expected_behavior": null
+    }
+  ]
+}

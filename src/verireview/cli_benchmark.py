@@ -9,6 +9,7 @@
     verireview build-gold A.json B.json [--adjudication ADJ.json]   write gold.json files
     verireview build-gold A.json --single-source model              provisional one-annotator gold
     verireview benchmark-freeze --version v1          write the frozen test manifest
+    verireview eval-benchmark --split dev             Phase 10 ablation (test: --final-test-run)
 
 Mining only works for repositories listed in ``dataset/benchmark/repositories.json``, which records
 the project owner's approval (roadmap D9). Annotation pages embed third-party code, so they default
@@ -19,6 +20,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 from verireview.benchmark import (
     CALIBRATION_CASES,
@@ -57,6 +59,7 @@ COMMANDS = (
     "adjudication-sheet",
     "build-gold",
     "benchmark-freeze",
+    "eval-benchmark",
 )
 
 
@@ -106,6 +109,20 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     )
     p.add_argument("--dataset", type=Path, default=DATASET)
 
+    p = sub.add_parser("eval-benchmark", help="Phase 10 ablation study on a benchmark split")
+    p.add_argument("--split", choices=["dev", "test"], required=True)
+    p.add_argument(
+        "--final-test-run",
+        action="store_true",
+        help="required for --split test: the frozen test split is evaluated once (Phase 10)",
+    )
+    p.add_argument("--systems", help="comma-separated subset (default: all pre-registered)")
+    p.add_argument("--no-models", action="store_true", help="skip systems needing the nlp group")
+    p.add_argument("--resamples", type=int, default=2000)
+    p.add_argument("--protocol", type=Path, default=Path("docs/phase10_protocol.md"))
+    p.add_argument("--dataset", type=Path, default=DATASET)
+    p.add_argument("--out", type=Path)
+
     p = sub.add_parser("benchmark-freeze", help="write the frozen test-split manifest")
     p.add_argument("--version", required=True)
     p.add_argument("--dataset", type=Path, default=DATASET)
@@ -125,6 +142,8 @@ def run(args: argparse.Namespace) -> int:
         return _adjudication_sheet(args)
     if command == "build-gold":
         return _build_gold(args)
+    if command == "eval-benchmark":
+        return _eval_benchmark(args)
     return _freeze(args.version, args.dataset)
 
 
@@ -321,6 +340,152 @@ def _freeze(version: str, dataset: Path) -> int:
         f"{len(manifest.real_world_test)} real-world test case(s) -> {out}"
     )
     return 0
+
+
+def _eval_benchmark(args: argparse.Namespace) -> int:
+    import hashlib
+
+    from verireview.benchmark import Split, iter_benchmark
+    from verireview.benchmark.manifest import Manifest, real_world_test_hash
+    from verireview.evaluation import dataset_hash
+    from verireview.evaluation.baselines import current_commit
+    from verireview.evaluation.benchmark import (
+        BOOTSTRAP_SEED,
+        evaluate_system,
+        paired_differences,
+    )
+    from verireview.evaluation.systems import SYSTEMS, BenchmarkReport
+
+    if args.split == "test" and not args.final_test_run:
+        print(
+            "error: the test split is frozen and evaluated once (Phase 10); "
+            "pass --final-test-run to run it",
+            file=sys.stderr,
+        )
+        return 2
+    wanted = {n.strip() for n in args.systems.split(",")} if args.systems else None
+    unknown = sorted((wanted or set()) - {s.name for s in SYSTEMS})
+    if unknown:
+        print(f"error: unknown system(s) {unknown}", file=sys.stderr)
+        return 2
+    systems = [s for s in SYSTEMS if wanted is None or s.name in wanted]
+    skipped = [s.name for s in systems if s.needs_models and args.no_models]
+    systems = [s for s in systems if s.name not in skipped]
+
+    split = Split(args.split)
+    dev = list(iter_benchmark(args.dataset, Split.DEV))
+    cases = dev if split == Split.DEV else list(iter_benchmark(args.dataset, Split.TEST))
+    manifest_path = args.dataset / MANIFEST
+    manifest = (
+        Manifest.model_validate_json(manifest_path.read_text(encoding="utf-8"))
+        if manifest_path.is_file()
+        else None
+    )
+    results = [evaluate_system(s, cases, dev, args.resamples) for s in systems]
+    report = BenchmarkReport(
+        split=split.value,
+        commit=current_commit(),
+        manifest_version=manifest.version if manifest else None,
+        protocol_sha256=hashlib.sha256(args.protocol.read_bytes()).hexdigest()
+        if args.protocol.is_file()
+        else "missing",
+        dataset_hashes=_split_hashes(args.dataset, cases, dataset_hash, real_world_test_hash),
+        resamples=args.resamples,
+        bootstrap_seed=BOOTSTRAP_SEED,
+        n_cases=len(cases),
+        systems=results,
+        paired_vs_full=paired_differences(results, args.resamples),
+        skipped=skipped,
+    )
+    _print_benchmark(report)
+    if args.out is not None:
+        _write(args.out, report.model_dump_json(indent=2) + "\n")
+        print(f"\nwrote {args.out}", file=sys.stderr)
+    return 0
+
+
+def _split_hashes(dataset: Path, cases: list, dataset_hash: Any, rw_hash: Any) -> dict[str, str]:  # type: ignore[type-arg]
+    from verireview.benchmark import CASE_SETS
+
+    used = {c.case_set for c in cases}
+    hashes = {
+        s.name: dataset_hash(dataset / s.path)
+        for s in CASE_SETS
+        if s.name in used and s.name != "real-world"
+    }
+    rw_ids = [c.fixture.meta.case_id for c in cases if c.case_set == "real-world"]
+    if rw_ids:
+        hashes["real-world (included cases)"] = rw_hash(dataset, rw_ids)
+    return hashes
+
+
+def _fmt(value: float | None) -> str:
+    return "  n/a" if value is None else f"{value:.3f}"
+
+
+def _ci(interval: Any) -> str:
+    if interval.estimate is None:
+        return "n/a"
+    if interval.low is None:
+        return f"{interval.estimate:.3f}"
+    return f"{interval.estimate:.3f} [{interval.low:.2f}, {interval.high:.2f}]"
+
+
+def _print_benchmark(report: Any) -> None:
+    print(
+        f"split {report.split}: {report.n_cases} cases; commit {report.commit[:8]}; "
+        f"manifest {report.manifest_version}; protocol {report.protocol_sha256[:12]}; "
+        f"bootstrap {report.resamples}x seed {report.bootstrap_seed}"
+    )
+    if report.skipped:
+        print(f"skipped (no model group): {report.skipped}")
+    print(
+        f"\n{'system':7}{'accuracy [95% CI]':24}{'macro-F1 [95% CI]':24}"
+        f"{'FAR [95% CI]':24}{'FBR [95% CI]':24}{'coverage':>9}{'sel.acc':>8}"
+    )
+    for r in report.systems:
+        p = r.pooled
+        print(
+            f"{r.system:7}{_ci(p.intervals['accuracy']):24}{_ci(p.intervals['macro_f1']):24}"
+            f"{_ci(p.intervals['false_acceptance_rate']):24}"
+            f"{_ci(p.intervals['false_blocking_rate']):24}"
+            f"{_fmt(p.coverage):>9}{_fmt(p.selective_accuracy):>8}"
+        )
+    sources = sorted({s for r in report.systems for s in r.by_source})
+    for source in sources:
+        n = next(r.by_source[source].n for r in report.systems if source in r.by_source)
+        print(f"\n-- {source}: n={n}")
+        print(f"{'system':7}{'acc':>7}{'mF1':>7}{'FAR':>7}{'FBR':>7}{'cov':>7}{'sel':>7}")
+        for r in report.systems:
+            sl = r.by_source.get(source)
+            if sl is None:
+                continue
+            m = sl.metrics
+            print(
+                f"{r.system:7}{_fmt(m.accuracy):>7}{_fmt(m.macro_f1):>7}"
+                f"{_fmt(m.false_acceptance_rate):>7}{_fmt(m.false_blocking_rate):>7}"
+                f"{_fmt(sl.coverage):>7}{_fmt(sl.selective_accuracy):>7}"
+            )
+    if report.paired_vs_full:
+        print("\npaired bootstrap, F minus X (95% CI):")
+        for d in report.paired_vs_full:
+            print(
+                f"  vs {d.other:7} accuracy {_ci(d.accuracy):28} FAR {_ci(d.false_acceptance_rate)}"
+            )
+    full = next((r for r in report.systems if r.system == "F"), None)
+    if full is not None:
+        m = full.pooled.metrics
+        print("\nF confusion (rows gold, cols predicted: SAT PART NOT UNC):")
+        for gold, row in m.confusion.items():
+            print(f"  {gold.value:22}" + "".join(f"{row[p]:5}" for p in row))
+        print(
+            "F accuracy by category:  "
+            + ", ".join(f"{k} {v:.2f}" for k, v in full.pooled.accuracy_by_category.items())
+        )
+        print(
+            "F accuracy by confidence: "
+            + ", ".join(f"{k} {v:.2f}" for k, v in full.accuracy_by_confidence.items())
+        )
 
 
 def _annotations(path: Path) -> AnnotationFile:

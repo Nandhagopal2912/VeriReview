@@ -21,15 +21,15 @@ A separate policy layer turns the verdict into `ALLOW` / `WARN` / `HUMAN_REVIEW`
 
 | | |
 |---|---|
-| **Current phase** | **Phase 9 done: benchmark v1 frozen.** 113 controlled + 40 adversarial + 50 real-world cases from 6 open-source projects; the test split is untouched until Phase 10 |
-| **Next phase** | Awaiting approval: Phase 10 (evaluation on the frozen test split) or Phase 8b (semantic evidence in aggregation, dev only) |
-| **Real-world labels** | **provisional**: written blind by Claude (no human annotator yet), marked `model`, replaced by human labels when added |
-| **Key real-world finding** | 2/3 of real review requests are refactoring, docs or style (`other`), outside the five rule categories |
-| **Verdict accuracy (rules)** | dev set 1.000 (training data) · held-out **0.875** with **zero false acceptances** (not blind after Phase 5.1) |
+| **Current phase** | **Phase 10 done: blind evaluation.** The frozen test split was run once, with a pre-registered protocol |
+| **Blind test result (full VeriReview)** | **accuracy 0.48** [0.39, 0.57] · **false acceptance 0.24** [0.14, 0.35] · false blocking 0.20 · 120 cases |
+| **What that means** | The rules do not generalise beyond the data they were built on (dev 1.00, held-out 0.875, FAR 0). **Use as an advisory flag for human review, never as a merge gate** |
+| **Real-world** | abstains on all 20 real-world test cases (2/3 of real requests are refactoring, docs or style, outside the rule categories). Labels are provisional (Claude, blind) |
+| **Next phase** | Awaiting approval: Phase 11 (GitHub advisory mode), or rule work followed by a new blind benchmark (v2) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title) |
 | **Requirement extraction** | blind held-out: count exact 0.844, category F1 0.909 |
-| **Tests** | 821 unit + 8 integration + 2 model tests, strict mypy, 96% coverage, CI on every push |
+| **Tests** | 829 unit + 8 integration + 2 model tests, strict mypy, 96% coverage, CI on every push |
 
 ---
 
@@ -138,6 +138,7 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview eval-baselines [--scorers lexical,tfidf,embedding,unixcoder] [--views added,code]` | Compare similarity baselines with the rules on dev and held-out |
 | `verireview eval-semantic` | Code-model evidence: signal (ROC-AUC) and proof it changes no verdict |
 | `verireview eval-injection [--pipeline NAME] [--baseline S --threshold T]` | Plant prompt injections in every fixture and count outcome changes |
+| `verireview eval-benchmark --split dev` (test: `--final-test-run`) | Phase 10 ablation: every system, bootstrap intervals, paired differences |
 | `verireview benchmark-stats` | Benchmark sizes, splits and targets |
 | `verireview annotation-sheet --batch B [--calibration]` | Write the offline annotation page for annotators |
 | `verireview mine-candidates OWNER/REPO` · `collect-cases FILE --n N --seed S` | Mine and collect real-world cases (approved repositories only, token needed) |
@@ -169,6 +170,40 @@ curl -X POST localhost:8000/verify/github -H "content-type: application/json" \
 ---
 
 ## Evaluation results
+
+### Blind test (Phase 10)
+
+The frozen v1 test split (60 controlled + 40 adversarial + 20 real-world cases) was evaluated once,
+with a pre-registered protocol ([protocol](docs/phase10_protocol.md),
+[results](docs/phase10_evaluation.md)). 95% bootstrap intervals, 2,000 resamples.
+
+| System (plan §21 row) | Accuracy | Macro-F1 | False acceptance ↓ | False blocking ↓ | Coverage |
+|---|---|---|---|---|---|
+| A lexical overlap | 0.383 [0.29, 0.47] | 0.168 | 0.034 | 0.922 | 1.00 |
+| B embeddings (MiniLM) | 0.342 [0.25, 0.42] | 0.148 | 0.119 | 0.941 | 1.00 |
+| B′ UniXcoder, code view | 0.508 [0.42, 0.60] | 0.259 | 0.797 | 0.039 | 1.00 |
+| L change near comment | 0.442 [0.36, 0.53] | 0.173 | 0.966 | 0.000 | 1.00 |
+| S AST structure | 0.542 [0.45, 0.63] | 0.283 | 0.763 | 0.000 | 1.00 |
+| R requirements + AST | 0.500 [0.42, 0.59] | 0.357 | 0.712 | 0.000 | 0.85 |
+| C/D rules + AST | 0.483 | 0.460 | 0.237 | 0.196 | 0.67 |
+| E + semantic model | 0.483 | 0.460 | 0.237 | 0.196 | 0.67 |
+| **F full VeriReview** | **0.483** [0.39, 0.57] | **0.460** | **0.237** [0.14, 0.35] | 0.196 | 0.67 |
+| F with gold requirements | 0.600 [0.51, 0.68] | 0.600 | 0.186 | 0.294 | 0.78 |
+
+- **F beats the text-similarity baselines on accuracy** (paired F − A = +0.10 [0.00, 0.20],
+  F − B = +0.14 [0.03, 0.25]). It is not clearly better than B′, L, S or R, but it accepts far fewer
+  bad fixes than they do (FAR −0.48 to −0.73, all intervals excluding 0).
+- **A and B look safe (low FAR) only because they reject almost everything** (FBR 0.92–0.94).
+- **The semantic model adds nothing to verdicts** (E = C/D = F), as designed (ADR-002). Better
+  requirement extraction would add +0.12 (F-gold − F, interval [0.07, 0.17]).
+- **Per source:** controlled 0.60, adversarial 0.55, real-world 0.00 (it abstains on every case).
+- **The errors, analysed without changing anything:**
+  - false acceptances come from partial fixes, tests that do not test the behaviour, wrong values,
+    and handlers that do not handle;
+  - false blocks come from valid idioms the rules do not know: `HTTPStatus`, Django `status=`,
+    `try/finally`, `raise from`, pydantic validation.
+
+### Development numbers (not blind)
 
 All pipelines are evaluated on the same pinned datasets (hashes recorded in `experiments/`).
 
@@ -285,7 +320,7 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 7 | ✅ | Code model (UniXcoder) as neutral evidence, code-only view, prompt-injection suite | [phase7](docs/phase7_code_model.md) |
 | 8b | | Aggregation with semantic evidence (needs benchmark data first, ADR-002) | — |
 | 9 | ✅ | Benchmark v1: annotation guide, 100 blind test cases, 50 real-world cases (provisional labels), frozen manifest, annotation tooling | [phase9](docs/phase9_benchmark.md) |
-| 10 | | Evaluation: ablation study, calibration | — |
+| 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 11–13 | | GitHub advisory mode, staged enforcement, dashboard | — |
 
 Decisions:
@@ -344,6 +379,7 @@ uv run --group nlp pytest -m model            # needs the downloaded models
 uv run verireview eval-fixtures && uv run verireview eval-requirements && uv run verireview eval-injection
 uv run verireview benchmark-stats
 uv run --group nlp verireview eval-baselines --scorers lexical,tfidf,embedding,unixcoder --views added,code
+uv run --group nlp verireview eval-benchmark --split dev    # ablation; the test split needs --final-test-run
 uv run --group nlp verireview eval-semantic
 ```
 
@@ -359,10 +395,13 @@ content is treated as untrusted data.
 
 - **Never blocks merges** by default. Blocking requires enforcement mode *and* an explicit opt-in,
   and a test pins that default.
-- **Confidence is rule-based, not calibrated.** HIGH is never emitted before Phase 10.
-- **No independent human labels yet.** The held-out verdict set is no longer blind. The new test
-  cases are blind but written by the rules' author, and the real-world labels are provisional model
-  labels. No test-split number exists before Phase 10.
+- **Not accurate enough to gate merges.** On the blind test, 24% of bad resolutions were
+  accepted and 20% of good ones called unsatisfied. Use the output as an advisory flag.
+- **Confidence is rule-based, not calibrated.** On test, MEDIUM verdicts were right 63% of the
+  time and LOW 20%. HIGH is never emitted.
+- **No independent human labels yet.** Test labels come from the rules' author (controlled and
+  adversarial, written blind) and from Claude (real-world, provisional). The v1 test split is now
+  used; rule changes need a new blind set (v2).
 - **Scope:** two thirds of real review requests are refactoring, docs or style (`other`), which the
   rules do not verify. These end as UNCERTAIN (human review), by design.
 - **Rules are structural, not semantic:** no control-flow analysis. Helpers are followed one level
@@ -371,7 +410,8 @@ content is treated as untrusted data.
 - **Models never decide.** Similarity baselines are measured for comparison only, and code-model
   evidence is neutral: at every usable threshold both would accept invalid fixes.
 - **Prompt-injection tested, not proven.** Planted instructions changed no outcome in 2,576
-  variants. That covers the tested texts and sites, not every possible attack. No LLM is used.
+  variants, and no blind-test error came from an injection. That covers the tested texts and sites,
+  not every possible attack. No LLM is used. See the [security model](docs/security_model.md).
 
 ## Documentation
 
@@ -379,6 +419,8 @@ content is treated as untrusted data.
 - Per phase: [1](docs/phase1_github_ingestion.md) · [1 live](docs/phase1_live_checks.md) ·
   [2](docs/phase2_local_verifier.md) · [3](docs/phase3_diff_ast.md) ·
   [4](docs/phase4_requirements.md) · [5](docs/phase5_rules.md) · [8a](docs/phase8a_mvp.md) ·
-  [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md)
+  [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md) ·
+  [10 protocol](docs/phase10_protocol.md) · [10 results](docs/phase10_evaluation.md)
+- Security model: [docs/security_model.md](docs/security_model.md)
 - Annotation guide: [docs/annotation_guide.md](docs/annotation_guide.md)
 - Decisions: [docs/adr/](docs/adr/)

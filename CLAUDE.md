@@ -57,6 +57,7 @@ uv run verireview eval-injection [--pipeline phase7-semantic]  # prompt-injectio
 uv run verireview benchmark-stats              # Phase 9: sets, splits, targets
 uv run verireview annotation-sheet --batch B [--calibration]   # offline page -> dataset/raw/sheets/
 uv run verireview agreement A.json B.json      # Cohen's kappa + disagreements
+uv run --group nlp verireview eval-benchmark --split dev   # Phase 10 ablation (test: --final-test-run)
 uv run --group nlp pytest -m model             # tests that need a downloaded model
 ```
 
@@ -85,7 +86,7 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 
 ## Benchmark notes (Phase 9)
 
-- **Test split is untouchable until Phase 10.** Never run any verifier on `dataset/benchmark/controlled`, `dataset/benchmark/adversarial` or real-world `test` cases. Their hashes are pinned (`tests/benchmark/test_benchmark_dataset.py`, later `benchmark/manifest.json`). Tune only on dev (`dataset/fixtures`, `dataset/heldout_fixtures`, real-world `dev`).
+- **The v1 test split has been used (Phase 10, once).** Never tune rules against `dataset/benchmark/controlled`, `dataset/benchmark/adversarial` or real-world `test` cases, and never re-run `eval-benchmark --split test` to try variants: rule changes need a new blind test set (v2). Reproducing the recorded run on the same commit is fine. Their hashes are pinned (`tests/benchmark/test_benchmark_dataset.py`, later `benchmark/manifest.json`). Tune only on dev (`dataset/fixtures`, `dataset/heldout_fixtures`, real-world `dev`).
 - Labels follow `docs/annotation_guide.md`. The verdict is derived from per-requirement statuses (`benchmark.labels.derive_verdict`); keep the page's `deriveVerdict` identical.
 - Real-world labels (owner decision 2026-09-24): no human annotator is available yet, so **Claude labels provisionally** as annotator `claude` (`build-gold A.json --single-source model` → `label_source: "model"`). Claude labels each case **before any verifier runs on it**, marks low confidence where unsure, and never edits labels after seeing verifier output. Human labels (two annotators, adjudicated) always replace model gold (`build-gold` refuses the reverse). Results on model-labelled cases are reported separately and called provisional; the plan-§19/§29 human-annotation item stays open until humans label.
 - Raw exports in `dataset/annotations/<name>/` are never edited.
@@ -123,6 +124,7 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - [x] Phase 6: NLP baselines (lexical, TF-IDF, MiniLM embeddings) through the same `Verifier` harness. Dev AUC < 0.5 for all three (lexical traps); held-out AUC 0.56–0.69, but 25–88% false acceptance at any usable threshold vs 0% for rules (docs/phase6_nlp_baselines.md).
 - [x] Phase 7: UniXcoder (D7, pinned revision) as **neutral** evidence per requirement and code chunk, code-only view, prompt-injection suite. Evidence AUC dev 0.569 / held-out 0.737; code view improves every scorer's AUC; **0 outcome changes in 2,576 injected variants**; D8 (LLM) deferred (docs/phase7_code_model.md, ADR-002 accepted).
 - [x] Phase 9: benchmark v1 **frozen** (`dataset/benchmark/manifest.json`, pinned). 113 controlled + 40 adversarial + 50 real-world (6 approved repos, 57 collected, pseudonymised, licensed). Real-world labels are **provisional Claude labels** (blind, `label_source: model`); human κ not yet measurable. Findings: 2/3 of real requests are `other` (outside the rule categories); some requests are satisfied by a comment/docstring; declined suggestions are common. Bugs fixed: Copilot bot reviews slipped through the miner; tree-sitter `Point.row` heap corruption crashed the process (docs/phase9_benchmark.md).
-- [ ] Next: Phase 8b (semantic evidence in aggregation, dev only, ADR-002) or Phase 10 (evaluation on the frozen test split: accuracy, coverage by category, FAR/FBR, ablation, CIs). Then Phase 11 (GitHub advisory mode). Optional: humans label real-world cases (their labels replace Claude's).
+- [x] Phase 10: pre-registered protocol (docs/phase10_protocol.md), `eval-benchmark`, **one** blind test run (experiments/phase10_test.json). Full VeriReview on test: **accuracy 0.483 [0.39, 0.57], FAR 0.237 [0.14, 0.35], FBR 0.196, coverage 0.667; real-world coverage 0**. Beats lexical/embedding baselines on accuracy; far lower FAR than structural/code-model baselines; E = F (semantic neutral); gold requirements +0.117. Dev/held-out numbers (1.0/0.875, FAR 0) did not generalise. Security model documented (docs/security_model.md) (docs/phase10_evaluation.md).
+- [ ] Next: Phase 11 (GitHub advisory mode; advisory only, the numbers do not justify gating) or rule work (partial requirements, tests that test, framework idioms, `other` requests) evaluated on a **new** blind benchmark v2. The v1 test split is used: never tune against it.
 
 Decisions: D1–D5, D7 (UniXcoder), D8 (LLM deferred), D9 (process: Claude proposes, owner approves repos) settled; D6 open (`docs/ROADMAP.md` §7). ADR-001 and ADR-002 accepted.

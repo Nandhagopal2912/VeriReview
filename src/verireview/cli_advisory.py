@@ -14,6 +14,9 @@ verireview repo-policy show OWNER/REPO --installation ID
 verireview repo-policy set OWNER/REPO --installation ID --stage STAGE [--categories a,b]
                        --actor NAME --reason TEXT
     Phase 12: a repository's rollout stage (one step up at a time, rollback any time).
+verireview demo-seed [--fixtures DIR] [--remove]
+    Fill the dashboard with demo data: real verifications of the dev fixtures under installation
+    0 and fictional demo/... repositories (no GitHub calls). --remove deletes exactly those rows.
 """
 
 import argparse
@@ -24,7 +27,14 @@ from urllib.parse import urlparse
 
 from verireview.config import get_settings
 
-COMMANDS = ("worker", "replay-webhook", "enforcement-eligibility", "repo-policy", "purge-audit")
+COMMANDS = (
+    "worker",
+    "replay-webhook",
+    "enforcement-eligibility",
+    "repo-policy",
+    "purge-audit",
+    "demo-seed",
+)
 LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
@@ -63,6 +73,12 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p.add_argument("--actor", default="", help="who decides (recorded)")
     p.add_argument("--reason", default="", help="why (recorded, at least 10 characters)")
 
+    p = sub.add_parser(
+        "demo-seed", help="fill the dashboard with demo verifications of the dev fixtures"
+    )
+    p.add_argument("--fixtures", type=Path, default=Path("dataset/fixtures"))
+    p.add_argument("--remove", action="store_true", help="delete the demo rows and exit")
+
 
 def run(args: argparse.Namespace) -> int:
     if args.command == "worker":
@@ -73,6 +89,8 @@ def run(args: argparse.Namespace) -> int:
         return _repo_policy(args)
     if args.command == "purge-audit":
         return _purge(args.days)
+    if args.command == "demo-seed":
+        return _demo_seed(args.fixtures, args.remove)
     return _replay(args.payload, args.event, args.delivery or str(uuid.uuid4()), args.url)
 
 
@@ -228,4 +246,32 @@ def _purge(days: int | None) -> int:
     with get_sessionmaker()() as session:
         purged = purge_stored_cases(session, retention)
     print(f"removed stored code from {purged} audit row(s) older than {retention} day(s)")
+    return 0
+
+
+def _demo_seed(fixtures: Path, remove_only: bool) -> int:
+    from verireview.advisory import demo
+    from verireview.db.session import get_sessionmaker
+
+    with get_sessionmaker()() as session:
+        if remove_only:
+            removed = demo.remove(session)
+            print(
+                f"removed demo data ({removed} verification(s), "
+                f"installation {demo.DEMO_INSTALLATION})"
+            )
+            return 0
+        if not fixtures.is_dir():
+            print(
+                f"error: {fixtures} is not a directory (run from the project root)", file=sys.stderr
+            )
+            return 2
+        summary = demo.seed(session, fixtures)
+    verdicts = ", ".join(f"{v} {n}" for v, n in sorted(summary.verdicts.items()))
+    print(
+        f"seeded {summary.verifications} verification(s) in {summary.pull_requests} "
+        f"pull request(s) of {summary.repositories} demo repositories "
+        f"(installation {demo.DEMO_INSTALLATION}): {verdicts}"
+    )
+    print("open http://localhost:8000/dashboard ; remove with: verireview demo-seed --remove")
     return 0

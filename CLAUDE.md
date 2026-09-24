@@ -65,6 +65,7 @@ uv run verireview enforcement-eligibility experiments/<frozen test run>.json [--
 uv run verireview repo-policy show|set OWNER/REPO --installation ID [...]   # rollout stage (owner's call)
 uv run verireview replay-webhook payload.json --event pull_request_review_thread   # signed, localhost only
 docker compose --profile advisory up -d --build   # api + worker; key in secrets/github-app.pem (git-ignored)
+uv run verireview demo-seed [--remove]    # dashboard demo data: dev fixtures under installation 0, demo/... repos
 uv run --group nlp pytest -m model             # tests that need a downloaded model
 ```
 

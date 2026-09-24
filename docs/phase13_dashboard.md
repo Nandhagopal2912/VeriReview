@@ -63,6 +63,30 @@ docker compose up -d --build
 uv run verireview purge-audit              # e.g. daily, from cron or a scheduler
 ```
 
+### Demo data
+
+Until the live App run, `verireview demo-seed` fills the dashboard for a demonstration. It runs
+the default pipeline on the 29 dev fixtures and stores the results the way the worker does (a
+finished job and an audit row with the verified case) under **installation 0**, which GitHub never
+issues, and three fictional repositories (`demo/shop-api`, `demo/payments`, `demo/accounts`).
+It makes no GitHub calls. It also records:
+
+- a stage history for `demo/shop-api` (observe → advisory → human_review), made through the
+  normal rollout rules;
+- two reviewer confirmations;
+- one failed job (a simulated GitHub outage);
+- one thread verified twice: first before any change was pushed (NOT_SATISFIED), then after the
+  fix (SATISFIED).
+
+No job is left queued, so a running worker never picks up demo work. Re-seeding replaces the demo
+rows, and `--remove` deletes exactly them. The overview labels installation 0 as demo data.
+Pinned by `tests/integration/test_demo.py`. Real output:
+
+```text
+seeded 30 verification(s) in 10 pull request(s) of 3 demo repositories (installation 0): NOT_SATISFIED 14, PARTIALLY_SATISFIED 5, SATISFIED 8, UNCERTAIN 3
+open http://localhost:8000/dashboard ; remove with: verireview demo-seed --remove
+```
+
 Real output of the retention command on the local database:
 
 ```text

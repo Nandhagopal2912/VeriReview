@@ -36,7 +36,7 @@ so nothing can fail or block today.
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,108 unit + 35 integration + 2 model tests, strict mypy, CI on every push |
+| **Tests** | 1,108 unit + 37 integration + 2 model tests, strict mypy, CI on every push |
 
 ---
 
@@ -166,6 +166,7 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview enforcement-eligibility REPORT.json [--write]` | Per-category false acceptance / false blocking with 95% upper bounds from a frozen test run; `--write` regenerates the shipped gate |
 | `verireview repo-policy show\|set OWNER/REPO --installation ID [--stage S --categories … --actor … --reason …]` | A repository's rollout stage (refuses skipped stages and ineligible categories) |
 | `verireview purge-audit [--days N]` | Remove stored code and diffs from audit rows older than the retention (default 90 days) |
+| `verireview demo-seed [--remove]` | Fill the dashboard with demo data: real verifications of the 29 dev fixtures under installation 0 and fictional `demo/…` repositories (no GitHub calls); `--remove` deletes exactly those rows |
 
 Pipelines: `mvp` (default), `phase7-semantic` (needs the `nlp` group), and the earlier
 `phase2-locality` … `phase5-rules` for comparison. The rules changed in place in Phase 10.1

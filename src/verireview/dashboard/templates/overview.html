@@ -38,7 +38,7 @@
   {% for r in repositories %}
     <tr>
       <td><a href="/dashboard/r/{{ r.installation_id }}/{{ r.repository }}">{{ r.repository }}</a></td>
-      <td>{{ r.installation_id }}</td>
+      <td>{{ r.installation_id }}{% if r.installation_id == 0 %} (demo){% endif %}</td>
       <td>{{ r.stage }}</td>
       <td>{{ r.pull_requests }}</td>
       <td>{{ r.verifications }}</td>
@@ -47,7 +47,10 @@
   {% endfor %}
   </tbody>
 </table>
+{% if repositories|selectattr("installation_id", "equalto", 0)|list %}
+<p class="muted">Installation 0 is demo data: real verifications of the built-in dev fixtures, not a GitHub repository. Remove it with <code>verireview demo-seed --remove</code>.</p>
+{% endif %}
 {% else %}
-<p class="muted">No verifications yet. They appear when a review thread is resolved in a repository where the GitHub App is installed.</p>
+<p class="muted">No verifications yet. They appear when a review thread is resolved in a repository where the GitHub App is installed. For a demo, run <code>verireview demo-seed</code>.</p>
 {% endif %}
 {% endblock %}

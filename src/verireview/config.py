@@ -2,10 +2,10 @@
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import SecretStr, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     # Policy (plan §27). Blocking stays off until Phase 12's evaluation; see policy/decision.py.
     policy_mode: Literal["observe", "advisory", "human_review", "enforcement"] = "advisory"
     policy_allow_block: bool = False
+    # Phase 12: categories to enforce (comma-separated), intersected with the shipped
+    # eligibility (none today), and per-repository promotion rules.
+    policy_enforced_categories: Annotated[list[str], NoDecode] = []
+    enforcement_min_human_review_days: int = 14
+    enforcement_min_confirmations: int = 10
 
     # GitHub App (Phase 11, advisory mode). The private key is PEM text, or a file path in
     # `github_app_private_key_path`; the webhook secret signs every delivery. None of them is
@@ -53,6 +58,13 @@ class Settings(BaseSettings):
     @classmethod
     def _blank_secret_is_none(cls, value: object) -> object:
         return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("policy_enforced_categories", mode="before")
+    @classmethod
+    def _comma_list(cls, value: object) -> object:
+        if isinstance(value, str):
+            return [v.strip() for v in value.split(",") if v.strip()]
+        return value
 
     @field_validator("github_app_id", "github_app_private_key_path", mode="before")
     @classmethod

@@ -111,6 +111,7 @@ class AdvisoryJob(Base):
     pull_number: Mapped[int]
     comment_id: Mapped[int | None] = mapped_column(BigInteger)
     head_sha: Mapped[str | None] = mapped_column(String(40))
+    actor: Mapped[str | None] = mapped_column(String(100))  # GitHub login (confirmations)
     status: Mapped[str] = mapped_column(String(20), default="queued", index=True)
     attempts: Mapped[int] = mapped_column(default=0)
     last_error: Mapped[str | None] = mapped_column(Text)
@@ -144,4 +145,56 @@ class VerificationAudit(Base):
     confidence: Mapped[str] = mapped_column(String(10))
     action: Mapped[str] = mapped_column(String(20))
     result: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class RepositoryPolicy(Base):
+    """The rollout stage of one repository of one installation (Phase 12).
+
+    No row means the global default (advisory). Enforcement is only reachable through a row, by
+    promotion one stage at a time (``enforcement/stages.py``), and only for eligible categories.
+    """
+
+    __tablename__ = "repository_policies"
+    __table_args__ = (UniqueConstraint("installation_id", "repository"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    installation_id: Mapped[int] = mapped_column(BigInteger)
+    repository: Mapped[str] = mapped_column(String(200))
+    stage: Mapped[str] = mapped_column(String(20))
+    enforced_categories: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    stage_since: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+    updated_by: Mapped[str] = mapped_column(String(100))
+
+
+class RepositoryPolicyChange(Base):
+    """Append-only history of stage changes: who, when, from, to, why."""
+
+    __tablename__ = "repository_policy_changes"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    installation_id: Mapped[int] = mapped_column(BigInteger)
+    repository: Mapped[str] = mapped_column(String(200), index=True)
+    from_stage: Mapped[str | None] = mapped_column(String(20))
+    to_stage: Mapped[str] = mapped_column(String(20))
+    enforced_categories: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    actor: Mapped[str] = mapped_column(String(100))
+    reason: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReviewConfirmation(Base):
+    """A reviewer pressed "Confirm reviewed" on the check (human-review stage)."""
+
+    __tablename__ = "review_confirmations"
+    __table_args__ = (UniqueConstraint("installation_id", "repository", "head_sha", "reviewer"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    installation_id: Mapped[int] = mapped_column(BigInteger)
+    repository: Mapped[str] = mapped_column(String(200), index=True)
+    pull_number: Mapped[int]
+    head_sha: Mapped[str] = mapped_column(String(40))
+    reviewer: Mapped[str] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

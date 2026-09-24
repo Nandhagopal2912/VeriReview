@@ -15,6 +15,11 @@ Operating modes (plan §27): OBSERVE (analyse only, nothing posted), ADVISORY (p
 block), HUMAN_REVIEW (require reviewer confirmation), ENFORCEMENT (may block). Blocking needs
 ENFORCEMENT mode *and* ``allow_block``. Both are off by default, and the plan forbids enabling
 them before Phase 12's evaluation.
+
+Phase 12 adds a third lock: a BLOCK also needs **every** not-satisfied requirement to be in an
+``enforced_categories`` category, and those can only be categories the frozen test evidence
+makes eligible (``enforcement.eligibility``; none today). Anything else is downgraded to a
+warning. The fourth lock is outside VeriReview: the repository must make the check required.
 """
 
 from enum import StrEnum
@@ -23,7 +28,7 @@ from typing import Self
 from pydantic import BaseModel, model_validator
 
 from verireview.config import get_settings
-from verireview.contracts import Confidence, Verdict, VerificationResult
+from verireview.contracts import Confidence, RequirementCategory, Verdict, VerificationResult
 
 
 class Action(StrEnum):
@@ -43,6 +48,7 @@ class OperatingMode(StrEnum):
 class PolicyConfig(BaseModel):
     mode: OperatingMode = OperatingMode.ADVISORY
     allow_block: bool = False
+    enforced_categories: frozenset[RequirementCategory] = frozenset()
 
     @model_validator(mode="after")
     def _block_needs_enforcement(self) -> Self:
@@ -61,10 +67,19 @@ class PolicyDecision(BaseModel):
 
 
 def configured_policy() -> PolicyConfig:
-    """Policy from settings (VERIREVIEW_POLICY_MODE / VERIREVIEW_POLICY_ALLOW_BLOCK)."""
+    """Policy from settings (VERIREVIEW_POLICY_MODE / _ALLOW_BLOCK / _ENFORCED_CATEGORIES).
+
+    Enforced categories are intersected with the shipped eligibility: a category the frozen test
+    evidence does not support is dropped, whatever the settings say.
+    """
+    from verireview.enforcement.eligibility import eligible_categories
+
     settings = get_settings()
+    requested = {RequirementCategory(c) for c in settings.policy_enforced_categories}
     return PolicyConfig(
-        mode=OperatingMode(settings.policy_mode), allow_block=settings.policy_allow_block
+        mode=OperatingMode(settings.policy_mode),
+        allow_block=settings.policy_allow_block,
+        enforced_categories=frozenset(requested & eligible_categories()),
     )
 
 
@@ -78,6 +93,12 @@ def decide(result: VerificationResult, config: PolicyConfig | None = None) -> Po
     ):
         action = Action.WARN
         reason += " Blocking is disabled, so this is reported as a warning."
+    elif action == Action.BLOCK and not _all_enforced(result, config.enforced_categories):
+        action = Action.WARN
+        reason += (
+            " Not every failed requirement is in a category approved for enforcement, so this"
+            " is reported as a warning."
+        )
     if config.mode == OperatingMode.HUMAN_REVIEW and action in (Action.WARN, Action.BLOCK):
         action = Action.HUMAN_REVIEW
         reason += " Human-review mode: a reviewer confirms before anything is enforced."
@@ -90,6 +111,12 @@ def decide(result: VerificationResult, config: PolicyConfig | None = None) -> Po
         blocks_merge=action == Action.BLOCK,
         reason=reason,
     )
+
+
+def _all_enforced(result: VerificationResult, enforced: frozenset[RequirementCategory]) -> bool:
+    """Every NOT_SATISFIED requirement has a known category that is enforced (none → False)."""
+    failed = [s.category for s in result.per_requirement if s.status == Verdict.NOT_SATISFIED]
+    return bool(failed) and all(c is not None and c in enforced for c in failed)
 
 
 def _recommend(verdict: Verdict, confidence: Confidence) -> tuple[Action, str]:

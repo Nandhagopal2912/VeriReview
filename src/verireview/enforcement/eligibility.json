@@ -1,0 +1,91 @@
+{
+  "schema_version": "1",
+  "source_report": "experiments/phase10_1_test.json",
+  "source_sha256": "ab120d4604add8b5fc470c04e6d47e41d4250e4f60c60bead89eb8cfed6e8b29",
+  "split": "test",
+  "manifest_version": "v2",
+  "protocol_sha256": "e3a7f5e68d6e4ee60c343b295a87cec670edd3f00bd25d93bd7e551e3b7e8c96",
+  "system": "F",
+  "threshold": 0.05,
+  "confidence": 0.95,
+  "categories": [
+    {
+      "category": "naming",
+      "bad_cases": 10,
+      "false_accepts": 0,
+      "far": 0.0,
+      "far_upper": 0.2589,
+      "good_cases": 10,
+      "false_blocks": 0,
+      "fbr": 0.0,
+      "fbr_upper": 0.2589,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.259 > 0.05; false-blocking upper bound 0.259 > 0.05"
+    },
+    {
+      "category": "validation",
+      "bad_cases": 10,
+      "false_accepts": 3,
+      "far": 0.3,
+      "far_upper": 0.6066,
+      "good_cases": 6,
+      "false_blocks": 1,
+      "fbr": 0.16666666666666666,
+      "fbr_upper": 0.5818,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.607 > 0.05; false-blocking upper bound 0.582 > 0.05"
+    },
+    {
+      "category": "testing",
+      "bad_cases": 10,
+      "false_accepts": 2,
+      "far": 0.2,
+      "far_upper": 0.5069,
+      "good_cases": 16,
+      "false_blocks": 1,
+      "fbr": 0.0625,
+      "fbr_upper": 0.264,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.507 > 0.05; false-blocking upper bound 0.264 > 0.05"
+    },
+    {
+      "category": "error_handling",
+      "bad_cases": 10,
+      "false_accepts": 2,
+      "far": 0.2,
+      "far_upper": 0.5069,
+      "good_cases": 9,
+      "false_blocks": 1,
+      "fbr": 0.1111111111111111,
+      "fbr_upper": 0.4291,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.507 > 0.05; false-blocking upper bound 0.429 > 0.05"
+    },
+    {
+      "category": "api_behavior",
+      "bad_cases": 10,
+      "false_accepts": 1,
+      "far": 0.1,
+      "far_upper": 0.3942,
+      "good_cases": 6,
+      "false_blocks": 0,
+      "fbr": 0.0,
+      "fbr_upper": 0.393,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.394 > 0.05; false-blocking upper bound 0.393 > 0.05"
+    },
+    {
+      "category": "other",
+      "bad_cases": 3,
+      "false_accepts": 0,
+      "far": 0.0,
+      "far_upper": 0.6316,
+      "good_cases": 33,
+      "false_blocks": 0,
+      "fbr": 0.0,
+      "fbr_upper": 0.0868,
+      "eligible": false,
+      "reason": "false-acceptance upper bound 0.632 > 0.05; false-blocking upper bound 0.087 > 0.05"
+    }
+  ]
+}

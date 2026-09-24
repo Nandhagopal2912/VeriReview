@@ -1,8 +1,12 @@
-"""The advisory Check Run: one "VeriReview" check per pull-request head, never blocking.
+"""The "VeriReview" Check Run: one check per pull-request head.
 
-The conclusion is always ``neutral`` (owner decision, Phase 11). It is a constant, and nothing
-here accepts another value, so no configuration can make the check fail or block a merge.
-Blocking stays a Phase 12 question (policy_allow_block, pinned off by a test).
+Its conclusion is ``neutral`` (owner decision, Phase 11) unless **all** Phase 12 locks are open:
+the repository opted in to the ``enforcement`` stage, the global ``policy_allow_block`` is on, and
+a verified thread's audited action is BLOCK, which the policy only gives when every failed
+requirement is in an enforced category that the frozen test evidence makes eligible (none today).
+Only then is it ``failure``, and even that blocks a merge only if the repository requires the
+check in branch protection. In the ``human_review`` stage the check carries a "Confirm reviewed"
+button; confirmations are recorded and listed.
 
 Text that comes from the repository (requirement wording, file names, evidence quoting code) is
 untrusted. It only ever appears inside a fenced ``text`` block (with any fence inside it broken),
@@ -14,11 +18,19 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
+from verireview.advisory.webhooks import CONFIRM_ACTION
 from verireview.db.models import VerificationAudit
 from verireview.gh.api import RepoRef
 from verireview.gh.client import GitHubClient
+from verireview.policy import Action, OperatingMode, PolicyConfig
 
-CONCLUSION = "neutral"
+NEUTRAL, FAILURE = "neutral", "failure"
+CONCLUSION = NEUTRAL  # the conclusion unless every enforcement lock is open
+CONFIRM_BUTTON = {
+    "label": "Confirm reviewed",
+    "description": "I reviewed the flagged threads",
+    "identifier": CONFIRM_ACTION,
+}
 MAX_OUTPUT_CHARS = 60_000  # GitHub's limit is 65,535 per field
 _FENCE = re.compile(r"`{3,}|~{3,}")
 
@@ -42,15 +54,37 @@ _ICON = {
 }
 
 
-def render(repo: RepoRef, pull_number: int, rows: Sequence[VerificationAudit]) -> dict[str, str]:
+def conclusion_for(rows: Sequence[VerificationAudit], policy: PolicyConfig) -> str:
+    """``failure`` only when enforcing (stage + global switch) and an audited action is BLOCK."""
+    enforcing = policy.mode == OperatingMode.ENFORCEMENT and policy.allow_block
+    blocked = any(row.action == Action.BLOCK.value for row in rows)
+    return FAILURE if enforcing and blocked else NEUTRAL
+
+
+def render(
+    repo: RepoRef,
+    pull_number: int,
+    rows: Sequence[VerificationAudit],
+    policy: PolicyConfig | None = None,
+    reviewers: Sequence[str] = (),
+) -> dict[str, str]:
     """Check Run ``output`` (title, summary, text) for the verified threads at one head."""
+    policy = policy or PolicyConfig()
     counts: dict[str, int] = {}
     for row in rows:
         counts[row.verdict] = counts.get(row.verdict, 0) + 1
     title = f"{len(rows)} resolved thread(s) checked: " + ", ".join(
         f"{n} {verdict.lower().replace('_', ' ')}" for verdict, n in sorted(counts.items())
     )
-    lines = [HEADER, "", "| Thread | Result | Confidence | Suggested |", "|---|---|---|---|"]
+    lines = [_stage_header(policy), ""]
+    if policy.mode == OperatingMode.HUMAN_REVIEW:
+        confirmed = ", ".join(f"`{r}`" for r in reviewers) or "nobody yet"
+        lines += [
+            "**Human review.** A reviewer should look at the flagged threads and press "
+            f"*Confirm reviewed*. Confirmed by: {confirmed}.",
+            "",
+        ]
+    lines += ["| Thread | Result | Confidence | Suggested |", "|---|---|---|---|"]
     for row in rows:
         link = (
             f"https://github.com/{repo.full_name}/pull/{pull_number}#discussion_r{row.comment_id}"
@@ -72,6 +106,18 @@ def render(repo: RepoRef, pull_number: int, rows: Sequence[VerificationAudit]) -
     }
 
 
+def _stage_header(policy: PolicyConfig) -> str:
+    if policy.mode != OperatingMode.ENFORCEMENT or not policy.allow_block:
+        return HEADER
+    categories = ", ".join(sorted(c.value for c in policy.enforced_categories)) or "none"
+    return (
+        f"**Enforcement for: {categories}.** This check fails only when a thread whose failed "
+        "requirements are all in these categories is judged not satisfied with medium "
+        "confidence; everything else is advisory. It blocks merging only if the repository "
+        "requires this check."
+    )
+
+
 def _details(row: VerificationAudit) -> str:
     result: dict[str, Any] = row.result
     explanation = _FENCE.sub("'''", str(result.get("explanation", "")))
@@ -91,10 +137,19 @@ def _limit(text: str) -> str:
 
 
 def publish(
-    client: GitHubClient, repo: RepoRef, head_sha: str, name: str, output: dict[str, str]
+    client: GitHubClient,
+    repo: RepoRef,
+    head_sha: str,
+    name: str,
+    output: dict[str, str],
+    conclusion: str = NEUTRAL,
+    confirm_button: bool = False,
 ) -> int:
     """Create the check run on ``head_sha``, or update ours if it exists; returns its id."""
-    body = {"status": "completed", "conclusion": CONCLUSION, "output": output}
+    if conclusion not in (NEUTRAL, FAILURE):
+        raise ValueError(f"unsupported conclusion {conclusion!r}")
+    body: dict[str, object] = {"status": "completed", "conclusion": conclusion, "output": output}
+    body["actions"] = [CONFIRM_BUTTON] if confirm_button else []
     existing = client.get_json(
         f"/repos/{repo.full_name}/commits/{head_sha}/check-runs",
         params={"check_name": name, "filter": "latest"},

@@ -3,7 +3,13 @@ from pydantic import ValidationError
 
 from helpers.cases import make_case
 from verireview.config import Settings
-from verireview.contracts import Confidence, Verdict, VerificationResult
+from verireview.contracts import (
+    Confidence,
+    RequirementCategory,
+    RequirementStatus,
+    Verdict,
+    VerificationResult,
+)
 from verireview.policy import Action, OperatingMode, PolicyConfig, configured_policy, decide
 
 CASE_ID = make_case("x = 1\n", "x = 2\n", 1).case_id
@@ -21,7 +27,7 @@ def result(verdict: Verdict, confidence: Confidence) -> VerificationResult:
     )
 
 
-V, C, A = Verdict, Confidence, Action
+V, C, A, RC = Verdict, Confidence, Action, RequirementCategory
 
 
 @pytest.mark.parametrize(
@@ -51,12 +57,66 @@ def test_block_is_downgraded_to_warn_by_default() -> None:
     assert "Blocking is disabled" in decision.reason
 
 
-def test_blocking_needs_enforcement_mode_and_explicit_opt_in() -> None:
-    enforced = PolicyConfig(mode=OperatingMode.ENFORCEMENT, allow_block=True)
-    enforcement_without_opt_in = PolicyConfig(mode=OperatingMode.ENFORCEMENT)
+def failed(*categories: RC | None) -> VerificationResult:
+    """NOT_SATISFIED at MEDIUM with one failed requirement per category."""
+    return result(V.NOT_SATISFIED, C.MEDIUM).model_copy(
+        update={
+            "per_requirement": [
+                RequirementStatus(
+                    requirement_id=f"R{i}", status=V.NOT_SATISFIED, evidence_ids=[], category=c
+                )
+                for i, c in enumerate(categories, 1)
+            ]
+        }
+    )
 
-    assert decide(result(V.NOT_SATISFIED, C.MEDIUM), enforced).blocks_merge
-    assert not decide(result(V.NOT_SATISFIED, C.MEDIUM), enforcement_without_opt_in).blocks_merge
+
+def test_blocking_needs_enforcement_mode_explicit_opt_in_and_an_enforced_category() -> None:
+    enforced = PolicyConfig(
+        mode=OperatingMode.ENFORCEMENT, allow_block=True, enforced_categories=frozenset({RC.NAMING})
+    )
+    enforcement_without_opt_in = PolicyConfig(
+        mode=OperatingMode.ENFORCEMENT, enforced_categories=frozenset({RC.NAMING})
+    )
+
+    assert decide(failed(RC.NAMING), enforced).blocks_merge
+    assert not decide(failed(RC.NAMING), enforcement_without_opt_in).blocks_merge
+
+
+def test_category_lock_blocks_only_when_every_failed_requirement_is_enforced() -> None:
+    enforced = PolicyConfig(
+        mode=OperatingMode.ENFORCEMENT, allow_block=True, enforced_categories=frozenset({RC.NAMING})
+    )
+
+    assert decide(failed(RC.NAMING, RC.NAMING), enforced).action == A.BLOCK
+    mixed = decide(failed(RC.NAMING, RC.VALIDATION), enforced)
+    assert (mixed.action, mixed.blocks_merge) == (A.WARN, False)
+    assert "category approved for enforcement" in mixed.reason
+    assert not decide(failed(None), enforced).blocks_merge  # unknown category never blocks
+    assert not decide(result(V.NOT_SATISFIED, C.MEDIUM), enforced).blocks_merge  # no statuses
+
+
+def test_enforcement_without_categories_never_blocks() -> None:
+    config = PolicyConfig(mode=OperatingMode.ENFORCEMENT, allow_block=True)
+
+    for category in RC:
+        assert not decide(failed(category), config).blocks_merge
+
+
+def test_settings_categories_are_cut_to_the_shipped_eligibility(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        policy_mode="enforcement",
+        policy_allow_block=True,
+        policy_enforced_categories="naming,validation",  # type: ignore[arg-type]
+    )
+    monkeypatch.setattr("verireview.policy.decision.get_settings", lambda: settings)
+
+    # The shipped eligibility admits no category (Phase 12), so nothing is enforced.
+    assert configured_policy().enforced_categories == frozenset()
+    assert not decide(failed(RC.NAMING), configured_policy()).blocks_merge
 
 
 def test_allow_block_outside_enforcement_is_rejected() -> None:

@@ -55,6 +55,8 @@ services:
       VERIREVIEW_GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github_app_key
       VERIREVIEW_ADVISORY_CHECK_NAME: ${VERIREVIEW_ADVISORY_CHECK_NAME:-VeriReview}
       VERIREVIEW_POLICY_MODE: ${VERIREVIEW_POLICY_MODE:-advisory}
+      # Phase 12: stays false; see docs/phase12_staged_enforcement.md (nothing is eligible).
+      VERIREVIEW_POLICY_ALLOW_BLOCK: ${VERIREVIEW_POLICY_ALLOW_BLOCK:-false}
     secrets:
       - github_app_key
     depends_on:

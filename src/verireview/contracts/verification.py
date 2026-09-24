@@ -6,8 +6,10 @@ from typing import Self
 from pydantic import BaseModel, Field, model_validator
 
 from verireview.contracts.evidence import Evidence
+from verireview.contracts.requirement import RequirementCategory
 
-RESULT_SCHEMA_VERSION = "1"
+# v2 (Phase 12): RequirementStatus.category, so the policy can gate enforcement per category.
+RESULT_SCHEMA_VERSION = "2"
 
 
 class Verdict(StrEnum):
@@ -29,6 +31,7 @@ class RequirementStatus(BaseModel):
     requirement_id: str
     status: Verdict
     evidence_ids: list[str]
+    category: RequirementCategory | None = None  # None when no requirement set was extracted
 
 
 class VerificationResult(BaseModel):

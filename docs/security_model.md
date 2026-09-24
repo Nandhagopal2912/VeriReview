@@ -34,6 +34,7 @@ document states the assumptions, the threats, and what enforces each mitigation 
 | **Cross-repository leakage** (Phase 11) | Per-repository tokens; audit queries always filter installation and repository | `test_audit_results_are_isolated_by_installation_and_repository` |
 | **Markdown injection into the check** (links, images, @-mentions from review text) (Phase 11) | Repository text is rendered only inside a fenced `text` block (inner fences broken); webhook body text is never rendered | `test_untrusted_text_only_appears_inside_a_fenced_block` |
 | **The advisory check blocking a merge** (Phase 11) | Check conclusion is the constant `neutral`, independent of the policy mode | `test_check_stays_neutral_even_if_blocking_were_configured` |
+| **Premature or accidental enforcement** (Phase 12) | Four independent locks: global `policy_allow_block` (off), per-repository promotion (one step at a time, ≥ 14 days of human review with ≥ 10 confirmations, recorded), a per-category statistical gate (95% upper bounds ≤ 5%, none eligible today), and the repository's own branch protection. Repositories without an opt-in are clamped to human review | `tests/unit/policy/test_policy.py`, `tests/unit/enforcement/test_eligibility.py` (shipped file pinned to its recomputation), `tests/integration/test_enforcement.py`; ADR-003 |
 | **Model pipeline in the service** (heavy dependencies, supply chain) | Service image contains no ML libraries; a model pipeline requested through the API returns 501 | Docker image check (Phase 7); API test |
 
 ## Known limits

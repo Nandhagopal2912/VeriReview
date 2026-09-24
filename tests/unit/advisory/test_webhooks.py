@@ -92,3 +92,33 @@ def test_malformed_head_sha_is_rejected() -> None:
 
     with pytest.raises(ValidationError):
         tasks_from_event("pull_request_review_thread", data, "V")
+
+
+def confirm_payload(identifier: str = "confirm_review", login: str = "rev-bob") -> dict:  # type: ignore[type-arg]
+    data = payload("check_run_rerequested.json")
+    data["action"] = "requested_action"
+    data["requested_action"] = {"identifier": identifier}
+    data["sender"] = {"login": login, "type": "User"}
+    return data
+
+
+def test_confirm_button_press_becomes_a_confirmation_task() -> None:
+    [task] = tasks_from_event("check_run", confirm_payload(), "VeriReview")
+
+    assert (task.kind, task.pull_number, task.actor, task.head_sha) == (
+        "confirm",
+        7,
+        "rev-bob",
+        "4" * 40,
+    )
+
+
+def test_other_requested_actions_and_other_checks_are_ignored() -> None:
+    assert tasks_from_event("check_run", confirm_payload("something_else"), "VeriReview") == []
+    assert tasks_from_event("check_run", confirm_payload(), "SomeOtherApp") == []
+
+
+@pytest.mark.parametrize("login", ["../admin", "a b", "x" * 60, "@rev-bob"])
+def test_confirming_login_is_validated(login: str) -> None:
+    with pytest.raises(ValidationError):
+        tasks_from_event("check_run", confirm_payload(login=login), "VeriReview")

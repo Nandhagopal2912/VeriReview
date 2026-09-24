@@ -40,7 +40,11 @@ def rule_aggregator(
         result = results.get(r.id)
         status = Verdict.UNCERTAIN if unavailable or result is None else _STATUS[result.passed]
         cited = [e.id for e in evidence if e.requirement_id == r.id]
-        statuses.append(RequirementStatus(requirement_id=r.id, status=status, evidence_ids=cited))
+        statuses.append(
+            RequirementStatus(
+                requirement_id=r.id, status=status, evidence_ids=cited, category=r.category
+            )
+        )
 
     found = {s.status for s in statuses}
     if unavailable or not results:

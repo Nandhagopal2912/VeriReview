@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session
 
 from verireview.advisory.webhooks import AdvisoryTask
 from verireview.contracts import ReviewCase, VerificationResult
-from verireview.db.models import AdvisoryJob, VerificationAudit
+from verireview.db.models import AdvisoryJob, ReviewConfirmation, VerificationAudit
 from verireview.policy import PolicyDecision
 
 QUEUED, RUNNING, DONE, FAILED = "queued", "running", "done", "failed"
@@ -40,6 +40,7 @@ def enqueue(session: Session, delivery_id: str, event: str, tasks: list[Advisory
                 pull_number=task.pull_number,
                 comment_id=task.comment_id,
                 head_sha=task.head_sha,
+                actor=task.actor,
                 status=QUEUED,
                 attempts=0,
             )
@@ -144,3 +145,43 @@ def latest_results(
     for row in rows:
         latest.setdefault(row.comment_id, row)
     return sorted(latest.values(), key=lambda r: r.comment_id)
+
+
+def record_confirmation(session: Session, job: AdvisoryJob) -> bool:
+    """Store "reviewer X confirmed the result at head H" once; returns whether it was new."""
+    if job.actor is None or job.head_sha is None:
+        raise ValueError("a confirmation needs a reviewer and a head commit")
+    statement = (
+        insert(ReviewConfirmation)
+        .values(
+            installation_id=job.installation_id,
+            repository=job.repository,
+            pull_number=job.pull_number,
+            head_sha=job.head_sha,
+            reviewer=job.actor,
+        )
+        .on_conflict_do_nothing(
+            index_elements=["installation_id", "repository", "head_sha", "reviewer"]
+        )
+        .returning(ReviewConfirmation.id)
+    )
+    new = session.execute(statement).first() is not None
+    session.commit()
+    return new
+
+
+def confirmations(
+    session: Session, installation_id: int, repository: str, head_sha: str
+) -> list[str]:
+    """Reviewers who confirmed the result at ``head_sha`` (this repository only)."""
+    return list(
+        session.scalars(
+            select(ReviewConfirmation.reviewer)
+            .where(
+                ReviewConfirmation.installation_id == installation_id,
+                ReviewConfirmation.repository == repository,
+                ReviewConfirmation.head_sha == head_sha,
+            )
+            .order_by(ReviewConfirmation.id)
+        )
+    )

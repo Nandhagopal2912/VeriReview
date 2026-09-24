@@ -1,5 +1,10 @@
 # Phase 11: GitHub Advisory Mode
 
+> **Update, Phase 12:** the check is still always `neutral` by default. Phase 12 added a gated
+> path to a `failure` conclusion that needs four locks open, none of which is open today (a
+> repository opt-in, the global blocking switch, an eligible category, and the repository's
+> branch protection). See [phase12_staged_enforcement.md](phase12_staged_enforcement.md).
+
 VeriReview now runs as a GitHub App. When a review thread is resolved on a pull request, it checks
 whether the code changes made after the comment actually address it. The result appears as a
 **"VeriReview" check whose conclusion is always `neutral`**. The check never fails and never blocks

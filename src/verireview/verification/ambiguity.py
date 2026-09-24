@@ -33,7 +33,12 @@ def ambiguity_gate(inner: Aggregator) -> Aggregator:
             e.id for e in evidence if e.kind in ("requirements_extracted", "requirement_ambiguity")
         ]
         statuses = [
-            RequirementStatus(requirement_id=r.id, status=Verdict.UNCERTAIN, evidence_ids=cited)
+            RequirementStatus(
+                requirement_id=r.id,
+                status=Verdict.UNCERTAIN,
+                evidence_ids=cited,
+                category=r.category,
+            )
             for r in requirement.requirements
         ]
         return Decision(

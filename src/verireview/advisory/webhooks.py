@@ -6,11 +6,13 @@ read. Payloads are untrusted data: only the few fields below are taken, each val
 (repository name, positive numbers, 40-hex SHAs), and nothing in them is ever executed or
 interpreted as an instruction.
 
-Work comes from two events (owner decision, Phase 11):
+Work comes from three events (owner decisions, Phases 11 and 12):
 
 - ``pull_request_review_thread`` / ``resolved``: verify that thread.
 - ``check_run`` / ``rerequested`` on our own check ("Re-run" in the GitHub UI): verify every
   resolved thread of the pull request again.
+- ``check_run`` / ``requested_action`` ``confirm_review`` on our own check (Phase 12, human-review
+  stage): record that the clicking reviewer confirmed the result.
 
 Everything else (``ping``, unresolved threads, other apps' checks) is acknowledged and ignored.
 """
@@ -25,7 +27,9 @@ from pydantic import BaseModel, Field, field_validator
 from verireview.gh.api import RepoRef
 
 SIGNATURE_PREFIX = "sha256="
+CONFIRM_ACTION = "confirm_review"
 _SHA = re.compile(r"^[0-9a-f]{40}$")
+_LOGIN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})(?:\[bot\])?$")
 
 
 class InvalidSignatureError(Exception):
@@ -47,12 +51,20 @@ def verify_signature(secret: str, body: bytes, header: str | None) -> None:
 class AdvisoryTask(BaseModel):
     """One unit of advisory work taken from a delivery (validated, nothing else is kept)."""
 
-    kind: Literal["thread", "pull_request"]
+    kind: Literal["thread", "pull_request", "confirm"]
     installation_id: int = Field(gt=0)
     repository: str
     pull_number: int = Field(gt=0)
     comment_id: int | None = Field(default=None, gt=0)  # any comment of the thread
     head_sha: str | None = None
+    actor: str | None = None  # GitHub login of the reviewer who confirmed (kind "confirm")
+
+    @field_validator("actor")
+    @classmethod
+    def _login(cls, value: str | None) -> str | None:
+        if value is not None and not _LOGIN.match(value):
+            raise ValueError("not a GitHub login")
+        return value
 
     @field_validator("repository")
     @classmethod
@@ -93,10 +105,26 @@ def tasks_from_event(event: str, payload: dict[str, Any], check_name: str) -> li
             )
         ]
 
-    if event == "check_run" and action == "rerequested":
+    if event == "check_run" and action in ("rerequested", "requested_action"):
         run = payload.get("check_run") or {}
         if run.get("name") != check_name:
             return []
+        if action == "requested_action":
+            identifier = (payload.get("requested_action") or {}).get("identifier")
+            if identifier != CONFIRM_ACTION:
+                return []
+            return [
+                AdvisoryTask(
+                    kind="confirm",
+                    installation_id=installation,
+                    repository=repository,
+                    pull_number=pr["number"],
+                    head_sha=run.get("head_sha"),
+                    actor=(payload.get("sender") or {}).get("login"),
+                )
+                for pr in run.get("pull_requests") or []
+                if isinstance(pr, dict) and "number" in pr
+            ]
         return [
             AdvisoryTask(
                 kind="pull_request",

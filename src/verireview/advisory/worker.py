@@ -6,6 +6,10 @@ thread(s), runs the default pipeline, applies the policy, writes an audit row pe
 updates the check on the head commit that was verified. In OBSERVE mode it audits but posts
 nothing.
 
+Phase 12: the policy is the repository's own stage (``enforcement.stages.effective_policy``;
+repositories without an opt-in never enforce). A "Confirm reviewed" press is a ``confirm`` job:
+recorded, then the check is re-rendered with the reviewer listed.
+
 Failures: GitHub outages, rate limits and auth problems are retried with backoff; a thread or
 pull request that does not exist fails the job at once. Error text stored on the job is the
 exception's class and message, which never contains tokens (the client puts only API paths in
@@ -21,8 +25,19 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from verireview.advisory import checks
 from verireview.advisory.auth import AppAuthError, GitHubAppAuth
-from verireview.advisory.jobs import claim, complete, latest_results, record_audit, retry_or_fail
+from verireview.advisory.jobs import (
+    claim,
+    complete,
+    confirmations,
+    latest_results,
+    record_audit,
+    record_confirmation,
+    retry_or_fail,
+)
+from verireview.contracts import RequirementCategory
 from verireview.db.models import AdvisoryJob
+from verireview.enforcement.eligibility import eligible_categories
+from verireview.enforcement.stages import effective_policy
 from verireview.gh.api import GitHubApi, RepoRef
 from verireview.gh.errors import GitHubError, GitHubNotFoundError
 from verireview.ingestion import ingest_review_case
@@ -44,6 +59,8 @@ class AdvisoryWorker:
     check_name: str = "VeriReview"
     pipeline: str = DEFAULT_PIPELINE
     max_attempts: int = 3
+    # Categories the frozen test evidence makes eligible; None = the shipped eligibility.
+    eligible: frozenset[RequirementCategory] | None = None
 
     def run_once(self) -> bool:
         """Process one job if there is one; returns whether a job was taken."""
@@ -75,40 +92,77 @@ class AdvisoryWorker:
 
     def process(self, session: Session, job: AdvisoryJob) -> None:
         repo = RepoRef(job.repository)
-        pipeline = get_pipeline(self.pipeline)
+        policy = effective_policy(
+            session, job.installation_id, job.repository, self.policy, self._eligible()
+        )
         with self.auth.client_for(job.installation_id, repo) as client:
-            reader = GitHubApi(client)
-            comment_ids = (
-                [job.comment_id]
-                if job.kind == "thread" and job.comment_id is not None
-                else _resolved_threads(reader, repo, job.pull_number)
-            )
-            head = job.head_sha
-            for comment_id in comment_ids:
-                case = ingest_review_case(reader, repo, job.pull_number, comment_id)
-                result = pipeline.run(case)
-                decision = decide(result, self.policy)
-                record_audit(session, job, case, comment_id, result, decision)
-                head = case.head_sha
+            if job.kind == "confirm":
+                record_confirmation(session, job)
+                head = job.head_sha
                 logger.info(
-                    "advisory job %s: %s#%s comment %s -> %s (%s)",
+                    "advisory job %s: %s#%s confirmed by %s",
                     job.id,
                     repo.full_name,
                     job.pull_number,
-                    comment_id,
-                    result.verdict.value,
-                    result.confidence.value,
+                    job.actor,
                 )
+            else:
+                head = self._verify(session, job, repo, GitHubApi(client), policy)
             if head is None:
-                head = reader.get_pull(repo, job.pull_number).head.sha
-            if self.policy.mode == OperatingMode.OBSERVE:
+                head = GitHubApi(client).get_pull(repo, job.pull_number).head.sha
+            if policy.mode == OperatingMode.OBSERVE:
                 return  # observe: analyse and audit only, post nothing (plan §27)
             rows = latest_results(
                 session, job.installation_id, job.repository, job.pull_number, head
             )
             if rows:
-                output = checks.render(repo, job.pull_number, rows)
-                checks.publish(client, repo, head, self.check_name, output)
+                reviewers = confirmations(session, job.installation_id, job.repository, head)
+                checks.publish(
+                    client,
+                    repo,
+                    head,
+                    self.check_name,
+                    checks.render(repo, job.pull_number, rows, policy, reviewers),
+                    conclusion=checks.conclusion_for(rows, policy),
+                    confirm_button=policy.mode == OperatingMode.HUMAN_REVIEW,
+                )
+
+    def _verify(
+        self,
+        session: Session,
+        job: AdvisoryJob,
+        repo: RepoRef,
+        reader: GitHubApi,
+        policy: PolicyConfig,
+    ) -> str | None:
+        """Verify the job's thread(s), audit each result; returns the head that was verified."""
+        pipeline = get_pipeline(self.pipeline)
+        comment_ids = (
+            [job.comment_id]
+            if job.kind == "thread" and job.comment_id is not None
+            else _resolved_threads(reader, repo, job.pull_number)
+        )
+        head = job.head_sha
+        for comment_id in comment_ids:
+            case = ingest_review_case(reader, repo, job.pull_number, comment_id)
+            result = pipeline.run(case)
+            decision = decide(result, policy)
+            record_audit(session, job, case, comment_id, result, decision)
+            head = case.head_sha
+            logger.info(
+                "advisory job %s: %s#%s comment %s -> %s (%s), %s",
+                job.id,
+                repo.full_name,
+                job.pull_number,
+                comment_id,
+                result.verdict.value,
+                result.confidence.value,
+                decision.action.value,
+            )
+        return head
+
+    def _eligible(self) -> frozenset[RequirementCategory]:
+        return self.eligible if self.eligible is not None else eligible_categories()
 
 
 def _resolved_threads(reader: GitHubApi, repo: RepoRef, pull_number: int) -> list[int]:

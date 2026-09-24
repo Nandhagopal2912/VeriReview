@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<p class="crumbs"><a href="/dashboard/r/{{ installation }}/{{ repository }}">{{ repository }}</a> / #{{ number }}</p>
+<h1>{{ repository }}#{{ number }}</h1>
+
+<table>
+  <thead><tr><th>Thread (first comment)</th><th>Latest result</th><th>Confidence</th><th>Action</th><th>Head</th><th>Verified</th><th>History</th></tr></thead>
+  <tbody>
+  {% for t in threads %}
+    <tr>
+      <td><a href="/dashboard/audit/{{ t.latest.id }}">comment {{ t.comment_id }}</a></td>
+      <td><span class="verdict {{ t.latest.verdict|lower }}">{{ t.latest.verdict }}</span></td>
+      <td>{{ t.latest.confidence }}</td>
+      <td>{{ t.latest.action }}</td>
+      <td><code>{{ t.latest.head_sha[:7] }}</code></td>
+      <td>{{ t.latest.created_at.strftime("%Y-%m-%d %H:%M UTC") }}</td>
+      <td>
+        {% for e in t.earlier %}<a href="/dashboard/audit/{{ e.id }}">{{ e.verdict|lower }} @ {{ e.head_sha[:7] }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="muted">-</span>{% endfor %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

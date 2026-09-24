@@ -27,6 +27,9 @@ services:
       # Advisory mode (Phase 11): the webhook endpoint refuses every delivery until this is set.
       VERIREVIEW_GITHUB_WEBHOOK_SECRET: ${VERIREVIEW_GITHUB_WEBHOOK_SECRET:-}
       VERIREVIEW_ADVISORY_CHECK_NAME: ${VERIREVIEW_ADVISORY_CHECK_NAME:-VeriReview}
+      # Dashboard (Phase 13): off unless a token is set in .env; stored code kept this long.
+      VERIREVIEW_DASHBOARD_TOKEN: ${VERIREVIEW_DASHBOARD_TOKEN:-}
+      VERIREVIEW_AUDIT_RETENTION_DAYS: ${VERIREVIEW_AUDIT_RETENTION_DAYS:-90}
     ports:
       - "8000:8000"
     depends_on:

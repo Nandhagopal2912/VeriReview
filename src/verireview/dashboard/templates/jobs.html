@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Recent jobs</h1>
+{% if jobs %}
+<table>
+  <thead><tr><th>Id</th><th>Event</th><th>Kind</th><th>Repository</th><th>PR</th><th>Status</th><th>Attempts</th><th>Updated</th><th>Last error</th></tr></thead>
+  <tbody>
+  {% for j in jobs %}
+    <tr class="{{ 'fail' if j.status == 'failed' else '' }}">
+      <td>{{ j.id }}</td><td>{{ j.event }}</td><td>{{ j.kind }}</td>
+      <td><a href="/dashboard/r/{{ j.installation_id }}/{{ j.repository }}">{{ j.repository }}</a></td>
+      <td>#{{ j.pull_number }}</td><td>{{ j.status }}</td><td>{{ j.attempts }}</td>
+      <td>{{ j.updated_at.strftime("%Y-%m-%d %H:%M") }}</td>
+      <td class="small">{{ j.last_error or "" }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">No jobs yet.</p>{% endif %}
+{% endblock %}

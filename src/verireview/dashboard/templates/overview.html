@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Overview</h1>
+
+<section class="cards">
+  <div class="card"><h2>Verifications</h2>
+    <ul class="plain">
+    {% for verdict in ["SATISFIED", "PARTIALLY_SATISFIED", "NOT_SATISFIED", "UNCERTAIN"] %}
+      <li><span class="verdict {{ verdict|lower }}">{{ verdict }}</span> {{ verdicts.get(verdict, 0) }}</li>
+    {% endfor %}
+    </ul>
+  </div>
+  <div class="card"><h2>Jobs</h2>
+    <ul class="plain">
+    {% for status in ["queued", "running", "done", "failed"] %}
+      <li>{{ status }}: {{ jobs.get(status, 0) }}</li>
+    {% endfor %}
+    </ul>
+    <p><a href="/dashboard/jobs">Recent jobs</a></p>
+  </div>
+  <div class="card"><h2>Enforcement</h2>
+    <p>Global blocking switch: <strong>{{ "on" if allow_block else "off" }}</strong></p>
+    {% if gate %}
+      <p>Eligible categories: <strong>{{ gate.eligible_categories()|map(attribute="value")|sort|join(", ") or "none" }}</strong>
+      (gate: {{ (gate.confidence * 100)|round|int }}% upper bounds ≤ {{ gate.threshold }}, {{ gate.split }} split of benchmark {{ gate.manifest_version }})</p>
+    {% else %}
+      <p>No eligibility file: nothing can be enforced.</p>
+    {% endif %}
+    <p class="muted">Stored code is removed after {{ retention_days }} days.</p>
+  </div>
+</section>
+
+<h2>Repositories</h2>
+{% if repositories %}
+<table>
+  <thead><tr><th>Repository</th><th>Installation</th><th>Stage</th><th>Pull requests</th><th>Verifications</th><th>Last verified</th></tr></thead>
+  <tbody>
+  {% for r in repositories %}
+    <tr>
+      <td><a href="/dashboard/r/{{ r.installation_id }}/{{ r.repository }}">{{ r.repository }}</a></td>
+      <td>{{ r.installation_id }}</td>
+      <td>{{ r.stage }}</td>
+      <td>{{ r.pull_requests }}</td>
+      <td>{{ r.verifications }}</td>
+      <td>{{ r.last_verified.strftime("%Y-%m-%d %H:%M UTC") }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="muted">No verifications yet. They appear when a review thread is resolved in a repository where the GitHub App is installed.</p>
+{% endif %}
+{% endblock %}

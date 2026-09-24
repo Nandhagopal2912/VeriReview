@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>{{ title }} · VeriReview</title>
+<link rel="stylesheet" href="/dashboard/static/style.css">
+</head>
+<body>
+<header>
+  <a class="brand" href="/dashboard">VeriReview</a>
+  <nav>
+    <a href="/dashboard">Overview</a>
+    <a href="/dashboard/jobs">Jobs</a>
+    <form method="post" action="/dashboard/logout"><button type="submit">Sign out</button></form>
+  </nav>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer>Read-only view. Verdicts are advisory; see the evaluation in the README.</footer>
+</body>
+</html>

@@ -145,6 +145,9 @@ class VerificationAudit(Base):
     confidence: Mapped[str] = mapped_column(String(10))
     action: Mapped[str] = mapped_column(String(20))
     result: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    # The exact ReviewCase verified (thread, code, diff), for the dashboard (Phase 13). Private
+    # repository content: removed after `audit_retention_days` by `verireview purge-audit`.
+    review_case: Mapped[dict[str, Any] | None] = mapped_column(JSONB(none_as_null=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

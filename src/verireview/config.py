@@ -41,6 +41,12 @@ class Settings(BaseSettings):
     enforcement_min_human_review_days: int = 14
     enforcement_min_confirmations: int = 10
 
+    # Dashboard (Phase 13): off unless a token is set; the operator signs in with it.
+    dashboard_token: SecretStr | None = None
+    dashboard_session_hours: int = 8
+    # Stored review cases (code, diff) are removed from audit rows after this many days.
+    audit_retention_days: int = 90
+
     # GitHub App (Phase 11, advisory mode). The private key is PEM text, or a file path in
     # `github_app_private_key_path`; the webhook secret signs every delivery. None of them is
     # ever logged or stored in the database.
@@ -53,7 +59,11 @@ class Settings(BaseSettings):
     worker_max_attempts: int = 3
 
     @field_validator(
-        "github_token", "github_app_private_key", "github_webhook_secret", mode="before"
+        "github_token",
+        "github_app_private_key",
+        "github_webhook_secret",
+        "dashboard_token",
+        mode="before",
     )
     @classmethod
     def _blank_secret_is_none(cls, value: object) -> object:

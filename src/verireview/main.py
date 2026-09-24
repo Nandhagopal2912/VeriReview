@@ -12,6 +12,7 @@ from verireview.api.health import router as health_router
 from verireview.api.verify import router as verify_router
 from verireview.api.webhooks import router as webhook_router
 from verireview.config import get_settings
+from verireview.dashboard.routes import router as dashboard_router
 
 
 def create_app() -> FastAPI:
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(verify_router)
     app.include_router(webhook_router)
+    app.include_router(dashboard_router)
     return app
 
 

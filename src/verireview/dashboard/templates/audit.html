@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block content %}
+{% set result = detail.result %}
+<p class="crumbs"><a href="/dashboard/r/{{ row.installation_id }}/{{ row.repository }}">{{ row.repository }}</a>
+ / <a href="/dashboard/r/{{ row.installation_id }}/{{ row.repository }}/pull/{{ row.pull_number }}">#{{ row.pull_number }}</a>
+ / comment {{ row.comment_id }}</p>
+<h1><span class="verdict {{ result.verdict.value|lower }}">{{ result.verdict.value }}</span> · {{ result.confidence.value }} confidence · {{ row.action }}</h1>
+
+<dl class="facts">
+  <dt>Verified</dt><dd>{{ row.created_at.strftime("%Y-%m-%d %H:%M UTC") }} at head <code>{{ row.head_sha }}</code></dd>
+  <dt>Pipeline</dt><dd><code>{{ row.pipeline_version }}</code></dd>
+  <dt>Inputs sha256</dt><dd><code>{{ row.inputs_sha256 }}</code></dd>
+</dl>
+
+{% if detail.case %}
+<h2>Review thread</h2>
+<p class="muted">{{ detail.case.file_path }}{% if detail.case.anchor_line %}, line {{ detail.case.anchor_line }} (before){% endif %}</p>
+{% for c in detail.case.thread.comments %}
+<div class="comment{% if loop.first %} root{% endif %}">
+  <div class="who">{{ c.author or "unknown" }} · {{ c.created_at.strftime("%Y-%m-%d %H:%M") }}{% if loop.first %} · the request{% endif %}</div>
+  <pre class="text">{{ c.body }}</pre>
+</div>
+{% endfor %}
+{% else %}
+<p class="muted">The stored code for this verification was removed (retention) or never stored. The verdict and evidence below remain.</p>
+{% endif %}
+
+<h2>Requirements</h2>
+<table>
+  <thead><tr><th>Id</th><th>Category</th><th>Status</th><th>Evidence</th></tr></thead>
+  <tbody>
+  {% for r in result.per_requirement %}
+    <tr><td>{{ r.requirement_id }}</td><td>{{ r.category.value if r.category else "-" }}</td>
+        <td><span class="verdict {{ r.status.value|lower }}">{{ r.status.value }}</span></td>
+        <td>{{ r.evidence_ids|join(", ") }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>Explanation</h2>
+<pre class="text">{{ result.explanation }}</pre>
+
+<h2>Evidence</h2>
+<table class="evidence">
+  <thead><tr><th>Id</th><th>For</th><th></th><th>Fact</th><th>Where</th></tr></thead>
+  <tbody>
+  {% for e in detail.evidence %}
+    <tr class="{{ 'pass' if e.passed is true else 'fail' if e.passed is false else 'neutral' }}">
+      <td>{{ e.id }}</td><td>{{ e.requirement }}</td>
+      <td>{{ "✓" if e.passed is true else "✗" if e.passed is false else "•" }}</td>
+      <td>{{ e.detail }}<div class="muted small">{{ e.kind }}</div></td>
+      <td><code>{{ e.where }}</code></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+{% if detail.case %}
+<h2>Code</h2>
+<div class="code-pair">
+  <div>
+    <h3>Before (commented line highlighted)</h3>
+    <pre class="code">{% for l in detail.before %}<span class="line{% if l.marked %} marked{% endif %}"><span class="no">{{ l.number }}</span>{{ l.text }}</span>{% endfor %}</pre>
+  </div>
+  <div>
+    <h3>After (lines cited by evidence highlighted)</h3>
+    <pre class="code">{% for l in detail.after %}<span class="line{% if l.marked %} marked{% endif %}"><span class="no">{{ l.number }}</span>{{ l.text }}</span>{% endfor %}</pre>
+  </div>
+</div>
+
+<h2>Diff of {{ detail.case.file_path }}</h2>
+{% if detail.diff %}
+<pre class="code diff">{% for d in detail.diff %}<span class="{{ d.kind }}">{{ d.text }}</span>{% endfor %}</pre>
+{% if detail.diff_truncated %}<p class="muted">Diff truncated.</p>{% endif %}
+{% else %}<p class="muted">No change to this file in the window.</p>{% endif %}
+{% endif %}
+{% endblock %}

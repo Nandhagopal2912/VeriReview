@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ repository }}</h1>
+<p class="muted">Installation {{ installation }}</p>
+
+<section class="cards">
+  <div class="card"><h2>Rollout stage</h2>
+  {% if policy %}
+    <p><strong>{{ policy.stage }}</strong> since {{ policy.stage_since.strftime("%Y-%m-%d") }} (by {{ policy.updated_by }})</p>
+    <p>Enforced categories: {{ policy.enforced_categories|join(", ") or "none" }}</p>
+  {% else %}
+    <p><strong>advisory</strong> (no opt-in; never enforces)</p>
+  {% endif %}
+  </div>
+  <div class="card"><h2>Reviewer confirmations</h2>
+  {% if confirmations %}
+    <ul class="plain">
+    {% for c in confirmations[:10] %}<li>{{ c.reviewer }} · #{{ c.pull_number }} · {{ c.created_at.strftime("%Y-%m-%d") }}</li>{% endfor %}
+    </ul>
+  {% else %}<p class="muted">None.</p>{% endif %}
+  </div>
+</section>
+
+<h2>Pull requests</h2>
+{% if pulls %}
+<table>
+  <thead><tr><th>Pull request</th><th>Threads</th><th>Latest results</th><th>Head</th><th>Last verified</th></tr></thead>
+  <tbody>
+  {% for p in pulls %}
+    <tr>
+      <td><a href="/dashboard/r/{{ installation }}/{{ repository }}/pull/{{ p.number }}">#{{ p.number }}</a></td>
+      <td>{{ p.threads }}</td>
+      <td>{% for verdict, n in p.verdicts|dictsort %}<span class="verdict {{ verdict|lower }}">{{ verdict }}</span> {{ n }} {% endfor %}</td>
+      <td><code>{{ p.head_sha[:7] }}</code></td>
+      <td>{{ p.last_verified.strftime("%Y-%m-%d %H:%M UTC") }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">No verifications.</p>{% endif %}
+
+<h2>Stage history</h2>
+{% if changes %}
+<table>
+  <thead><tr><th>When</th><th>From</th><th>To</th><th>Categories</th><th>Who</th><th>Why</th></tr></thead>
+  <tbody>
+  {% for c in changes %}
+    <tr><td>{{ c.created_at.strftime("%Y-%m-%d %H:%M") }}</td><td>{{ c.from_stage or "(default)" }}</td><td>{{ c.to_stage }}</td>
+        <td>{{ c.enforced_categories|join(", ") or "-" }}</td><td>{{ c.actor }}</td><td>{{ c.reason }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}<p class="muted">No changes recorded.</p>{% endif %}
+{% endblock %}

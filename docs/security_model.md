@@ -13,6 +13,7 @@ document states the assumptions, the threats, and what enforces each mitigation 
 | GitHub API responses | authenticated transport, content untrusted | validated with Pydantic models; `RepoRef` rejects path injection |
 | Configuration and environment (`.env`) | trusted (operator) | secrets as `SecretStr`, never logged or persisted |
 | Model weights (optional `nlp` group) | pinned revisions from Hugging Face | never loaded by the service image |
+| Dashboard operator token (Phase 13) | trusted (operator) | `.env` only, `SecretStr`; the session cookie carries an HMAC, not the token |
 | Webhook deliveries (Phase 11) | **untrusted until the HMAC signature verifies**; content untrusted after | signature over the raw body checked before parsing; only validated ids are taken, and the thread is re-read from GitHub |
 | GitHub App private key, webhook secret (Phase 11) | trusted (operator) | key file mounted as a Docker secret (`secrets/`, git-ignored); `SecretStr`; installation tokens only in memory |
 
@@ -35,6 +36,7 @@ document states the assumptions, the threats, and what enforces each mitigation 
 | **Markdown injection into the check** (links, images, @-mentions from review text) (Phase 11) | Repository text is rendered only inside a fenced `text` block (inner fences broken); webhook body text is never rendered | `test_untrusted_text_only_appears_inside_a_fenced_block` |
 | **The advisory check blocking a merge** (Phase 11) | Check conclusion is the constant `neutral`, independent of the policy mode | `test_check_stays_neutral_even_if_blocking_were_configured` |
 | **Premature or accidental enforcement** (Phase 12) | Four independent locks: global `policy_allow_block` (off), per-repository promotion (one step at a time, ≥ 14 days of human review with ≥ 10 confirmations, recorded), a per-category statistical gate (95% upper bounds ≤ 5%, none eligible today), and the repository's own branch protection. Repositories without an opt-in are clamped to human review | `tests/unit/policy/test_policy.py`, `tests/unit/enforcement/test_eligibility.py` (shipped file pinned to its recomputation), `tests/integration/test_enforcement.py`; ADR-003 |
+| **Dashboard exposure** (Phase 13: private code shown in a browser) | Off unless `VERIREVIEW_DASHBOARD_TOKEN` is set (404 otherwise); token sign-in with an HMAC session cookie (HttpOnly, SameSite=Strict, never the token), rate-limited sign-in, no JavaScript, strict CSP, autoescaped templates, `no-store`; stored code purged after the retention | `tests/unit/dashboard/test_auth_and_pages.py`, `tests/integration/test_dashboard.py` (hostile HTML/script rendered as text) |
 | **Model pipeline in the service** (heavy dependencies, supply chain) | Service image contains no ML libraries; a model pipeline requested through the API returns 501 | Docker image check (Phase 7); API test |
 
 ## Known limits

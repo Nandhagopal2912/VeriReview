@@ -24,18 +24,19 @@ so nothing can fail or block today.
 
 | | |
 |---|---|
-| **Current phase** | **Phase 12 done: staged enforcement, built and inert.** Repositories move observe → advisory → human review (with a *Confirm reviewed* button) → enforcement, one step at a time, recorded. A check can only fail when four locks are open (global switch, repository opt-in, an eligible category, branch protection). **No category is eligible**: on the v2 test even naming's clean 0/10 has a 26% upper bound, and the gate needs ≤ 5% ([ADR-003](docs/adr/003-enforcement-gate.md)) |
+| **Current phase** | **Phase 13 done: read-only dashboard.** Server-rendered pages in the API (no JavaScript) for repositories, pull requests, each verification (thread, requirements, evidence, explanation, code before/after, diff, inputs hash) and history. Off unless an operator token is set; stored code is purged after a retention period (90 days) |
+| **Phase 12** | **Staged enforcement, built and inert.** Repositories move observe → advisory → human review (with a *Confirm reviewed* button) → enforcement, one step at a time, recorded. A check can only fail when four locks are open (global switch, repository opt-in, an eligible category, branch protection). **No category is eligible**: on the v2 test even naming's clean 0/10 has a 26% upper bound, and the gate needs ≤ 5% ([ADR-003](docs/adr/003-enforcement-gate.md)) |
 | **Phase 11** | **GitHub advisory mode.** A GitHub App receives signed webhooks, verifies each resolved review thread in a background worker, audits it, and posts one **neutral** check per pull request. Built and tested offline; the live run on a test repository follows the setup guide once an App exists |
 | **Advisory mode** | HMAC-verified webhooks (forged → 401), idempotent queue (redelivery → processed once), per-repository least-privilege App tokens, audit trail with inputs hash, check conclusion pinned to `neutral` |
 | **Blind test v2 (full VeriReview)** | **accuracy 0.65** [0.58, 0.73] · **false acceptance 0.15** [0.06, 0.26] · false blocking 0.04 · 147 cases |
 | **Against the Phase 10 rules, same cases** | accuracy **+0.23** [+0.16, +0.31] · false acceptance **−0.15** [−0.25, −0.07] (paired bootstrap) |
 | **What that means** | Clearly better, but still not safe enough to gate merges: 8 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
 | **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly and none a false acceptance. Nearly all through the new suggestion-block check. Labels are provisional (Claude, blind) |
-| **Next phase** | Awaiting approval: Phase 13 (read-only dashboard), the live advisory run on a test repository (needs a GitHub App, [guide](docs/phase11_github_advisory.md#live-setup-when-you-want-to-connect-a-real-repository)), or the data work that could ever open the gate (≥ 59 bad and 59 good cases per category, human labels, better rules) |
+| **Next phase** | Every roadmap phase is done except 8b (semantic evidence in the verdict), which the data has not justified (ADR-002). Awaiting direction: the live advisory run on a test repository (needs a GitHub App, [guide](docs/phase11_github_advisory.md#live-setup-when-you-want-to-connect-a-real-repository)), or the data work that could ever open the gate (≥ 59 bad and 59 good cases per category, human labels, better rules) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,094 unit + 30 integration + 2 model tests, strict mypy, CI on every push |
+| **Tests** | 1,108 unit + 35 integration + 2 model tests, strict mypy, CI on every push |
 
 ---
 
@@ -56,6 +57,7 @@ GitHub PR ──► ingestion ──► ReviewCase ──► requirement extract
 | Rules | One deterministic rule per category, querying code *structure*: guards, handlers, responses, test inputs. A comment that only *mentions* the fix never counts. GitHub suggestion blocks are checked against their exact code, and common `other` requests (remove this, add a docstring, use A instead of B) have rules too | 5, 10.1 |
 | Aggregation | Per-requirement status → overall verdict. Ambiguous requests → `UNCERTAIN`. Confidence is lowered when the case is unreliable | 5, 8a |
 | Policy | Verdict × confidence → action, in observe / advisory / human-review / enforcement mode. A BLOCK also needs every failed requirement in an enforced, statistically eligible category | 8a, 12 |
+| Dashboard | Read-only operator views of every verification with its evidence, code and diff; token sign-in, off by default | 13 |
 | Staged rollout | Per-repository stage, one step at a time; enforcement only after ≥ 14 days of human review with ≥ 10 reviewer confirmations, and only for eligible categories (none today) | 12 |
 | GitHub App | Signed webhook → PostgreSQL job queue → worker (scoped installation token) → audit row → one neutral Check Run per PR head | 11 |
 | NLP baselines | Keyword overlap, TF-IDF and sentence-embedding similarity between comment and added code, scored by the same harness, for comparison ([results](#nlp-baselines-and-the-code-model)) | 6 |
@@ -163,6 +165,7 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview replay-webhook PAYLOAD.json --event EVENT` | Sign a recorded webhook with the configured secret and POST it to a **local** server |
 | `verireview enforcement-eligibility REPORT.json [--write]` | Per-category false acceptance / false blocking with 95% upper bounds from a frozen test run; `--write` regenerates the shipped gate |
 | `verireview repo-policy show\|set OWNER/REPO --installation ID [--stage S --categories … --actor … --reason …]` | A repository's rollout stage (refuses skipped stages and ineligible categories) |
+| `verireview purge-audit [--days N]` | Remove stored code and diffs from audit rows older than the retention (default 90 days) |
 
 Pipelines: `mvp` (default), `phase7-semantic` (needs the `nlp` group), and the earlier
 `phase2-locality` … `phase5-rules` for comparison. The rules changed in place in Phase 10.1
@@ -179,6 +182,7 @@ limits.
 | `POST /verify` | `{"case": ReviewCase, "pipeline"?: name}` | `{"result": VerificationResult, "policy": PolicyDecision}` |
 | `POST /verify/github` | `{"repository": "owner/repo", "pull_number": N, "comment_id": N}` | same |
 | `POST /github/webhook` | a GitHub App delivery, signed (`X-Hub-Signature-256`) | `202 {"status": "queued" \| "duplicate" \| "ignored" \| "pong"}`; 401 if unsigned or forged, 503 without a configured secret |
+| `GET /dashboard` … | browser, operator token | read-only dashboard pages (404 unless `VERIREVIEW_DASHBOARD_TOKEN` is set) |
 | `GET /health`, `GET /health/db` | — | liveness / database readiness |
 
 The service image has no model libraries: asking it for `phase7-semantic` returns **501** with the
@@ -409,8 +413,8 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 10.1 | ✅ | Rule and extraction fixes from the Phase 10 error analysis, suggestion-block and `other` rules, benchmark v2 frozen first, one blind v2 run old vs new | [protocol](docs/phase10_1_protocol.md), [results](docs/phase10_1_rules_v2.md) |
 | 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run (offline-tested; live run pending an App) | [phase11](docs/phase11_github_advisory.md) |
+| 13 | ✅ | Read-only dashboard: server-rendered, no JavaScript, operator token (off by default), stored cases with retention | [phase13](docs/phase13_dashboard.md) |
 | 12 | ✅ | Staged enforcement: per-repository stages, human-review confirmations, statistical category gate, four locks. Built and **inert**: no category is eligible | [phase12](docs/phase12_staged_enforcement.md), [ADR-003](docs/adr/003-enforcement-gate.md) |
-| 13 | | Read-only dashboard | — |
 
 Decisions:
 - [ADR-001](docs/adr/001-pre-existing-implementation.md) (accepted): code that already did what was
@@ -445,6 +449,7 @@ src/verireview/
   benchmark/     splits, real-world store, pseudonymisation, miner, annotation page, kappa, gold, freeze
   advisory/      GitHub App: JWT + scoped installation tokens, webhook signatures, job queue, worker, check run
   enforcement/   staged rollout: category eligibility (Clopper–Pearson gate, shipped eligibility.json), stages
+  dashboard/     read-only pages: token sign-in, queries, templates (autoescaped, no JS), stylesheet
   api/  db/  cli.py  cli_benchmark.py  cli_advisory.py  config.py
 dataset/         fixtures + heldout_fixtures (dev), benchmark/ (test sets, real-world), annotations/,
                  requirements (held-out comments), raw/ (git-ignored: candidates, annotation pages)
@@ -468,6 +473,9 @@ Environment variables (prefix `VERIREVIEW_`, see `.env.example`):
 | `ADVISORY_CHECK_NAME` | `VeriReview` | Name of the published check |
 | `POLICY_ENFORCED_CATEGORIES` | — | Categories to enforce on the `/verify` API path (comma-separated); always cut to the eligible ones (none today) |
 | `ENFORCEMENT_MIN_HUMAN_REVIEW_DAYS` / `ENFORCEMENT_MIN_CONFIRMATIONS` | `14` / `10` | Promotion rule into the enforcement stage |
+| `DASHBOARD_TOKEN` | — | Enables the dashboard; the operator signs in with it (long random value, `.env` only) |
+| `DASHBOARD_SESSION_HOURS` | `8` | Dashboard session lifetime |
+| `AUDIT_RETENTION_DAYS` | `90` | Stored review cases (code, diff) are purged after this |
 
 ## Development
 
@@ -497,6 +505,10 @@ content is treated as untrusted data.
   repository promoted to enforcement through human review, every failed requirement in an
   **eligible** category (none: the v2 test evidence is too small and too error-prone), and the
   repository making the check required. Tests pin each lock and the default.
+- **Dashboard:** off unless a token is set. One shared operator token (no per-user
+  permissions), strict CSP, no JavaScript, `no-store`; hostile repository text renders as text
+  (tested). The stored private code is kept only for the retention period, and only if
+  `purge-audit` is scheduled.
 - **GitHub App security:** webhooks are HMAC-verified before parsing, each job's token is limited to
   one repository and to read + checks-write, secrets never reach logs or the database, and the
   thread is always re-read from GitHub rather than trusted from the webhook body
@@ -530,7 +542,8 @@ content is treated as untrusted data.
   [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md) ·
   [10 protocol](docs/phase10_protocol.md) · [10 results](docs/phase10_evaluation.md) ·
   [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md) ·
-  [11 advisory mode](docs/phase11_github_advisory.md) · [12 staged enforcement](docs/phase12_staged_enforcement.md)
+  [11 advisory mode](docs/phase11_github_advisory.md) · [12 staged enforcement](docs/phase12_staged_enforcement.md) ·
+  [13 dashboard](docs/phase13_dashboard.md)
 - Security model: [docs/security_model.md](docs/security_model.md)
 - Annotation guide: [docs/annotation_guide.md](docs/annotation_guide.md)
 - Decisions: [docs/adr/](docs/adr/)

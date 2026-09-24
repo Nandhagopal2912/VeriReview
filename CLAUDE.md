@@ -29,7 +29,7 @@ The semantic model is one evidence source, never the final authority. Aggregatio
 Package map (`src/verireview/`): `api`, `gh` (GitHub client), `ingestion`, `threads`,
 `requirements`, `evidence`, `diff`, `syntax` (Tree-sitter), `rules`, `semantic`,
 `verification`, `policy`, `explanations`, `contracts` (shared Pydantic models), `db`,
-`advisory` (GitHub App: webhooks, job queue, worker, check run), `enforcement` (eligibility gate, rollout stages).
+`advisory` (GitHub App: webhooks, job queue, worker, check run), `enforcement` (eligibility gate, rollout stages), `dashboard` (read-only operator pages).
 Do not rename `syntax` to `ast`, because that shadows the stdlib `ast` module. Do not rename `gh` to `github`.
 
 ## Commands
@@ -118,6 +118,13 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - Audit queries must filter installation **and** repository (repository isolation).
 - No live calls in tests: `helpers.github.FakeGitHubApp` serves the App endpoints; RSA keys are generated at test time (`rsa_private_key_pem`), never committed.
 
+## Dashboard notes (Phase 13)
+
+- Read-only: pages only query. Never add a write action (stage changes stay CLI-only and recorded).
+- Templates autoescape; never use `|safe` or add JavaScript (the CSP forbids scripts). Repository text (comments, code, diff, evidence) is untrusted and must stay plain text.
+- Off unless `VERIREVIEW_DASHBOARD_TOKEN` is set; never put the token in a URL, cookie or log. Never type it into a browser yourself (it is the owner's credential); preview pages as rendered files instead.
+- `verification_audit.review_case` holds private code: keep `purge-audit` working (it sets SQL NULL: the column is `JSONB(none_as_null=True)`).
+
 ## Conventions
 
 - Python 3.13, `src/` layout, strict mypy, ruff (line length 100).
@@ -145,6 +152,7 @@ uv run --group nlp pytest -m model             # tests that need a downloaded mo
 - [x] Phase 10.1: benchmark v2 frozen **first** (60 controlled + 30 adversarial written blind; 57 fresh real-world, provisional Claude labels; `dataset/benchmark/v2/`, FREEZE_LOG). v1 test became dev (203 cases). Extraction + rule fixes on dev only (tests that assert/run/are new, handlers that handle, cleanup, status names/raised HTTP exceptions/except branches/dead code/absence polarity, bounds, pydantic, alias, suggestion blocks + `other` rules in `rules/other.py`); pipelines now `mvp-2`. Pre-registered protocol (docs/phase10_1_protocol.md), one v2 test run, old rules (commit 1b530fa via `git archive`) vs new, paired: **accuracy 0.422 → 0.653 (+0.231 [0.16, 0.31]), FAR 0.302 → 0.151 (−0.151 [−0.25, −0.07])**, real-world coverage 0.09 → 0.44 (23/25 decided correct) (docs/phase10_1_rules_v2.md).
 - [x] Phase 11: GitHub advisory mode (owner decisions: neutral Check Run only, trigger = thread resolved + check re-run, offline now / live later; PyJWT[crypto] added). `advisory/` package: App JWT → installation token scoped to one repo (contents/PR read, checks write), `POST /github/webhook` (HMAC before parsing, 401/503), Postgres queue `advisory_jobs` (unique delivery id, SKIP LOCKED, backoff), worker (`verireview worker`), `verification_audit` (inputs sha256 + full result), one neutral check per head. Forged → 401, redelivery processed once, conclusion pinned neutral even with enforcement. Offline end-to-end tested; **live run on a test repo pending the owner's GitHub App** (docs/phase11_github_advisory.md).
 - [x] Phase 12: staged enforcement, built and **inert** (owner decisions: gated machinery, gate = one-sided 95% Clopper–Pearson upper bounds of FAR and FBR ≤ 5% per category on a frozen test run, enforcement = failed check that blocks only if the repo requires it). `enforcement/` (eligibility gate shipped as `eligibility.json`, pinned to its recomputation from `experiments/phase10_1_test.json`: **eligible none**; stages observe → advisory → human_review → enforcement, one step up, ≥ 14 days + ≥ 10 confirmations, recorded changes, repos without opt-in clamped to human_review), `RequirementStatus.category` (result schema v2), policy category lock, "Confirm reviewed" button (`check_run`/`requested_action`), CLI `enforcement-eligibility`, `repo-policy` (docs/phase12_staged_enforcement.md, ADR-003).
-- [ ] Next: Phase 13 (read-only dashboard), the live advisory run on a test repository (owner creates the App per the guide), or the data work that could open the gate (≥ 59 bad + 59 good cases per category, human labels, better rules on a **new** blind v3). The v1 and v2 test splits are both used: never tune against them.
+- [x] Phase 13: read-only dashboard (owner decisions: server-rendered in FastAPI with Jinja2, no JS; one operator token, off by default; store the verified ReviewCase on audit rows with retention). `dashboard/` (token sign-in with HMAC session cookie, rate limit, strict CSP + no-store, autoescaped templates, pages: overview, repository, pull, audit detail with code/diff/evidence, jobs), `verification_audit.review_case` (migration 0005), `verireview purge-audit` (docs/phase13_dashboard.md).
+- [ ] Next (owner's direction): the live advisory run on a test repository (owner creates the App per the Phase 11 guide), the data work that could open the enforcement gate (≥ 59 bad + 59 good cases per category, human labels, better rules on a **new** blind v3), or Phase 8b (semantic evidence in the verdict; only with data, ADR-002). The v1 and v2 test splits are both used: never tune against them.
 
 Decisions: D1–D5, D7 (UniXcoder), D8 (LLM deferred), D9 (process: Claude proposes, owner approves repos) settled; D6 open (`docs/ROADMAP.md` §7). ADR-001 and ADR-002 accepted.

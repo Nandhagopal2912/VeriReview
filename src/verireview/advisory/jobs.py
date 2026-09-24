@@ -121,6 +121,7 @@ def record_audit(
         confidence=result.confidence.value,
         action=decision.action.value,
         result=result.model_dump(mode="json"),
+        review_case=case.model_dump(mode="json"),
     )
     session.add(row)
     session.commit()
@@ -185,3 +186,21 @@ def confirmations(
             .order_by(ReviewConfirmation.id)
         )
     )
+
+
+def purge_stored_cases(session: Session, older_than_days: int) -> int:
+    """Remove stored review cases (repository code) from audit rows older than the retention.
+
+    The verdict, hashes and result stay (the audit trail); only the copied code and diff go.
+    Returns how many rows were purged.
+    """
+    cutoff = datetime.now(UTC) - timedelta(days=older_than_days)
+    rows = session.scalars(
+        select(VerificationAudit).where(
+            VerificationAudit.created_at < cutoff, VerificationAudit.review_case.is_not(None)
+        )
+    ).all()
+    for row in rows:
+        row.review_case = None
+    session.commit()
+    return len(rows)

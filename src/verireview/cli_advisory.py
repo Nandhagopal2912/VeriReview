@@ -8,6 +8,8 @@ verireview replay-webhook PAYLOAD.json --event EVENT [--delivery ID] [--url URL]
 verireview enforcement-eligibility REPORT.json [--system F] [--write]
     Phase 12: per-category false-acceptance / false-blocking upper bounds from a frozen test
     run; --write replaces the eligibility shipped with the package.
+verireview purge-audit [--days N]
+    Phase 13: remove the stored code and diff from audit rows older than the retention.
 verireview repo-policy show OWNER/REPO --installation ID
 verireview repo-policy set OWNER/REPO --installation ID --stage STAGE [--categories a,b]
                        --actor NAME --reason TEXT
@@ -22,7 +24,7 @@ from urllib.parse import urlparse
 
 from verireview.config import get_settings
 
-COMMANDS = ("worker", "replay-webhook", "enforcement-eligibility", "repo-policy")
+COMMANDS = ("worker", "replay-webhook", "enforcement-eligibility", "repo-policy", "purge-audit")
 LOCAL_HOSTS = frozenset({"localhost", "127.0.0.1", "::1"})
 
 
@@ -45,6 +47,11 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
         "--write", action="store_true", help="replace the eligibility shipped with the package"
     )
 
+    p = sub.add_parser(
+        "purge-audit", help="remove stored repository code from audit rows past retention"
+    )
+    p.add_argument("--days", type=int, help="retention in days (default: audit_retention_days)")
+
     p = sub.add_parser("repo-policy", help="show or change a repository's rollout stage")
     p.add_argument("action", choices=["show", "set"])
     p.add_argument("repository", help="OWNER/REPO")
@@ -64,6 +71,8 @@ def run(args: argparse.Namespace) -> int:
         return _eligibility(args.report, args.system, args.write)
     if args.command == "repo-policy":
         return _repo_policy(args)
+    if args.command == "purge-audit":
+        return _purge(args.days)
     return _replay(args.payload, args.event, args.delivery or str(uuid.uuid4()), args.url)
 
 
@@ -205,4 +214,18 @@ def _repo_policy(args: argparse.Namespace) -> int:
             f"enforced categories: {enforced}; confirmations since: {confirmed}; global "
             f"blocking switch: {'on' if settings.policy_allow_block else 'off'}"
         )
+    return 0
+
+
+def _purge(days: int | None) -> int:
+    from verireview.advisory.jobs import purge_stored_cases
+    from verireview.db.session import get_sessionmaker
+
+    retention = days if days is not None else get_settings().audit_retention_days
+    if retention < 1:
+        print("error: --days must be at least 1", file=sys.stderr)
+        return 2
+    with get_sessionmaker()() as session:
+        purged = purge_stored_cases(session, retention)
+    print(f"removed stored code from {purged} audit row(s) older than {retention} day(s)")
     return 0

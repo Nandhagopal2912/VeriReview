@@ -3,7 +3,7 @@
     verireview benchmark-stats                        sizes, splits, targets
     verireview mine-candidates OWNER/REPO             resolved review threads (network, token)
     verireview collect-cases CANDIDATES.jsonl --n N --seed S   ingest a sample (network)
-    verireview annotation-sheet --batch NAME [--calibration]   offline HTML page for annotators
+    verireview annotation-sheet --batch NAME [--calibration] [--relabel-model]   annotator page
     verireview agreement A.json B.json                Cohen's kappa + disagreements
     verireview adjudication-sheet A.json B.json --batch NAME   page for the adjudicator
     verireview build-gold A.json B.json [--adjudication ADJ.json]   write gold.json files
@@ -88,6 +88,12 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p = sub.add_parser("annotation-sheet", help="write the offline annotation page")
     p.add_argument("--batch", required=True, help="batch name, e.g. rw-v1")
     p.add_argument("--calibration", action="store_true", help="the 10 calibration fixtures")
+    p.add_argument(
+        "--relabel-model",
+        action="store_true",
+        help="also include cases that only have provisional model gold (for human relabelling); "
+        "the model's labels are never shown on the page",
+    )
     p.add_argument("--dataset", type=Path, default=DATASET)
     p.add_argument("--out", type=Path)
 
@@ -169,7 +175,12 @@ def run(args: argparse.Namespace) -> int:
         return _network(args)
     if command == "annotation-sheet":
         return _annotation_sheet(
-            args.batch, args.calibration, args.dataset, args.out, args.benchmark_version
+            args.batch,
+            args.calibration,
+            args.dataset,
+            args.out,
+            args.benchmark_version,
+            relabel_model=args.relabel_model,
         )
     if command == "agreement":
         return _agreement(_annotations(args.a), _annotations(args.b), args.out)
@@ -347,7 +358,13 @@ def approved_repositories(dataset: Path) -> set[str]:
 
 
 def _annotation_sheet(
-    batch: str, calibration: bool, dataset: Path, out: Path | None, version: str
+    batch: str,
+    calibration: bool,
+    dataset: Path,
+    out: Path | None,
+    version: str,
+    *,
+    relabel_model: bool = False,
 ) -> int:
     if calibration:
         cases = []
@@ -365,7 +382,18 @@ def _annotation_sheet(
         mode: Mode = "calibration"
     else:
         root = dataset / get_version(version).real_world
-        pending = [rw for rw in iter_real_world(root) if rw.gold is None] if root.is_dir() else []
+        # Unlabelled cases, plus (with --relabel-model) cases whose only gold is a provisional
+        # model label: humans relabel those blind. Never cases that already have human gold.
+        # sheet_case gets no reference, so the existing (model) label is never shown.
+        pending = (
+            [
+                rw
+                for rw in iter_real_world(root)
+                if rw.gold is None or (relabel_model and rw.gold.label_source == "model")
+            ]
+            if root.is_dir()
+            else []
+        )
         cases = [sheet_case(rw.case_id, rw.case) for rw in pending]
         mode = "annotate"
     out = out or RAW / "sheets" / f"{batch}.html"

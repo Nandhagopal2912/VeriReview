@@ -134,7 +134,8 @@ the real-world cases as annotator `claude`, following this guide, with these saf
 - Gold built this way is marked `label_source: "model"`. Results on it are reported separately and
   called provisional. Claude also wrote the rules, so its labels may share their blind spots.
 - When humans label later, their two-annotator, adjudicated labels replace the model labels. The
-  tools refuse the reverse. `agreement claude.json human.json` measures how often a human agrees
+  tools refuse the reverse. Generate their page with `annotation-sheet --batch B --relabel-model`:
+  it includes the model-labelled cases but never shows the model's label (blind). `agreement claude.json human.json` measures how often a human agrees
   with Claude.
 
 ## 8. Worked examples (from the dev fixtures)

@@ -215,3 +215,32 @@ def test_provisional_model_gold_never_replaces_human_gold(
     assert main_v1(args) == 0  # the model label comes back...
     assert "kept human gold" in capsys.readouterr().out  # ...but does not overwrite humans
     assert json.loads(gold_path.read_text(encoding="utf-8"))["label_source"] == "human"
+
+
+def test_relabel_model_puts_model_labelled_cases_on_the_sheet_blind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Humans relabel cases that only have provisional model gold, without seeing that label."""
+    root = mine_and_collect(tmp_path)
+    claude = export(tmp_path / "claude.json", "claude", "not_satisfied")
+    model_gold = ["build-gold", str(claude), "--single-source", "model", "--dataset", str(root)]
+    assert main_v1(model_gold) == 0
+    sheet = tmp_path / "sheet.html"
+
+    def write_sheet(*extra: str) -> str:
+        args = ["annotation-sheet", "--batch", "rw", "--dataset", str(root), "--out", str(sheet)]
+        assert main_v1([*args, *extra]) == 0
+        return capsys.readouterr().out
+
+    assert "(0 case(s)" in write_sheet()  # default: only unlabelled cases
+    assert "(1 case(s)" in write_sheet("--relabel-model")
+    html = sheet.read_text(encoding="utf-8")
+    assert KEY in html
+    assert "claude" not in html and "label_source" not in html  # blind: no model label shown
+    assert '"reference": {' not in html
+
+    a = export(tmp_path / "a.json", "ann-a", "satisfied")
+    b = export(tmp_path / "b.json", "ann-b", "satisfied")
+    assert main_v1(["build-gold", str(a), str(b), "--dataset", str(root)]) == 0
+    capsys.readouterr()
+    assert "(0 case(s)" in write_sheet("--relabel-model")  # human gold is never relabelled

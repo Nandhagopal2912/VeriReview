@@ -56,7 +56,7 @@ uv run --group nlp verireview eval-baselines --scorers lexical,tfidf,embedding,u
 uv run --group nlp verireview eval-semantic    # code-model evidence: AUC + 0 verdict changes vs mvp
 uv run verireview eval-injection [--pipeline phase7-semantic]  # prompt-injection suite (0 changes)
 uv run verireview benchmark-stats              # Phase 9: sets, splits, targets
-uv run verireview annotation-sheet --batch B [--calibration]   # offline page -> dataset/raw/sheets/
+uv run verireview annotation-sheet --batch B [--calibration] [--relabel-model]   # offline page -> dataset/raw/sheets/ (--relabel-model: humans relabel model-gold cases, blind)
 uv run verireview agreement A.json B.json      # Cohen's kappa + disagreements
 uv run --group nlp verireview eval-benchmark --split dev   # ablation on benchmark v2 (--benchmark-version v1 for the old layout; test: --final-test-run)
 uv run verireview compare-reports OLD.json NEW.json --system F   # paired bootstrap across two reports

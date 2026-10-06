@@ -158,7 +158,7 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview eval-benchmark --split dev [--benchmark-version v1\|v2]` (test: `--final-test-run`) | Ablation: every system, bootstrap intervals, paired differences (default benchmark: v2) |
 | `verireview compare-reports OLD.json NEW.json [--system F]` | Paired bootstrap of one system across two reports on the same cases (e.g. old vs new rules) |
 | `verireview benchmark-stats [--benchmark-version v1\|v2]` | Benchmark sizes, splits and targets |
-| `verireview annotation-sheet --batch B [--calibration]` | Write the offline annotation page for annotators |
+| `verireview annotation-sheet --batch B [--calibration] [--relabel-model]` | Write the offline annotation page for annotators (`--relabel-model` adds cases that only have provisional model labels, without showing those labels) |
 | `verireview mine-candidates OWNER/REPO` · `collect-cases FILE --n N --seed S` | Mine and collect real-world cases (approved repositories only, token needed) |
 | `verireview agreement A.json B.json` · `adjudication-sheet` · `build-gold` · `benchmark-freeze` | Cohen's kappa, adjudication, gold labels, frozen test manifest |
 | `verireview worker [--once]` | Advisory mode: process queued webhook jobs (GitHub App settings needed) |

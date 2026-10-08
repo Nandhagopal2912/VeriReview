@@ -26,17 +26,17 @@ so nothing can fail or block today.
 |---|---|
 | **Current phase** | **Phase 13 done: read-only dashboard.** Server-rendered pages in the API (no JavaScript) for repositories, pull requests, each verification (thread, requirements, evidence, explanation, code before/after, diff, inputs hash) and history. Off unless an operator token is set; stored code is purged after a retention period (90 days) |
 | **Phase 12** | **Staged enforcement, built and inert.** Repositories move observe → advisory → human review (with a *Confirm reviewed* button) → enforcement, one step at a time, recorded. A check can only fail when four locks are open (global switch, repository opt-in, an eligible category, branch protection). **No category is eligible**: on the v2 test even naming's clean 0/10 has a 26% upper bound, and the gate needs ≤ 5% ([ADR-003](docs/adr/003-enforcement-gate.md)) |
-| **Phase 11** | **GitHub advisory mode.** A GitHub App receives signed webhooks, verifies each resolved review thread in a background worker, audits it, and posts one **neutral** check per pull request. Built and tested offline; the live run on a test repository follows the setup guide once an App exists |
+| **Phase 11** | **GitHub advisory mode.** A GitHub App receives signed webhooks, verifies each resolved review thread in a background worker, audits it, and posts one **neutral** check per pull request. **Run live on a private test repository (2026-10-08):** all checks worked end to end after 7 fixes found by the live run (Re-run sends `check_suite`, re-check on every push, worker resilience, logging, a separate test database) ([live run](docs/phase11_github_advisory.md#live-run-2026-10-08)) |
 | **Advisory mode** | HMAC-verified webhooks (forged → 401), idempotent queue (redelivery → processed once), per-repository least-privilege App tokens, audit trail with inputs hash, check conclusion pinned to `neutral` |
 | **Blind test v2 (full VeriReview)** | **accuracy 0.65** [0.58, 0.73] · **false acceptance 0.15** [0.06, 0.26] · false blocking 0.04 · 147 cases |
 | **Against the Phase 10 rules, same cases** | accuracy **+0.23** [+0.16, +0.31] · false acceptance **−0.15** [−0.25, −0.07] (paired bootstrap) |
 | **What that means** | Clearly better, but still not safe enough to gate merges: 8 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
 | **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly and none a false acceptance. Nearly all through the new suggestion-block check. Labels are provisional (Claude, blind) |
-| **Next phase** | Every roadmap phase is done except 8b (semantic evidence in the verdict), which the data has not justified (ADR-002). Awaiting direction: the live advisory run on a test repository (needs a GitHub App, [guide](docs/phase11_github_advisory.md#live-setup-when-you-want-to-connect-a-real-repository)), or the data work that could ever open the gate (≥ 59 bad and 59 good cases per category, human labels, better rules) |
+| **Next phase** | Every roadmap phase is done except 8b (semantic evidence in the verdict), which the data has not justified (ADR-002). In progress: human relabelling of the real-world cases by two annotators. Then: the data work that could ever open the gate (≥ 59 bad and 59 good cases per category, human labels, better rules) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,108 unit + 37 integration + 2 model tests, strict mypy, CI on every push |
+| **Tests** | 1,114 unit + 39 integration + 2 model tests (integration on a separate test database), strict mypy, CI on every push |
 
 ---
 
@@ -413,7 +413,7 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 9 | ✅ | Benchmark v1: annotation guide, 100 blind test cases, 50 real-world cases (provisional labels), frozen manifest, annotation tooling | [phase9](docs/phase9_benchmark.md) |
 | 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 10.1 | ✅ | Rule and extraction fixes from the Phase 10 error analysis, suggestion-block and `other` rules, benchmark v2 frozen first, one blind v2 run old vs new | [protocol](docs/phase10_1_protocol.md), [results](docs/phase10_1_rules_v2.md) |
-| 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run (offline-tested; live run pending an App) | [phase11](docs/phase11_github_advisory.md) |
+| 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run; live run on a test repository, re-check on every push | [phase11](docs/phase11_github_advisory.md) |
 | 13 | ✅ | Read-only dashboard: server-rendered, no JavaScript, operator token (off by default), stored cases with retention | [phase13](docs/phase13_dashboard.md) |
 | 12 | ✅ | Staged enforcement: per-repository stages, human-review confirmations, statistical category gate, four locks. Built and **inert**: no category is eligible | [phase12](docs/phase12_staged_enforcement.md), [ADR-003](docs/adr/003-enforcement-gate.md) |
 
@@ -513,8 +513,8 @@ content is treated as untrusted data.
 - **GitHub App security:** webhooks are HMAC-verified before parsing, each job's token is limited to
   one repository and to read + checks-write, secrets never reach logs or the database, and the
   thread is always re-read from GitHub rather than trusted from the webhook body
-  ([security model](docs/security_model.md)). The live App path is not yet exercised on a real
-  repository.
+  ([security model](docs/security_model.md)). The live App path has run on one private test
+  repository (2026-10-08), not on a team's real repositories or under load.
 - **Not accurate enough to gate merges.** On the blind v2 test, 15% of bad resolutions were
   accepted and 4% of good ones called unsatisfied. Use the output as an advisory flag.
 - **Confidence is rule-based, not calibrated.** On v2 test, MEDIUM verdicts were right 84% of the

@@ -68,6 +68,13 @@ async def github_webhook(
     except (ValueError, ValidationError, AttributeError, TypeError) as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "unexpected payload") from exc
     if not tasks:
+        logger.info(
+            "webhook %s (%s/%s): ignored%s",
+            x_github_delivery,
+            x_github_event,
+            _safe_action(payload),
+            _check_run_detail(payload, settings.advisory_check_name),
+        )
         return WebhookResponse(status="ignored")
 
     created = await run_in_threadpool(enqueue, session, x_github_delivery, x_github_event, tasks)
@@ -79,3 +86,19 @@ async def github_webhook(
         len(tasks),
     )
     return WebhookResponse(status="queued" if created else "duplicate", jobs=created)
+
+
+def _safe_action(payload: Any) -> str:
+    """The payload's ``action``, only if it is a plain word (payload text is untrusted)."""
+    action = payload.get("action") if isinstance(payload, dict) else None
+    return action if isinstance(action, str) and _EVENT.match(action) else "-"
+
+
+def _check_run_detail(payload: Any, check_name: str) -> str:
+    """For an ignored check_run event: whether it was our check and how many PRs it named."""
+    run = payload.get("check_run") if isinstance(payload, dict) else None
+    if not isinstance(run, dict):
+        return ""
+    pulls = run.get("pull_requests")
+    count = len(pulls) if isinstance(pulls, list) else 0
+    return f" (our check: {run.get('name') == check_name}, pull requests: {count})"

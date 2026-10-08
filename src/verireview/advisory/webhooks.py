@@ -6,11 +6,16 @@ read. Payloads are untrusted data: only the few fields below are taken, each val
 (repository name, positive numbers, 40-hex SHAs), and nothing in them is ever executed or
 interpreted as an instruction.
 
-Work comes from three events (owner decisions, Phases 11 and 12):
+Work comes from these events (owner decisions, Phases 11 and 12, and the first live run):
 
 - ``pull_request_review_thread`` / ``resolved``: verify that thread.
-- ``check_run`` / ``rerequested`` on our own check ("Re-run" in the GitHub UI): verify every
-  resolved thread of the pull request again.
+- ``check_run`` / ``rerequested`` on our own check, and ``check_suite`` / ``rerequested`` (what
+  GitHub's "Re-run" button actually sends for an app's check, found in the first live run):
+  verify every resolved thread of the pull request again, on its latest head. GitHub delivers a
+  ``check_suite`` event only to the app that owns the suite.
+- ``check_suite`` / ``requested``, which GitHub sends on every push: the same re-check, so the
+  check follows the latest commit (owner decision after the live run, 2026-10-08). A pull request
+  with no resolved thread gets no check (the worker posts only when there are results).
 - ``check_run`` / ``requested_action`` ``confirm_review`` on our own check (Phase 12, human-review
   stage): record that the clicking reviewer confirmed the result.
 
@@ -125,15 +130,22 @@ def tasks_from_event(event: str, payload: dict[str, Any], check_name: str) -> li
                 for pr in run.get("pull_requests") or []
                 if isinstance(pr, dict) and "number" in pr
             ]
-        return [
-            AdvisoryTask(
-                kind="pull_request",
-                installation_id=installation,
-                repository=repository,
-                pull_number=pr["number"],
-                head_sha=run.get("head_sha"),
-            )
-            for pr in run.get("pull_requests") or []
-            if isinstance(pr, dict) and "number" in pr
-        ]
+        return _rerun_tasks(installation, repository, run)
+    if event == "check_suite" and action in ("requested", "rerequested"):
+        return _rerun_tasks(installation, repository, payload.get("check_suite") or {})
     return []
+
+
+def _rerun_tasks(installation: int, repository: str, source: dict[str, Any]) -> list[AdvisoryTask]:
+    """One "verify the whole pull request again" task per pull request a re-run names."""
+    return [
+        AdvisoryTask(
+            kind="pull_request",
+            installation_id=installation,
+            repository=repository,
+            pull_number=pr["number"],
+            head_sha=source.get("head_sha"),
+        )
+        for pr in source.get("pull_requests") or []
+        if isinstance(pr, dict) and "number" in pr
+    ]

@@ -106,8 +106,11 @@ uv run pytest -m integration tests/integration/test_advisory.py
 
 1. **Create a GitHub App.** Go to GitHub → Settings → Developer settings → GitHub Apps → New.
    - Name: e.g. `verireview-<you>`.
-   - Webhook: active. URL: your tunnel URL (step 5) followed by `/github/webhook`. Secret: a long
-     random string.
+   - Webhook: active. URL: with smee (step 5), the plain channel URL (`https://smee.io/<channel>`,
+     nothing appended; `--target` adds `/github/webhook`). With a tunnel that forwards a whole
+     host (e.g. ngrok), the tunnel URL followed by `/github/webhook`. Secret: a long random string.
+   - Homepage URL: required but unused (e.g. your GitHub profile). Callback and Setup URLs:
+     empty; user authorization (OAuth) and device flow: off.
    - Repository permissions: **Checks: Read and write**, **Contents: Read-only**, **Pull
      requests: Read-only**. Metadata: Read-only is mandatory. Nothing else.
    - Subscribe to events: **Pull request review thread** and **Check run**.
@@ -137,15 +140,61 @@ uv run pytest -m integration tests/integration/test_advisory.py
 
 Set `VERIREVIEW_POLICY_MODE=observe` to audit without posting anything.
 
+## Live run (2026-10-08)
+
+The first run against real GitHub: the owner's App (`verireview-nandhagopal`) on a private test
+repository, webhooks relayed with smee, following [live_test_kit.md](live_test_kit.md). It tested
+the connection, not accuracy; the expected verdicts were produced offline first.
+
+| # | Scenario | Live result |
+|---|---|---|
+| T1 | proper fix (`username` check) | SATISFIED (MEDIUM) |
+| T2 | resolved without a change | NOT_SATISFIED (MEDIUM) |
+| T3 | range check added, test missing | PARTIALLY_SATISFIED (MEDIUM) |
+| T4 | "This could be cleaner." | UNCERTAIN (LOW) |
+| T5 | suggestion | UNCERTAIN: the guide's instruction text was pasted into the comment as extra sentences (each became an unverifiable requirement); the suggestion itself was found applied, at the right line. Guide corrected |
+| 6 | Re-run | worked after fix 3 below |
+| 7 | dashboard | all five threads with evidence, code and diff |
+| 8 | unsigned delivery | 401 |
+| 9 | push | re-checked all threads without a Re-run (after fix 5) |
+| 10 | push with a syntax error, then the fix | same verdicts at LOW ("the parser reported syntax errors"), back to MEDIUM after the fix |
+
+GitHub's record of the check on the final commit (real output, read back from the API):
+
+```text
+VeriReview | status: completed | conclusion: neutral | 5 resolved thread(s) checked: 1 not satisfied, 1 partially satisfied, 1 satisfied, 2 uncertain
+```
+
+Problems found that the offline tests did not catch, all fixed and pinned by tests:
+
+1. **The worker logged nothing**: logging was only configured for the API (`cli_advisory._worker`).
+2. **An applied suggestion cited the line within the function** (3) instead of the file line (21)
+   (`rules/other.py`; `test_applied_suggestion_cites_the_file_line_not_the_line_within_the_function`).
+3. **"Re-run" did nothing.** GitHub's button sends `check_suite`/`rerequested`, not the
+   `check_run`/`rerequested` the offline fixtures used. Both are handled now
+   (`check_suite_rerequested.json`).
+4. **Ignored deliveries were not logged**, which hid problem 3. Each is now logged with its event,
+   action and, for check runs, whether it was our check (no payload text).
+5. **The check did not follow new commits.** Owner decision: re-check on every push, using the
+   `check_suite`/`requested` event GitHub sends to the App anyway (no new App setting).
+6. **One unexpected error stopped the worker for good.** It is now retried and logged by class
+   name, the loop continues, and compose restarts the `worker` and `api` containers.
+7. **The integration tests shared the live database**: the live worker claimed a test job. They now
+   use their own database (`<name>_test`, created and migrated by `tests/integration/conftest.py`).
+
+Notes: the green "successful check" on the pull request was GitGuardian, another App on the
+account; VeriReview's check is neutral. After a Re-run on an older commit, that commit's
+VeriReview suite stays "queued" (the fresh check goes to the latest commit), which is cosmetic.
+
 ## Limitations
 
 - **Advisory quality only.** About 1 in 7 unaddressed threads is reported as satisfied (v2 test).
   The check says so in its first line.
-- **One check per head commit.**
-  - A new push does not re-verify; "Re-run" does, on the latest head.
+- **One check per head commit.** Every push and every Re-run re-checks all resolved threads on the
+  latest head (one job per push: a large pull request means many GitHub calls).
   - Unresolving a thread does not remove it from the check.
-- **Not measured live yet.** The worker is a single process by default; several are safe
-  (`SKIP LOCKED`), but none has been load-tested.
-- **The audit trail grows without a retention policy** (to decide before any real deployment).
+- **Tested live on one private repository**, not load-tested. The worker is a single process by
+  default; several are safe (`SKIP LOCKED`).
+- **Stored code is kept 90 days**; `purge-audit` must be scheduled (Phase 13).
 - **GitHub Enterprise:** set `VERIREVIEW_GITHUB_API_URL`. Untested.
 - **Python files only**, as before. Threads on other files end as UNCERTAIN (human review).

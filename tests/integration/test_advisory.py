@@ -134,13 +134,21 @@ def test_forged_webhook_is_rejected_and_queues_nothing(
     assert jobs(session, delivery) == []
 
 
+@pytest.mark.parametrize(
+    ("fixture", "event"),
+    [
+        ("check_run_rerequested.json", "check_run"),  # re-run of one check
+        ("check_suite_rerequested.json", "check_suite"),  # GitHub's "Re-run" button (live run)
+        ("check_suite_requested.json", "check_suite"),  # a push (owner decision: re-check)
+    ],
+)
 def test_rerun_reverifies_resolved_threads_and_updates_the_same_check(
-    client: TestClient, session: Session
+    client: TestClient, session: Session, fixture: str, event: str
 ) -> None:
     fake = FakeGitHubApp()
     deliver(client, "thread_resolved.json", "pull_request_review_thread", f"it-{uuid.uuid4()}")
     worker(fake).run_once()
-    deliver(client, "check_run_rerequested.json", "check_run", f"it-{uuid.uuid4()}")
+    deliver(client, fixture, event, f"it-{uuid.uuid4()}")
     worker(fake).run_once()
 
     assert len(fake.check_runs) == 1  # updated, not duplicated

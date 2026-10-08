@@ -17,6 +17,7 @@ services:
       retries: 10
 
   api:
+    restart: unless-stopped
     build:
       context: .
       dockerfile: docker/Dockerfile
@@ -50,6 +51,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     command: ["verireview", "worker"]
+    restart: unless-stopped  # a crashed worker silently stops all checking (first live run)
     environment:
       VERIREVIEW_ENVIRONMENT: ${VERIREVIEW_ENVIRONMENT:-development}
       VERIREVIEW_LOG_LEVEL: ${VERIREVIEW_LOG_LEVEL:-INFO}

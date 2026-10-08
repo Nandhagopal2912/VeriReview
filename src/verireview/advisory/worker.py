@@ -11,7 +11,9 @@ repositories without an opt-in never enforce). A "Confirm reviewed" press is a `
 recorded, then the check is re-rendered with the reviewer listed.
 
 Failures: GitHub outages, rate limits and auth problems are retried with backoff; a thread or
-pull request that does not exist fails the job at once. Error text stored on the job is the
+pull request that does not exist fails the job at once. Anything unforeseen is retried too, and
+never stops the worker: the first live run showed one unexpected database error ending the
+process, after which nothing was verified until a restart. Error text stored on the job is the
 exception's class and message, which never contains tokens (the client puts only API paths in
 its messages).
 """
@@ -76,6 +78,11 @@ class AdvisoryWorker:
             except RETRYABLE_ERRORS as exc:
                 logger.warning("advisory job %s failed, will retry: %s", job.id, type(exc).__name__)
                 retry_or_fail(session, job, _describe(exc), self.max_attempts)
+            except Exception as exc:  # noqa: BLE001 - unforeseen: retry the job, keep the worker
+                name = type(exc).__name__
+                logger.warning("advisory job %s failed unexpectedly, will retry: %s", job.id, name)
+                session.rollback()
+                retry_or_fail(session, job, name, self.max_attempts)
             else:
                 complete(session, job)
             return True
@@ -87,7 +94,14 @@ class AdvisoryWorker:
             "advisory worker started (check %r, mode %s)", self.check_name, self.policy.mode
         )
         while True:
-            if not self.run_once():
+            try:
+                worked = self.run_once()
+            except Exception as exc:  # noqa: BLE001 - e.g. the job row vanished, the database blipped
+                # Only the class name: database errors can carry statement parameters.
+                name = type(exc).__name__
+                logger.error("advisory worker: unexpected error, continuing: %s", name)
+                worked = False
+            if not worked:
                 sleep(poll_interval_s)
 
     def process(self, session: Session, job: AdvisoryJob) -> None:

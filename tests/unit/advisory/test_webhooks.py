@@ -65,6 +65,33 @@ def test_rerun_of_our_check_verifies_the_pull_request() -> None:
     assert [(t.kind, t.pull_number, t.comment_id) for t in tasks] == [("pull_request", 7, None)]
 
 
+def test_rerun_all_checks_verifies_the_pull_request() -> None:
+    """GitHub's "Re-run" on an app's check sends check_suite/rerequested (seen live)."""
+    tasks = tasks_from_event("check_suite", payload("check_suite_rerequested.json"), "VeriReview")
+
+    assert [(t.kind, t.pull_number, t.head_sha) for t in tasks] == [("pull_request", 7, "3" * 40)]
+
+
+def test_a_push_rechecks_the_pull_request() -> None:
+    """GitHub sends check_suite/requested on every push (owner decision: re-check on push)."""
+    data = payload("check_suite_rerequested.json")
+    data["action"] = "requested"
+
+    assert [(t.kind, t.pull_number) for t in tasks_from_event("check_suite", data, "V")] == [
+        ("pull_request", 7)
+    ]
+
+
+def test_check_suite_without_pull_requests_or_other_actions_creates_no_work() -> None:
+    data = payload("check_suite_rerequested.json")
+    data["check_suite"]["pull_requests"] = []  # a push to a branch without a pull request
+    assert tasks_from_event("check_suite", data, "VeriReview") == []
+
+    data = payload("check_suite_rerequested.json")
+    data["action"] = "completed"
+    assert tasks_from_event("check_suite", data, "VeriReview") == []
+
+
 @pytest.mark.parametrize(
     ("event", "name", "check_name"),
     [

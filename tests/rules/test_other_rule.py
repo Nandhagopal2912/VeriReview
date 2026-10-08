@@ -36,6 +36,18 @@ def test_positive_suggestion_reformatted_over_several_lines() -> None:
     assert run_suggestion("    return g(a, b)", before, after, anchor=2).status == S.SATISFIED
 
 
+def test_applied_suggestion_cites_the_file_line_not_the_line_within_the_function() -> None:
+    # Found during the first live GitHub run: the citation said line 3 (third line of the
+    # function) instead of the file line.
+    before = "def first(x):\n    return x\n\n\ndef area(w, h):\n    return w * h\n"
+    after = before.replace("return w * h", "return float(w) * float(h)")
+    outcome = run_suggestion("    return float(w) * float(h)", before, after, anchor=6)
+
+    assert outcome.status == S.SATISFIED
+    location = outcome.evidence[0].location
+    assert location is not None and location.line_start == 6
+
+
 def test_negative_suggestion_ignored() -> None:
     outcome = run_suggestion("    return float(w) * float(h)", CODE, CODE)
 

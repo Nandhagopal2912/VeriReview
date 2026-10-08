@@ -69,7 +69,7 @@ def other_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
 def suggestion_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
     old = _commented_lines(ctx)
     new = (requirement.suggested_code or "").split("\n")
-    before, after = _target_lines(ctx)
+    before, after, after_offset = _target_lines(ctx)
     if not [line for line in old if line.strip()]:
         return inconclusive(requirement, "The commented lines are blank; nothing to compare.")
 
@@ -86,7 +86,8 @@ def suggestion_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
 
     nb, na = _count(new_block, norm(before)), _count(new_block, norm(after))
     if na > nb or (na >= 1 and oa < ob):
-        line = _find(new_block, after, exact) or anchor
+        found = _find(new_block, after, exact)  # 1-based within the function's lines
+        line = found + after_offset if found else anchor
         return _outcome(requirement, ctx, True, "The suggested code is applied.", line)
     if oa >= ob and na <= nb:
         return _outcome(
@@ -104,18 +105,20 @@ def suggestion_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
     )
 
 
-def _target_lines(ctx: RuleContext) -> tuple[list[str], list[str]]:
+def _target_lines(ctx: RuleContext) -> tuple[list[str], list[str], int]:
     """Lines of the commented function before and after (the whole file at module level), so a
-    copy of the same line in another function cannot stand in for the commented one."""
+    copy of the same line in another function cannot stand in for the commented one. The third
+    value is the offset to add to a 1-based position in the "after" lines to get a file line."""
     before = (ctx.case.before_code or "").split("\n")
     after = (ctx.case.after_code or "").split("\n")
     old_symbol = ctx.resolution.before
     new_symbol = ctx.resolution.after or ctx.resolution.moved_to
     if old_symbol is None or new_symbol is None:
-        return before, after
+        return before, after, 0
     return (
         before[old_symbol.start_line - 1 : old_symbol.end_line],
         after[new_symbol.start_line - 1 : new_symbol.end_line],
+        new_symbol.start_line - 1,
     )
 
 

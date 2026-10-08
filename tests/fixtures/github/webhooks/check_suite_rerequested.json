@@ -1,0 +1,36 @@
+{
+  "action": "rerequested",
+  "check_suite": {
+    "id": 11,
+    "head_branch": "feature",
+    "head_sha": "3333333333333333333333333333333333333333",
+    "app": {
+      "id": 1234,
+      "slug": "verireview"
+    },
+    "pull_requests": [
+      {
+        "number": 7,
+        "head": {
+          "sha": "4444444444444444444444444444444444444444"
+        }
+      }
+    ]
+  },
+  "repository": {
+    "id": 100,
+    "name": "shop",
+    "full_name": "acme/shop",
+    "private": true,
+    "owner": {
+      "login": "acme"
+    }
+  },
+  "installation": {
+    "id": 4242
+  },
+  "sender": {
+    "login": "dev-alice",
+    "type": "User"
+  }
+}

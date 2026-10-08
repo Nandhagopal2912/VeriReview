@@ -20,6 +20,7 @@ verireview demo-seed [--fixtures DIR] [--remove]
 """
 
 import argparse
+import logging
 import sys
 import uuid
 from pathlib import Path
@@ -101,6 +102,11 @@ def _worker(once: bool) -> int:
     from verireview.policy import configured_policy
 
     settings = get_settings()
+    # Same format as the API (main.py); without this the worker's progress logs are dropped.
+    logging.basicConfig(
+        level=settings.log_level,
+        format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    )
     key = settings.app_private_key()
     if settings.github_app_id is None or key is None:
         print(

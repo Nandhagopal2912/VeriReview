@@ -1,0 +1,1 @@
+Extend the tests to cover `None` as input.

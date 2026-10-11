@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-naming-11-confusing-names",
+  "category": "naming",
+  "file_path": "geo/area.py",
+  "target_symbol": "f",
+  "comment_line": 1,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment does not say which names, or what they should be.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Use clearer names (unspecified)",
+      "target": "f"
+    }
+  ]
+}

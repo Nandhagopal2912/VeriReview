@@ -120,8 +120,14 @@ The order is the one of v2 (`dataset/benchmark/v2/FREEZE_LOG.md`): the new test 
   and the model labels disagree plus 15 drawn at random (seed 20261011) from the other 39. The
   random 15 give an unbiased look at human–human agreement; the 21 settle the disputes.
 
-Still to do before the freeze: the human labels for the new real-world cases; the `controlled`
-(60) and `adversarial` (30) test cases written blind from the same recipe as v1 and v2; then
+- **Controlled (60) and adversarial (30) cases:** written blind (no verifier ran on them; they
+  were only loaded and compiled) and pinned by hash in `tests/benchmark/test_benchmark_v3.py`
+  before any rule change. Same recipe as v1 and v2, checked by a test against v2: 12 and 6 cases
+  per category, the same verdict mix, and the same number of every difficult-case type (prompt
+  injection, dead code, wrong value, wrong target, text that only mentions the fix, unusual but
+  valid idioms, partial fixes). Same caveat as before: they come from the rules' author.
+
+Still to do before the freeze: the human labels for the 60 new real-world cases; then
 `benchmark-freeze --benchmark-version v3`. After that: rule changes on dev data, and one blind v3
 run under a pre-registered protocol.
 

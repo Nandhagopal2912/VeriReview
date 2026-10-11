@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-08-only-the-source-changed",
+  "category": "testing",
+  "file_path": "money/rounding.py",
+  "target_symbol": "round_cents",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only the implementation was rewritten; no test was added or changed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the rounding of half cents",
+      "target": "round_cents",
+      "condition": "amount ends in half a cent",
+      "expected_behavior": "rounded up"
+    }
+  ]
+}

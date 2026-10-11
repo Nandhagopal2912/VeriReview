@@ -1,0 +1,1 @@
+Make sure `port` is an int; a string sneaks through from the CLI.

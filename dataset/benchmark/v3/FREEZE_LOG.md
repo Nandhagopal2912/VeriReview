@@ -39,7 +39,25 @@ in this directory, v2 remains the locked test split and no rule may change.
    committed): `rw-v3.html` (all 60), and a split for two annotators made by shuffling the sorted
    case ids with seed `20261011`: the first 20 `rw-v3-shared.html` (both annotators), the next 20
    `rw-v3-a.html`, the last 20 `rw-v3-b.html`.
+5. **2026-10-11**: v3 `controlled` (60) and `adversarial` (30) written blind and pinned in
+   `tests/benchmark/test_benchmark_v3.py`, **before any rule change**:
+   - controlled `3fc99b745a361d9cbe7c1a7c7cdc5744cf14fe4608615c27d96ef6b30069ae89`
+   - adversarial `fdef0943fc66d129b6ac6cdd484782b59abb79a3e592982c92c20976c87684d0`
+   - Blind means: no verifier ran on them; they were only loaded and compiled. The rules are the
+     ones of Phase 10.1 (the only code changes since are a cited line number and the advisory
+     service).
+   - Same recipe as v1 and v2: 12 controlled and 6 adversarial cases per category; per category
+     5 satisfied, 2 partial, 3 not satisfied, 2 uncertain (controlled) and 1 satisfied, 1 partial,
+     4 not satisfied (adversarial); the same counts of every difficult-case type as v2 (a test
+     compares the two). New scenarios; as in v2, the adversarial cases are six resolutions of one
+     request per category.
 
-Still to do, in this order: the human labels (`build-gold`); `controlled` (60) and `adversarial`
-(30) written blind from the v1/v2 recipe; `benchmark-freeze --benchmark-version v3`. Only then:
-rule changes on dev data (v2 included), and one blind v3 run.
+Still to do, in this order: the human labels for the 60 real-world cases (`build-gold
+--benchmark-version v3`); then `benchmark-freeze --benchmark-version v3` and v3 becomes the
+current version. Only then: rule changes on dev data (v2 included), and one blind v3 run under a
+pre-registered protocol.
+
+Caveat, as for v2: the controlled and adversarial cases were written by the same author as the
+rules, who had seen the v2 results (though not an error analysis of the human-labelled v2 cases,
+which waits for the freeze). The recipe was kept identical to limit targeting, but it cannot be
+ruled out. The real-world cases, labelled by humans, are the independent part.

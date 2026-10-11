@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-api-03-django-401",
+  "category": "api_behavior",
+  "file_path": "reports/views.py",
+  "target_symbol": "monthly_report",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "An unauthenticated user gets a JsonResponse with status 401 before any work is done.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 401 for unauthenticated requests",
+      "target": "monthly_report",
+      "condition": "user not authenticated",
+      "expected_behavior": "HTTP 401"
+    }
+  ]
+}

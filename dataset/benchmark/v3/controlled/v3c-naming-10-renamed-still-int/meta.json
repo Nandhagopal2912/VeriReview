@@ -1,0 +1,26 @@
+{
+  "case_id": "v3c-naming-10-renamed-still-int",
+  "category": "naming",
+  "file_path": "forms/checks.py",
+  "target_symbol": "chk",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The function is renamed (with its caller), but it still returns 0 or 1.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename chk to is_valid",
+      "target": "chk",
+      "expected_behavior": "is_valid"
+    },
+    {
+      "id": "R2",
+      "category": "other",
+      "description": "Return a bool instead of 0/1",
+      "target": "chk",
+      "expected_behavior": "bool"
+    }
+  ]
+}

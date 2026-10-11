@@ -1,0 +1,1 @@
+Return 400 if `qty` is missing and 422 if it is not a positive integer.

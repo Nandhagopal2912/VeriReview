@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-01-permission-to-config-error",
+  "category": "error_handling",
+  "file_path": "conf/keys.py",
+  "target_symbol": "load_key",
+  "comment_line": 6,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "PermissionError from the read is caught and re-raised as ConfigError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch PermissionError and raise ConfigError instead",
+      "target": "load_key",
+      "condition": "PermissionError",
+      "expected_behavior": "raise ConfigError"
+    }
+  ]
+}

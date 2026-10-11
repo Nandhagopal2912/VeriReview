@@ -1,0 +1,1 @@
+Rename `d` to `delay` and `m` to `max_delay`.

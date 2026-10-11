@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-06-keyerror-not-valueerror",
+  "category": "error_handling",
+  "file_path": "units/convert.py",
+  "target_symbol": "to_metres",
+  "comment_line": 5,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "An unknown unit is now detected, but it still raises KeyError, not ValueError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Raise ValueError for an unknown unit",
+      "target": "to_metres",
+      "condition": "unit not in FACTORS",
+      "expected_behavior": "raise ValueError"
+    }
+  ]
+}

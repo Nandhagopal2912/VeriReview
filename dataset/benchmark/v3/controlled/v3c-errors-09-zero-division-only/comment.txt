@@ -1,0 +1,1 @@
+Handle `ZeroDivisionError` and `TypeError` in `average`.

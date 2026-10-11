@@ -1,0 +1,1 @@
+Add a test that the cache is invalidated after an update.

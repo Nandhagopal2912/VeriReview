@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-02-blank-title",
+  "category": "validation",
+  "file_path": "blog/posts.py",
+  "target_symbol": "create_post",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A title that is empty after strip() raises ValueError before the post is built.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject a blank title, including whitespace only",
+      "target": "title",
+      "condition": "title.strip() is empty",
+      "expected_behavior": "reject"
+    }
+  ]
+}

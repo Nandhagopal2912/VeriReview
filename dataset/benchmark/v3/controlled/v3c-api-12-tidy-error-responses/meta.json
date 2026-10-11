@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-api-12-tidy-error-responses",
+  "category": "api_behavior",
+  "file_path": "web/orders.py",
+  "target_symbol": "cancel_order",
+  "comment_line": 7,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "Which responses, and what the consistent form should be, is not stated.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Make the error responses consistent (unspecified)",
+      "target": "cancel_order"
+    }
+  ]
+}

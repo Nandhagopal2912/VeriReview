@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-05-raise-timeout",
+  "category": "error_handling",
+  "file_path": "net/wait.py",
+  "target_symbol": "wait_until",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The fall-through now raises TimeoutError.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Raise TimeoutError when the deadline passes",
+      "target": "wait_until",
+      "condition": "deadline passed",
+      "expected_behavior": "raise TimeoutError"
+    }
+  ]
+}

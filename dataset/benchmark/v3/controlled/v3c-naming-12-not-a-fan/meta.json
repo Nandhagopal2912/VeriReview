@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-naming-12-not-a-fan",
+  "category": "naming",
+  "file_path": "cache/store.py",
+  "target_symbol": "proc",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "No new name is proposed and it is not clear what a better one would be.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Choose a better name (unspecified)",
+      "target": "proc"
+    }
+  ]
+}

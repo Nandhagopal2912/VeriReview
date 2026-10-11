@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-api-05-total-in-response",
+  "category": "api_behavior",
+  "file_path": "web/search.py",
+  "target_symbol": "search",
+  "comment_line": 11,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The response body now carries `total` next to `items`.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Include the total count in the response",
+      "target": "search",
+      "expected_behavior": "total in the body"
+    }
+  ]
+}

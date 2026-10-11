@@ -1,0 +1,26 @@
+{
+  "case_id": "v3c-naming-09-first-of-two-renames",
+  "category": "naming",
+  "file_path": "net/backoff.py",
+  "target_symbol": "next_delay",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "d is now delay; m is unchanged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename d to delay",
+      "target": "d",
+      "expected_behavior": "delay"
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename m to max_delay",
+      "target": "m",
+      "expected_behavior": "max_delay"
+    }
+  ]
+}

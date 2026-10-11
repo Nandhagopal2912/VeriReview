@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-api-05-werkzeug-forbidden",
+  "category": "api_behavior",
+  "file_path": "web/docs.py",
+  "target_symbol": "read_doc",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": "unusual_idiom",
+  "rationale": "werkzeug's Forbidden exception is the HTTP 403 response, raised for a non-owner.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 403 when the user is not the owner of the document",
+      "target": "read_doc",
+      "condition": "doc[\"owner\"] != g.user",
+      "expected_behavior": "HTTP 403"
+    }
+  ]
+}

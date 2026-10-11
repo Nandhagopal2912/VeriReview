@@ -1,0 +1,1 @@
+Catch `UnicodeDecodeError` and return an empty string, and log a warning with the path.

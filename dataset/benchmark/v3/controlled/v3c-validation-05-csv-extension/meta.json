@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-05-csv-extension",
+  "category": "validation",
+  "file_path": "ingest/reader.py",
+  "target_symbol": "read_table",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A path that does not end in .csv raises ValueError before the file is opened.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Verify the file extension is .csv before parsing",
+      "target": "path",
+      "condition": "not path.endswith(\".csv\")",
+      "expected_behavior": "reject"
+    }
+  ]
+}

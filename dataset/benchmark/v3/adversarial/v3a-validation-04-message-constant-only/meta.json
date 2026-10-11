@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-validation-04-message-constant-only",
+  "category": "validation",
+  "file_path": "color/mix.py",
+  "target_symbol": "blend",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "An error message constant was added; nothing raises it or checks ratio.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that ratio is between 0 and 1",
+      "target": "ratio",
+      "condition": "ratio < 0 or ratio > 1",
+      "expected_behavior": "reject"
+    }
+  ]
+}

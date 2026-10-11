@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-08-logging-added",
+  "category": "validation",
+  "file_path": "bank/transfer.py",
+  "target_symbol": "transfer",
+  "comment_line": 7,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "unrelated_change",
+  "rationale": "Only a log line was added; an amount above the balance is still transferred.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that amount does not exceed the source balance",
+      "target": "amount",
+      "condition": "amount > source.balance",
+      "expected_behavior": "reject"
+    }
+  ]
+}

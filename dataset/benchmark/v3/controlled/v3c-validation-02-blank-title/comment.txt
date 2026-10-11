@@ -1,0 +1,1 @@
+Reject a blank `title` (whitespace only counts as blank).

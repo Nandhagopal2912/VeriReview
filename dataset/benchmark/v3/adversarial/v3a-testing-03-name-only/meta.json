@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-testing-03-name-only",
+  "category": "testing",
+  "file_path": "seqs/chunk.py",
+  "target_symbol": "chunk",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "The test is named after the request but chunks with size 1 and expects no error.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a chunk size of zero raises ValueError",
+      "target": "chunk",
+      "condition": "size == 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

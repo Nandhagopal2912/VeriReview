@@ -1,0 +1,26 @@
+{
+  "case_id": "v3c-api-10-202-without-job-id",
+  "category": "api_behavior",
+  "file_path": "jobs/api.py",
+  "target_symbol": "start_export",
+  "comment_line": 11,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The status is now 202, but the body still has no job id.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 202",
+      "target": "start_export",
+      "expected_behavior": "HTTP 202"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Include the job id in the body",
+      "target": "start_export",
+      "expected_behavior": "job id in the body"
+    }
+  ]
+}

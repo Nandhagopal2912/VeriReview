@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-08-other-new-name",
+  "category": "naming",
+  "file_path": "shipping/cost.py",
+  "target_symbol": "calc",
+  "comment_line": 4,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "The function was renamed to calculate, not to the requested compute_shipping.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename calc to compute_shipping",
+      "target": "calc",
+      "expected_behavior": "compute_shipping"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-api-02-check-after-return",
+  "category": "api_behavior",
+  "file_path": "web/docs.py",
+  "target_symbol": "read_doc",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The 403 check comes after the return statement, so it can never run.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 403 when the user is not the owner of the document",
+      "target": "read_doc",
+      "condition": "doc[\"owner\"] != g.user",
+      "expected_behavior": "HTTP 403"
+    }
+  ]
+}

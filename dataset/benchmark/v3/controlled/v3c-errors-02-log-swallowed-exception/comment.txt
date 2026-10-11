@@ -1,0 +1,1 @@
+Don't swallow the exception here, log it with the traceback.

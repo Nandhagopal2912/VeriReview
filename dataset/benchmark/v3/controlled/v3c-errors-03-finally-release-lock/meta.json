@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-03-finally-release-lock",
+  "category": "error_handling",
+  "file_path": "jobs/locks.py",
+  "target_symbol": "run_locked",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The release moved into a finally block, so it runs when the job raises.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Release the lock in a finally block",
+      "target": "run_locked",
+      "condition": "job raises",
+      "expected_behavior": "lock released"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+Validate the `email` format with EMAIL_RE and strip whitespace before saving.

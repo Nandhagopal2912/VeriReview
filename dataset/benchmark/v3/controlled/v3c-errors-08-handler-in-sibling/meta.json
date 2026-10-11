@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-08-handler-in-sibling",
+  "category": "error_handling",
+  "file_path": "store/files.py",
+  "target_symbol": "load_user",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "FileNotFoundError is now handled in load_team; load_user, where the comment is, is unchanged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Return None when the file is missing",
+      "target": "load_user",
+      "condition": "FileNotFoundError",
+      "expected_behavior": "return None"
+    }
+  ]
+}

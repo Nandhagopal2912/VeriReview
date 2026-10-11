@@ -1,0 +1,28 @@
+{
+  "case_id": "v3a-validation-06-ratio-but-not-none",
+  "category": "validation",
+  "file_path": "color/mix.py",
+  "target_symbol": "blend",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "ratio is range-checked; a and b are not checked for None.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that ratio is between 0 and 1",
+      "target": "ratio",
+      "condition": "ratio < 0 or ratio > 1",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Validate that a and b are not None",
+      "target": "a",
+      "condition": "a is None or b is None",
+      "expected_behavior": "reject"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-03-case-insensitive",
+  "category": "testing",
+  "file_path": "blog/tags.py",
+  "target_symbol": "find_tag",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The new test looks a tag up with a different case and expects the stored tag.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the case-insensitive match",
+      "target": "find_tag",
+      "condition": "name differs in case",
+      "expected_behavior": "tag found"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-12-opaque-normalize",
+  "category": "validation",
+  "file_path": "geo/places.py",
+  "target_symbol": "store_place",
+  "comment_line": 5,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The coordinates now pass through normalize(), imported and not shown; its name does not say whether invalid coordinates are rejected.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the coordinates before storing them",
+      "target": "coords",
+      "condition": "coordinates out of range",
+      "expected_behavior": "reject"
+    }
+  ]
+}

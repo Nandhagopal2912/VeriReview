@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-12-opaque-assertion-helper",
+  "category": "testing",
+  "file_path": "cache/core.py",
+  "target_symbol": "update",
+  "comment_line": 13,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The new test updates a key and then calls check_cache(), a helper imported from the test suite's support module and not shown; what it asserts cannot be told.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that the cache is invalidated after an update",
+      "target": "update",
+      "condition": "after update(key, value)",
+      "expected_behavior": "next get reloads"
+    }
+  ]
+}

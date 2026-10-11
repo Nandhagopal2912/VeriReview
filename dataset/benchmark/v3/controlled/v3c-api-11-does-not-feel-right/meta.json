@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-api-11-does-not-feel-right",
+  "category": "api_behavior",
+  "file_path": "web/profile.py",
+  "target_symbol": "profile",
+  "comment_line": 10,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment does not say what is wrong or what the response should be.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Change the response (unspecified)",
+      "target": "profile"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "v3c-validation-09-name-but-not-quantity",
+  "category": "validation",
+  "file_path": "shop/lines.py",
+  "target_symbol": "add_line",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "An empty name is rejected; quantity is not checked.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that name is not empty",
+      "target": "name",
+      "condition": "not name",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "validation",
+      "description": "Validate that quantity is at least 1",
+      "target": "quantity",
+      "condition": "quantity < 1",
+      "expected_behavior": "reject"
+    }
+  ]
+}

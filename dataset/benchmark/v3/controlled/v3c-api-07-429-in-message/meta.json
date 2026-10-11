@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-api-07-429-in-message",
+  "category": "api_behavior",
+  "file_path": "web/limits.py",
+  "target_symbol": "send_message",
+  "comment_line": 10,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "string_mention",
+  "rationale": "The limit is detected, but the view still answers 200; 429 only appears in the text.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 429 when the rate limit is exceeded",
+      "target": "send_message",
+      "condition": "COUNTS[user] > LIMIT",
+      "expected_behavior": "HTTP 429"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-validation-02-check-under-type-checking",
+  "category": "validation",
+  "file_path": "color/mix.py",
+  "target_symbol": "blend",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The check sits under `if TYPE_CHECKING:`, which is False at run time.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that ratio is between 0 and 1",
+      "target": "ratio",
+      "condition": "ratio < 0 or ratio > 1",
+      "expected_behavior": "reject"
+    }
+  ]
+}

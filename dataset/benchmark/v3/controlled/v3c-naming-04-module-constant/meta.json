@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-04-module-constant",
+  "category": "naming",
+  "file_path": "net/client.py",
+  "target_symbol": "T",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The constant and both places that read it are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename the constant T to DEFAULT_TIMEOUT_S",
+      "target": "T",
+      "expected_behavior": "DEFAULT_TIMEOUT_S"
+    }
+  ]
+}

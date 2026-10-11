@@ -1,0 +1,1 @@
+Validate that `name` is not empty and that `quantity` is at least 1.

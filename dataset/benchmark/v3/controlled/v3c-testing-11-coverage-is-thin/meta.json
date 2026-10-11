@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-testing-11-coverage-is-thin",
+  "category": "testing",
+  "file_path": "report/table.py",
+  "target_symbol": "render_row",
+  "comment_line": 1,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "No behaviour or input to test is named.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add tests (unspecified)",
+      "target": "render_row"
+    }
+  ]
+}

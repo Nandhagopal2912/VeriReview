@@ -1,0 +1,28 @@
+{
+  "case_id": "v3a-api-06-403-but-no-404",
+  "category": "api_behavior",
+  "file_path": "web/docs.py",
+  "target_symbol": "read_doc",
+  "comment_line": 9,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "Non-owners get 403; an unknown document still raises KeyError (a 500).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 for an unknown document",
+      "target": "read_doc",
+      "condition": "doc_id not in DOCS",
+      "expected_behavior": "HTTP 404"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return 403 when the user is not the owner of the document",
+      "target": "read_doc",
+      "condition": "doc[\"owner\"] != g.user",
+      "expected_behavior": "HTTP 403"
+    }
+  ]
+}

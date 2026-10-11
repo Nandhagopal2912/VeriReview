@@ -1,0 +1,1 @@
+Catch `UnicodeDecodeError` when decoding the file and return an empty string.

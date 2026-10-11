@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-12-opaque-unit-of-work",
+  "category": "error_handling",
+  "file_path": "billing/charge.py",
+  "target_symbol": "charge",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": null,
+  "rationale": "The calls now run inside unit_of_work(), which is imported and not shown; whether it rolls back on an error cannot be told from the case.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Roll back when the payment fails",
+      "target": "charge",
+      "condition": "gateway.pay raises",
+      "expected_behavior": "ledger debit rolled back"
+    }
+  ]
+}

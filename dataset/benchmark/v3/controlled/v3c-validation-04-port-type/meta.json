@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-04-port-type",
+  "category": "validation",
+  "file_path": "net/server.py",
+  "target_symbol": "bind_address",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A non-int port raises TypeError before the address is built.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Make sure port is an int",
+      "target": "port",
+      "condition": "not isinstance(port, int)",
+      "expected_behavior": "reject"
+    }
+  ]
+}

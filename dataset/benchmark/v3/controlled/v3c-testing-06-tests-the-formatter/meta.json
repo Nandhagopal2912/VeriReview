@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-06-tests-the-formatter",
+  "category": "testing",
+  "file_path": "timeutil/duration.py",
+  "target_symbol": "parse_duration",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The new test exercises format_duration; parse_duration is never called.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that parse_duration rejects a negative value",
+      "target": "parse_duration",
+      "condition": "seconds < 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

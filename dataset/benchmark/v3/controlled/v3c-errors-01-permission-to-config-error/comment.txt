@@ -1,0 +1,1 @@
+Catch `PermissionError` when reading the key file and raise `ConfigError` instead.

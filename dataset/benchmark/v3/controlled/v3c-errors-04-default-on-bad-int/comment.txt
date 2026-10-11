@@ -1,0 +1,1 @@
+`int()` can raise `ValueError` for bad input; return the default in that case.

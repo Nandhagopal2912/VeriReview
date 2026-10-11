@@ -1,0 +1,1 @@
+Validate that `width` is positive.

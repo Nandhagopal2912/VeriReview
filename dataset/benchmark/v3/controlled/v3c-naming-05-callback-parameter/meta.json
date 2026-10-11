@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-05-callback-parameter",
+  "category": "naming",
+  "file_path": "tasks/runner.py",
+  "target_symbol": "run_task",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The parameter, its uses in the body and the keyword call site are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename the cb parameter to on_done",
+      "target": "cb",
+      "expected_behavior": "on_done"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-06-documented-not-checked",
+  "category": "validation",
+  "file_path": "draw/canvas.py",
+  "target_symbol": "make_canvas",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "The docstring now says width must be positive; nothing checks it.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate that width is positive",
+      "target": "width",
+      "condition": "width <= 0",
+      "expected_behavior": "reject"
+    }
+  ]
+}

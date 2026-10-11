@@ -1,0 +1,28 @@
+{
+  "case_id": "v3c-api-09-400-not-422",
+  "category": "api_behavior",
+  "file_path": "shop/cart.py",
+  "target_symbol": "add_item",
+  "comment_line": 9,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A missing qty gives 400; a non-positive or non-integer qty is still accepted.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 400 if qty is missing",
+      "target": "add_item",
+      "condition": "qty is None",
+      "expected_behavior": "HTTP 400"
+    },
+    {
+      "id": "R2",
+      "category": "api_behavior",
+      "description": "Return 422 if qty is not a positive integer",
+      "target": "add_item",
+      "condition": "qty not a positive int",
+      "expected_behavior": "HTTP 422"
+    }
+  ]
+}

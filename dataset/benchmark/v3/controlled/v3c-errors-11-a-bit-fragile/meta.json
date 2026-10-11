@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-errors-11-a-bit-fragile",
+  "category": "error_handling",
+  "file_path": "mail/sender.py",
+  "target_symbol": "send_all",
+  "comment_line": 4,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment names no failure and no expected behaviour.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Improve the error handling (unspecified)",
+      "target": "send_all"
+    }
+  ]
+}

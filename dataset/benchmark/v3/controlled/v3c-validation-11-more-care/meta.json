@@ -1,0 +1,18 @@
+{
+  "case_id": "v3c-validation-11-more-care",
+  "category": "validation",
+  "file_path": "geo/distance.py",
+  "target_symbol": "speed",
+  "comment_line": 2,
+  "expected_verdict": "UNCERTAIN",
+  "hard_case": "ambiguous",
+  "rationale": "The comment names no input and no condition to check.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the inputs (unspecified)",
+      "target": "speed"
+    }
+  ]
+}

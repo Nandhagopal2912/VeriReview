@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-testing-02-skipped-test",
+  "category": "testing",
+  "file_path": "seqs/chunk.py",
+  "target_symbol": "chunk",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "The test is unconditionally skipped, so the behaviour is never exercised.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a chunk size of zero raises ValueError",
+      "target": "chunk",
+      "condition": "size == 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "case_id": "v3c-validation-10-stripped-not-validated",
+  "category": "validation",
+  "file_path": "users/signup.py",
+  "target_symbol": "save_email",
+  "comment_line": 7,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The address is stripped before saving; EMAIL_RE is never applied.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Validate the email format with EMAIL_RE",
+      "target": "email",
+      "condition": "not EMAIL_RE.match(email)",
+      "expected_behavior": "reject"
+    },
+    {
+      "id": "R2",
+      "category": "other",
+      "description": "Strip whitespace before saving",
+      "target": "email",
+      "expected_behavior": "stripped"
+    }
+  ]
+}

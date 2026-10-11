@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-api-04-413-upload-too-large",
+  "category": "api_behavior",
+  "file_path": "upload/handler.py",
+  "target_symbol": "handle_upload",
+  "comment_line": 6,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Oversized uploads now return an error body with status 413 before being stored.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 413 when the upload is larger than MAX_BYTES",
+      "target": "handle_upload",
+      "condition": "len(data) > MAX_BYTES",
+      "expected_behavior": "HTTP 413"
+    }
+  ]
+}

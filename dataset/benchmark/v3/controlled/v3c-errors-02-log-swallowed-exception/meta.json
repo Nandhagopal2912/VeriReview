@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-02-log-swallowed-exception",
+  "category": "error_handling",
+  "file_path": "sync/runner.py",
+  "target_symbol": "run_sync",
+  "comment_line": 11,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The handler now calls logger.exception, which logs the error with its traceback.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Log the exception with its traceback instead of swallowing it",
+      "target": "run_sync",
+      "condition": "Exception",
+      "expected_behavior": "logged with traceback"
+    }
+  ]
+}

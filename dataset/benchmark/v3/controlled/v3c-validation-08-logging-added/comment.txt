@@ -1,0 +1,1 @@
+Validate that `amount` does not exceed the source balance.

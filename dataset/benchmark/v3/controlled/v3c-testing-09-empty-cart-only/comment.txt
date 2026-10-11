@@ -1,0 +1,1 @@
+Add tests for an empty cart and for a cart with a discount code.

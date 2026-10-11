@@ -1,0 +1,1 @@
+Verify the file extension is `.csv` before parsing.

@@ -1,0 +1,28 @@
+{
+  "case_id": "v3c-testing-09-empty-cart-only",
+  "category": "testing",
+  "file_path": "shop/cart.py",
+  "target_symbol": "cart_total",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The empty cart is tested; no test passes a discount code.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an empty cart",
+      "target": "cart_total",
+      "condition": "items == []",
+      "expected_behavior": "0"
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for a cart with a discount code",
+      "target": "cart_total",
+      "condition": "code given",
+      "expected_behavior": "discounted total"
+    }
+  ]
+}

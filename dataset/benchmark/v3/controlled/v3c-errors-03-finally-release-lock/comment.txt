@@ -1,0 +1,1 @@
+Use `try/finally` so the lock is always released.

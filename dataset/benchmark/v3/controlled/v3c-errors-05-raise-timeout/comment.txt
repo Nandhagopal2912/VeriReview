@@ -1,0 +1,1 @@
+Raise `TimeoutError` instead of returning None when the deadline passes.

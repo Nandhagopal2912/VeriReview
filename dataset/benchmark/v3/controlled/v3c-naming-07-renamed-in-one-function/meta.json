@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-07-renamed-in-one-function",
+  "category": "naming",
+  "file_path": "accounts/views.py",
+  "target_symbol": "show",
+  "comment_line": 1,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "show() uses user now, but update() still takes and uses usr: the rename is half done.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename usr to user in the module",
+      "target": "usr",
+      "expected_behavior": "user"
+    }
+  ]
+}

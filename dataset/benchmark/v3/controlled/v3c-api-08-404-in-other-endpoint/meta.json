@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-api-08-404-in-other-endpoint",
+  "category": "api_behavior",
+  "file_path": "billing/invoices.py",
+  "target_symbol": "get_invoice",
+  "comment_line": 9,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_target",
+  "rationale": "The 404 was added to delete_invoice; get_invoice, where the comment is, is unchanged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 404 if the invoice does not exist",
+      "target": "get_invoice",
+      "condition": "invoice_id not in INVOICES",
+      "expected_behavior": "HTTP 404"
+    }
+  ]
+}

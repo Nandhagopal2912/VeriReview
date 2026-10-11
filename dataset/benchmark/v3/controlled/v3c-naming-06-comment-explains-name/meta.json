@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-06-comment-explains-name",
+  "category": "naming",
+  "file_path": "api/client.py",
+  "target_symbol": "get_status",
+  "comment_line": 2,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "lexical_false_positive",
+  "rationale": "A comment says what res is; the variable is still called res.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename res to response",
+      "target": "res",
+      "expected_behavior": "response"
+    }
+  ]
+}

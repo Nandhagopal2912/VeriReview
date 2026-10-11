@@ -1,0 +1,27 @@
+{
+  "case_id": "v3c-testing-10-retry-tested-count-fixed",
+  "category": "testing",
+  "file_path": "net/fetch.py",
+  "target_symbol": "fetch",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "A test now covers a failure followed by a success; the count is still hard-coded as 3.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for the retry path",
+      "target": "fetch",
+      "condition": "first call raises ConnectionError",
+      "expected_behavior": "second call returns"
+    },
+    {
+      "id": "R2",
+      "category": "other",
+      "description": "Make the retry count configurable",
+      "target": "fetch",
+      "expected_behavior": "parameter"
+    }
+  ]
+}

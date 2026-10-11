@@ -1,0 +1,26 @@
+{
+  "case_id": "v3a-naming-06-limit-not-renamed",
+  "category": "naming",
+  "file_path": "work/buffer.py",
+  "target_symbol": "drain",
+  "comment_line": 1,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "q is now queue; limit is unchanged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename q to queue",
+      "target": "q",
+      "expected_behavior": "queue"
+    },
+    {
+      "id": "R2",
+      "category": "naming",
+      "description": "Rename limit to max_items",
+      "target": "limit",
+      "expected_behavior": "max_items"
+    }
+  ]
+}

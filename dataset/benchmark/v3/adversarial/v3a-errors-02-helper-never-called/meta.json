@@ -1,0 +1,20 @@
+{
+  "case_id": "v3a-errors-02-helper-never-called",
+  "category": "error_handling",
+  "file_path": "textio/reader.py",
+  "target_symbol": "read_text",
+  "comment_line": 3,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "dead_code",
+  "rationale": "A helper with the handler was added, but read_text does not call it.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch UnicodeDecodeError and return an empty string",
+      "target": "read_text",
+      "condition": "UnicodeDecodeError",
+      "expected_behavior": "return \"\""
+    }
+  ]
+}

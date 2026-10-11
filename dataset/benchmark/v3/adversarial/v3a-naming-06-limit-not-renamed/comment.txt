@@ -1,0 +1,1 @@
+Rename `q` to `queue` and `limit` to `max_items`.

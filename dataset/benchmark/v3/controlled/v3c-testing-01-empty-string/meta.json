@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-01-empty-string",
+  "category": "testing",
+  "file_path": "text/names.py",
+  "target_symbol": "initials",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A new test calls initials('') and checks the result.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for an empty string input",
+      "target": "initials",
+      "condition": "name == \"\"",
+      "expected_behavior": "\"\""
+    }
+  ]
+}

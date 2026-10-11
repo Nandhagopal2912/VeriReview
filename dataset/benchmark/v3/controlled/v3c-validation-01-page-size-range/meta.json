@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-01-page-size-range",
+  "category": "validation",
+  "file_path": "api/paging.py",
+  "target_symbol": "page",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A range check on page_size raises ValueError before it is used.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Check that page_size is between 1 and 100",
+      "target": "page_size",
+      "condition": "page_size < 1 or page_size > 100",
+      "expected_behavior": "reject"
+    }
+  ]
+}

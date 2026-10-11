@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-api-01-409-username-taken",
+  "category": "api_behavior",
+  "file_path": "web/register.py",
+  "target_symbol": "register",
+  "comment_line": 9,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A 409 HTTPException is raised when the username already exists, before the insert.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "api_behavior",
+      "description": "Return 409 if the username is already taken",
+      "target": "register",
+      "condition": "username in USERS",
+      "expected_behavior": "HTTP 409"
+    }
+  ]
+}

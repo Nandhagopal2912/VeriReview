@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-02-local-counter",
+  "category": "naming",
+  "file_path": "net/retry.py",
+  "target_symbol": "call_with_retry",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "Every use of the local n is now retry_count.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename n to retry_count",
+      "target": "n",
+      "expected_behavior": "retry_count"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "case_id": "v3c-naming-03-class-name",
+  "category": "naming",
+  "file_path": "auth/sessions.py",
+  "target_symbol": "Mgr",
+  "comment_line": 1,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The class, its type hint and its instantiation are renamed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "naming",
+      "description": "Rename the class Mgr to SessionManager",
+      "target": "Mgr",
+      "expected_behavior": "SessionManager"
+    }
+  ]
+}

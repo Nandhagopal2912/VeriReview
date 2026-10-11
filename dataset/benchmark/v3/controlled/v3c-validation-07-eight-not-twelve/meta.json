@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-validation-07-eight-not-twelve",
+  "category": "validation",
+  "file_path": "auth/passwords.py",
+  "target_symbol": "set_password",
+  "comment_line": 6,
+  "expected_verdict": "NOT_SATISFIED",
+  "hard_case": "wrong_value",
+  "rationale": "The new check rejects passwords shorter than 8, so 8 to 11 characters still pass.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "validation",
+      "description": "Reject passwords shorter than 12 characters",
+      "target": "password",
+      "condition": "len(password) < 12",
+      "expected_behavior": "reject"
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-04-unittest-boundary",
+  "category": "testing",
+  "file_path": "jobs/batches.py",
+  "target_symbol": "split_batches",
+  "comment_line": 4,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "A unittest case calls split_batches with exactly 100 items and checks one full batch.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for exactly 100 items",
+      "target": "split_batches",
+      "condition": "len(items) == 100",
+      "expected_behavior": "one batch"
+    }
+  ]
+}

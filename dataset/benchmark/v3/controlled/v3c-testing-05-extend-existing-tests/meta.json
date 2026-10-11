@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-05-extend-existing-tests",
+  "category": "testing",
+  "file_path": "text/normalize.py",
+  "target_symbol": "normalize",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The existing test module gained a test that calls normalize(None).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test for None as input",
+      "target": "normalize",
+      "condition": "value is None",
+      "expected_behavior": "\"\""
+    }
+  ]
+}

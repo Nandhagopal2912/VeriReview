@@ -1,0 +1,28 @@
+{
+  "case_id": "v3a-errors-06-caught-not-logged",
+  "category": "error_handling",
+  "file_path": "textio/reader.py",
+  "target_symbol": "read_text",
+  "comment_line": 3,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The error is caught and '' returned, but nothing is logged.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Catch UnicodeDecodeError and return an empty string",
+      "target": "read_text",
+      "condition": "UnicodeDecodeError",
+      "expected_behavior": "return \"\""
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Log a warning with the path",
+      "target": "read_text",
+      "condition": "UnicodeDecodeError",
+      "expected_behavior": "warning logged"
+    }
+  ]
+}

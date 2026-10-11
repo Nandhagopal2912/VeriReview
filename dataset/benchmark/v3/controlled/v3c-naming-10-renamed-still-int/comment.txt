@@ -1,0 +1,1 @@
+Rename `chk` to `is_valid` and make it return a bool instead of 0/1.

@@ -1,0 +1,28 @@
+{
+  "case_id": "v3c-errors-10-closed-but-not-wrapped",
+  "category": "error_handling",
+  "file_path": "ingest/importer.py",
+  "target_symbol": "import_rows",
+  "comment_line": 6,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The file is closed in a finally block; the error is not re-raised as ImportFailed.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Close the file when an error occurs",
+      "target": "import_rows",
+      "condition": "error while reading",
+      "expected_behavior": "file closed"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Re-raise the error as ImportFailed",
+      "target": "import_rows",
+      "condition": "error while reading",
+      "expected_behavior": "raise ImportFailed"
+    }
+  ]
+}

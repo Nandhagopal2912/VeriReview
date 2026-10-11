@@ -1,0 +1,28 @@
+{
+  "case_id": "v3c-errors-09-zero-division-only",
+  "category": "error_handling",
+  "file_path": "stats/basic.py",
+  "target_symbol": "average",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "ZeroDivisionError is handled; a TypeError from non-numeric values still propagates.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Handle ZeroDivisionError",
+      "target": "average",
+      "condition": "ZeroDivisionError",
+      "expected_behavior": "handled"
+    },
+    {
+      "id": "R2",
+      "category": "error_handling",
+      "description": "Handle TypeError",
+      "target": "average",
+      "condition": "TypeError",
+      "expected_behavior": "handled"
+    }
+  ]
+}

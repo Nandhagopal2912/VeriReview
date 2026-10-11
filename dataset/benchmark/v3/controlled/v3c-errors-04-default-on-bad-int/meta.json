@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-errors-04-default-on-bad-int",
+  "category": "error_handling",
+  "file_path": "cli/options.py",
+  "target_symbol": "read_workers",
+  "comment_line": 5,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "ValueError from int() is caught and the default is returned.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "error_handling",
+      "description": "Return the default when int() raises ValueError",
+      "target": "read_workers",
+      "condition": "ValueError",
+      "expected_behavior": "return default"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "case_id": "v3a-testing-06-zero-size-but-not-empty-sequence",
+  "category": "testing",
+  "file_path": "seqs/chunk.py",
+  "target_symbol": "chunk",
+  "comment_line": 2,
+  "expected_verdict": "PARTIALLY_SATISFIED",
+  "hard_case": "partial",
+  "rationale": "The zero size is tested; nothing calls chunk with an empty sequence.",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a chunk size of zero raises ValueError",
+      "target": "chunk",
+      "condition": "size == 0",
+      "expected_behavior": "ValueError"
+    },
+    {
+      "id": "R2",
+      "category": "testing",
+      "description": "Add a test for an empty sequence",
+      "target": "chunk",
+      "condition": "seq == []",
+      "expected_behavior": "[]"
+    }
+  ]
+}

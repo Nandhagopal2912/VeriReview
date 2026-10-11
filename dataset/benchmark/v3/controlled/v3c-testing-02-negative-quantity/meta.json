@@ -1,0 +1,20 @@
+{
+  "case_id": "v3c-testing-02-negative-quantity",
+  "category": "testing",
+  "file_path": "shop/stock.py",
+  "target_symbol": "reserve",
+  "comment_line": 2,
+  "expected_verdict": "SATISFIED",
+  "hard_case": null,
+  "rationale": "The new test calls reserve(10, -1) inside pytest.raises(ValueError).",
+  "requirements": [
+    {
+      "id": "R1",
+      "category": "testing",
+      "description": "Add a test that a negative quantity raises ValueError",
+      "target": "reserve",
+      "condition": "quantity < 0",
+      "expected_behavior": "ValueError"
+    }
+  ]
+}

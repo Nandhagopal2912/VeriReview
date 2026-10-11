@@ -5,19 +5,24 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Handle the datetimetz type through the plottable ExtensionDtype mechanism (plottable_ea_dtypes) instead of listing it here",
-        "status": "uncertain"
+        "description": "Stop hard-coding \"datetimetz\" in plottable_types(); let the extension-dtype registry supply it",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Provide the Timestamp and Period converter pairs from DatetimeTZDtype/PeriodDtype instead of hard-coding them in get_pairs().",
+        "status": "satisfied"
       }
     ],
     "ambiguous": true,
     "verdict": "UNCERTAIN",
-    "evidence": "pandas/plotting/_matplotlib/converter.py plottable_types: 'datetimetz' is gone and EA pairs are added from plottable_ea_pairs(), but Timestamp is still listed explicitly",
+    "evidence": "converter.py:87-101 (\"datetimetz\" removed, EA types via plottable_ea_pairs(), lines 77-84); :107-108 (get_pairs still hard-codes Timestamp and Period); dtype-side changes not in the diff",
     "confidence": "low",
-    "notes": "An observation more than a request, resolved in an offline discussion ('as we discussed last week'); whether the final code is what the reviewer meant cannot be told from the case."
+    "notes": "Reviewer comment is a hunch about \"datetimetz\" being covered by plottable_ea_dtypes; the author later describes an offline agreement to move the Timestamp/Period pairs into the ExtensionDtypes (fec4d87), which is not in this diff. \"datetimetz\" is removed from plottable_types, but get_pairs still hard-codes (Timestamp, ...) and (Period, ...) at 107-108, and the dtype-side change can't be verified from converter.py."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

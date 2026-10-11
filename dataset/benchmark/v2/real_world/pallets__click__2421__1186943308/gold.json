@@ -5,19 +5,34 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Do not clear the pre-defined shells for good: save _available_shells, clear, run, then restore (ideally with a yield fixture)",
+        "description": "Save a copy of the pre-existing _available_shells contents before the test clears it.",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Clear _available_shells for the duration of the test.",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Restore the saved shells after the test so other tests aren't affected.",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Implement this as a pytest fixture with yield for setup and teardown, as the reviewer suggested.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "tests/test_shell_completion.py:349-356: _restore_available_shells fixture copies, clears, yields, restores; both tests use it",
+    "evidence": "tests/test_shell_completion.py:349-355 (the _restore_available_shells fixture), :358, :378, :404 (applied to all three tests)",
     "confidence": "high",
-    "notes": ""
+    "notes": "Author added a yield fixture (349-355) that copies _available_shells, clears it, yields, then clears and restores the copy; applied via usefixtures to all shell-registration tests, and the in-test .clear() calls are removed. Extra assertions and a new test (test_add_completion_class_with_name) were added but not requested. Teardown after yield runs even if the test fails, so isolation holds."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

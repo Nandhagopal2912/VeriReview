@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Do not include the builtin `object` in the scatter include types, since it matches every dtype",
+        "category": "api_behavior",
+        "description": "Replace object in the scatter include_type list with np.object_ so the dtype predicate no longer matches every dtype.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "pandas/plotting/_matplotlib/core.py:715: include_type.extend([np.object_, CategoricalDtypeType, str])",
-    "confidence": "medium",
-    "notes": "Question-form concern; the author replaces object with np.object_ as discussed. The reviewer's last reply is skeptical but asks the author, so the final code is judged."
+    "evidence": "pandas/plotting/_matplotlib/core.py:715 (after code): include_type.extend([np.object_, CategoricalDtypeType, str]); comment updated at :714",
+    "confidence": "high",
+    "notes": "Reviewer pointed out that object in include_type makes the issubclass predicate match everything. The author proposed np.object_, and the after code uses np.object_ (core.py:715) with the comment updated. The reviewer didn't explicitly confirm the replacement, but the match-everything behavior is gone. The test diff (conftest.py) is unrelated."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -31,12 +31,13 @@ so nothing can fail or block today.
 | **Blind test v2 (full VeriReview)** | **accuracy 0.65** [0.58, 0.73] · **false acceptance 0.15** [0.06, 0.26] · false blocking 0.04 · 147 cases |
 | **Against the Phase 10 rules, same cases** | accuracy **+0.23** [+0.16, +0.31] · false acceptance **−0.15** [−0.25, −0.07] (paired bootstrap) |
 | **What that means** | Clearly better, but still not safe enough to gate merges: 8 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
-| **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly and none a false acceptance. Nearly all through the new suggestion-block check. Labels are provisional (Claude, blind) |
-| **Next phase** | Every roadmap phase is done except 8b (semantic evidence in the verdict), which the data has not justified (ADR-002). In progress: human relabelling of the real-world cases by two annotators. Then: the data work that could ever open the gate (≥ 59 bad and 59 good cases per category, human labels, better rules) |
+| **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly, nearly all through the new suggestion-block check. That was scored on provisional Claude labels; see the next row |
+| **Human labels (Phase 10.2)** | One human annotator relabelled the 60 v2 real-world cases blind. The recorded run, re-scored without running again: on the 49 cases both label sets include, accuracy 0.43 → 0.45, right when decided 19 of 21 either way, but **bad resolutions accepted 0 of 3 → 1 of 7**: the model labels hid one false acceptance. Human against model labels: kappa 0.60. One annotator only: not adjudicated ([details](docs/phase10_2_human_labels_v3.md)) |
+| **Next phase** | Every roadmap phase is done except 8b (semantic evidence in the verdict), which the data has not justified (ADR-002). In progress (Phase 10.2): benchmark v3. 60 new real-world cases from 45 fresh pull requests are collected and with the human annotators; once v3 is frozen, the v2 test split becomes dev data and the rules can be improved on it, then one blind v3 run. Longer term: the data that could ever open the gate (≥ 59 bad and 59 good cases per category) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,114 unit + 39 integration + 2 model tests (integration on a separate test database), strict mypy, CI on every push |
+| **Tests** | 1,124 unit + 39 integration + 2 model tests (integration on a separate test database), strict mypy, CI on every push |
 
 ---
 
@@ -156,9 +157,10 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 | `verireview eval-semantic` | Code-model evidence: signal (ROC-AUC) and proof it changes no verdict |
 | `verireview eval-injection [--pipeline NAME] [--baseline S --threshold T]` | Plant prompt injections in every fixture and count outcome changes |
 | `verireview eval-benchmark --split dev [--benchmark-version v1\|v2]` (test: `--final-test-run`) | Ablation: every system, bootstrap intervals, paired differences (default benchmark: v2) |
+| `verireview rescore-report REPORT.json [--system F]` | Score a recorded run's stored predictions against the current real-world labels (after a relabelling; no verifier runs) |
 | `verireview compare-reports OLD.json NEW.json [--system F]` | Paired bootstrap of one system across two reports on the same cases (e.g. old vs new rules) |
 | `verireview benchmark-stats [--benchmark-version v1\|v2]` | Benchmark sizes, splits and targets |
-| `verireview annotation-sheet --batch B [--calibration] [--relabel-model]` | Write the offline annotation page for annotators (`--relabel-model` adds cases that only have provisional model labels, without showing those labels) |
+| `verireview annotation-sheet --batch B [--calibration] [--relabel-model] [--cases FILE]` | Write the offline annotation page for annotators (`--relabel-model` adds cases that only have provisional model labels; `--cases` puts exactly the listed case ids on the page; labels are never shown) |
 | `verireview mine-candidates OWNER/REPO` · `collect-cases FILE --n N --seed S` | Mine and collect real-world cases (approved repositories only, token needed) |
 | `verireview agreement A.json B.json` · `adjudication-sheet` · `build-gold` · `benchmark-freeze` | Cohen's kappa, adjudication, gold labels, frozen test manifest |
 | `verireview worker [--once]` | Advisory mode: process queued webhook jobs (GitHub App settings needed) |
@@ -376,11 +378,14 @@ What the real data (v1) showed:
   please"). Rules that distrust comment-only changes will disagree; Phase 10 measures it.
 
 **Label caveats:**
-- The real-world labels are **provisional**. Claude wrote them blind, before any verifier ran, but
-  Claude also wrote the rules, so the labels may share their blind spots. Results on them will be
-  reported separately.
-- Inter-annotator agreement (κ) is not measurable until humans label. The tooling for that is ready:
-  an offline annotation page, `agreement`, adjudication and `build-gold`.
+- The v1 real-world labels are **provisional**. Claude wrote them blind, before any verifier ran,
+  but Claude also wrote the rules, so the labels may share their blind spots.
+- The v2 real-world labels are **human, from one annotator** since Phase 10.2 (they were
+  provisional when the v2 test ran). The blind spot was real: the human found 7 not-satisfied
+  cases where Claude had 3, and one of them is a false acceptance the model labels hid
+  ([Phase 10.2](docs/phase10_2_human_labels_v3.md)).
+- Agreement between two humans (κ) is still not measurable: there is one annotator. Human against
+  model labels: κ 0.60 on the verdict.
 
 ### Prompt injection
 
@@ -413,6 +418,7 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 9 | ✅ | Benchmark v1: annotation guide, 100 blind test cases, 50 real-world cases (provisional labels), frozen manifest, annotation tooling | [phase9](docs/phase9_benchmark.md) |
 | 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 10.1 | ✅ | Rule and extraction fixes from the Phase 10 error analysis, suggestion-block and `other` rules, benchmark v2 frozen first, one blind v2 run old vs new | [protocol](docs/phase10_1_protocol.md), [results](docs/phase10_1_rules_v2.md) |
+| 10.2 | 🔄 | Human labels for the v2 real-world cases (one annotator), recorded run re-scored without running again; benchmark v3 under construction (60 new real-world cases collected, with the annotators). No rule changed | [phase10_2](docs/phase10_2_human_labels_v3.md) |
 | 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run; live run on a test repository, re-check on every push | [phase11](docs/phase11_github_advisory.md) |
 | 13 | ✅ | Read-only dashboard: server-rendered, no JavaScript, operator token (off by default), stored cases with retention | [phase13](docs/phase13_dashboard.md) |
 | 12 | ✅ | Staged enforcement: per-repository stages, human-review confirmations, statistical category gate, four locks. Built and **inert**: no category is eligible | [phase12](docs/phase12_staged_enforcement.md), [ADR-003](docs/adr/003-enforcement-gate.md) |
@@ -519,9 +525,11 @@ content is treated as untrusted data.
   accepted and 4% of good ones called unsatisfied. Use the output as an advisory flag.
 - **Confidence is rule-based, not calibrated.** On v2 test, MEDIUM verdicts were right 84% of the
   time and LOW 36%. HIGH is never emitted.
-- **No independent human labels yet.** Test labels come from the rules' author (controlled and
-  adversarial, written blind) and from Claude (real-world, provisional). The v1 and v2 test
-  splits have both been used once. Further rule changes need a new blind set (v3).
+- **Human labels from one annotator, for part of the data.** The v2 real-world cases have one
+  human annotator's labels (not adjudicated, no human–human agreement). The controlled and
+  adversarial cases come from the rules' author (written blind), and the v1 real-world labels are
+  still Claude's. The v1 and v2 test splits have both been used once; further rule changes wait
+  for the new blind set (v3, being built).
 - **Scope:** most real review requests are refactoring, docs or style (`other`). Only suggestion
   blocks and a few request shapes (remove this, add a docstring, use A instead of B) are verified;
   the rest end as UNCERTAIN (human review), by design.
@@ -542,7 +550,7 @@ content is treated as untrusted data.
   [4](docs/phase4_requirements.md) · [5](docs/phase5_rules.md) · [8a](docs/phase8a_mvp.md) ·
   [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md) ·
   [10 protocol](docs/phase10_protocol.md) · [10 results](docs/phase10_evaluation.md) ·
-  [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md) ·
+  [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md) · [10.2 human labels, v3](docs/phase10_2_human_labels_v3.md) ·
   [11 advisory mode](docs/phase11_github_advisory.md) · [12 staged enforcement](docs/phase12_staged_enforcement.md) ·
   [13 dashboard](docs/phase13_dashboard.md)
 - Security model: [docs/security_model.md](docs/security_model.md)

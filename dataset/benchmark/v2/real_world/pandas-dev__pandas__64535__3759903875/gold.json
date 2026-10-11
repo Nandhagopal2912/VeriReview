@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Turn the _get_plot_df helper into a pytest fixture (plot_data on BasePlottingTests)",
+        "description": "Replace the _get_plot_df helper with a pytest fixture (plot_data) on BasePlottingTests that the plot tests receive as an argument.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "pandas/tests/extension/base/plotting.py:126-131: @pytest.fixture(params=[True, False]) def plot_data(self, data, request); tests take plot_data",
+    "evidence": "pandas/tests/extension/base/plotting.py after code: _get_plot_df removed; @pytest.fixture plot_data in BasePlottingTests (about lines 126-131); test_plot_on_x_axis/test_plot_on_y_axis take plot_data",
     "confidence": "high",
-    "notes": ""
+    "notes": "Reviewer asked for the DataFrame-building helper to become a fixture on BasePlottingTests; _get_plot_df is removed and a plot_data fixture is added and used by the x/y-axis tests (author reply points to d1c1e10). The fixture is also parametrized on skipna, which the author proposed and the reviewer did not object to."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

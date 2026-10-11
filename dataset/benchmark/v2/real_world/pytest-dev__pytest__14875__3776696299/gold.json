@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Also add the phase note for xfails in the setup phase, not only teardown",
+        "category": "testing",
+        "description": "Add a test verifying that XFAIL reports identify the setup phase.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/terminal.py:1332-1335: any phase other than call is reported as 'at {rep.when} of {nodeid}'",
-    "confidence": "high",
-    "notes": ""
+    "evidence": "testing/test_skipping.py:792–810",
+    "confidence": "medium",
+    "notes": "The test creates a fixture that raises an exception during setup, marks the test as xfail, and checks that the report contains XFAIL at setup."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

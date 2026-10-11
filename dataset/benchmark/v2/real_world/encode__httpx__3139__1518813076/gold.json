@@ -1,17 +1,23 @@
 {
   "label": {
     "case_id": "encode__httpx__3139__1518813076",
-    "include": false,
-    "exclusion_reason": "no_requirement",
-    "requirements": [],
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Explain why the zstandard version check is needed despite specifying zstandard>=0.18.0.",
+        "status": "satisfied"
+      }
+    ],
     "ambiguous": false,
-    "evidence": "",
+    "verdict": "SATISFIED",
+    "evidence": "nothing added",
     "confidence": "high",
-    "notes": "A curiosity question ('feel free to not answer it'), answered in the thread; nothing is asked of the author."
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

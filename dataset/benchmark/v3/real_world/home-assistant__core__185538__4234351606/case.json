@@ -1,0 +1,2194 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#185538/4234351606",
+  "repository": "home-assistant/core",
+  "pull_number": 185538,
+  "pull_title": "Add translated exceptions to Hydrawise entity actions",
+  "base_sha": "7d31b4e247b846eab87564e47f58160ae9d196ae",
+  "head_sha": "6ec40fbf2fa253a8203dc0572ce5799dfebc7a30",
+  "thread": {
+    "root_comment_id": 4234351606,
+    "path": "homeassistant/components/hydrawise/entity.py",
+    "line": 114,
+    "original_line": 112,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -98,3 +102,28 @@ def _handle_coordinator_update(self) -> None:\n     def available(self) -> bool:\n         \"\"\"Set the entity availability.\"\"\"\n         return super().available and self.controller.online\n+\n+\n+def exception_handler[_EntityT: HydrawiseEntity, **_P](\n+    func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],\n+) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:\n+    \"\"\"Decorate Hydrawise API calls to raise translated errors.\"\"\"\n+\n+    async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:",
+    "original_commit_sha": "004cdc5427c345b4b7e5c2c82407cc796e8f83db",
+    "commit_sha": "6ec40fbf2fa253a8203dc0572ce5799dfebc7a30",
+    "comments": [
+      {
+        "id": 4234351606,
+        "author": "reviewer",
+        "body": "Does this need the `functools.wraps(func)` decorator around it?",
+        "created_at": "2026-10-09T20:38:16Z",
+        "in_reply_to_id": null
+      },
+      {
+        "id": 4234376548,
+        "author": "author",
+        "body": "Sure, I guess, It works without. I will help with retaining the name and such. Will add it.",
+        "created_at": "2026-10-09T20:41:43Z",
+        "in_reply_to_id": 4234351606
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": false
+  },
+  "window": {
+    "start_commit_sha": "004cdc5427c345b4b7e5c2c82407cc796e8f83db",
+    "end_commit_sha": "6ec40fbf2fa253a8203dc0572ce5799dfebc7a30",
+    "subsequent_commits": [
+      {
+        "sha": "ddcde68d50f9ad5202f6d38bb5d77d5e8cf7f71c",
+        "message": "Use functools.wraps in Hydrawise exception handler",
+        "authored_at": "2026-10-09T20:43:56Z",
+        "committed_at": "2026-10-09T20:43:56Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5ba8b1cb5e5e1a831f47444119ee60a5f3aab1a7",
+        "message": "Merge remote-tracking branch 'origin/dev' into frenck/hydrawise-config-flow-bronze\n\n# Conflicts:\n#\thomeassistant/components/hydrawise/quality_scale.yaml",
+        "authored_at": "2026-10-10T13:44:52Z",
+        "committed_at": "2026-10-10T13:44:52Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "2f74d124f8e9b41e4f40bfdc3ecf035a90b6dd22",
+        "message": "Merge branch 'frenck/hydrawise-config-flow-bronze' into frenck/hydrawise-action-exceptions",
+        "authored_at": "2026-10-10T13:45:10Z",
+        "committed_at": "2026-10-10T13:45:10Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "6ec40fbf2fa253a8203dc0572ce5799dfebc7a30",
+        "message": "Address review feedback on Hydrawise action exceptions",
+        "authored_at": "2026-10-10T14:20:14Z",
+        "committed_at": "2026-10-10T14:20:14Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "homeassistant/components/hydrawise/entity.py",
+  "before_code": "\"\"\"Base classes for Hydrawise entities.\"\"\"\n\nfrom collections.abc import Callable, Coroutine\nfrom typing import Any, Concatenate, override\n\nfrom aiohttp import ClientError\nfrom pydrawise import Error as PydrawiseError, NotAuthorizedError\nfrom pydrawise.schema import Controller, Sensor, Zone\n\nfrom homeassistant.core import callback\nfrom homeassistant.exceptions import HomeAssistantError\nfrom homeassistant.helpers import device_registry as dr\nfrom homeassistant.helpers.device_registry import DeviceInfo\nfrom homeassistant.helpers.entity import EntityDescription\nfrom homeassistant.helpers.update_coordinator import CoordinatorEntity\n\nfrom .const import DOMAIN, MANUFACTURER, MODEL_ZONE\nfrom .coordinator import HydrawiseDataUpdateCoordinator\n\n\nclass HydrawiseEntity(CoordinatorEntity[HydrawiseDataUpdateCoordinator]):\n    \"\"\"Entity class for Hydrawise devices.\"\"\"\n\n    _attr_attribution = \"Data provided by hydrawise.com\"\n    _attr_has_entity_name = True\n\n    def __init__(\n        self,\n        coordinator: HydrawiseDataUpdateCoordinator,\n        description: EntityDescription,\n        controller: Controller,\n        *,\n        zone_id: int | None = None,\n        sensor_id: int | None = None,\n    ) -> None:\n        \"\"\"Initialize the Hydrawise entity.\"\"\"\n        super().__init__(coordinator=coordinator)\n        self.entity_description = description\n        self.controller = controller\n        self.zone_id = zone_id\n        self.sensor_id = sensor_id\n        self._device_id = str(zone_id) if zone_id is not None else str(controller.id)\n        self._attr_unique_id = f\"{self._device_id}_{description.key}\"\n        self._attr_device_info = DeviceInfo(\n            identifiers={(DOMAIN, self._device_id)},\n            name=self.zone.name if zone_id is not None else controller.name,\n            model=(\n                MODEL_ZONE\n                if zone_id is not None\n                else controller.hardware.model.description\n            ),\n            manufacturer=MANUFACTURER,\n        )\n        if zone_id is not None:\n            # Only zones get their own device; sensor entities share the\n            # controller device, so linking them to the controller would create\n            # a self-referential via_device.\n            self._attr_device_info[\"via_device_id\"] = (\n                dr.async_get_device_id_by_identifier(\n                    self.coordinator.hass,\n                    (DOMAIN, str(controller.id)),\n                    config_entry_id=self.coordinator.config_entry.entry_id,\n                )\n            )\n        self._update_attrs()\n\n    @property\n    def zone(self) -> Zone:\n        \"\"\"Return the entity zone.\"\"\"\n        assert self.zone_id is not None  # needed for mypy\n        return self.coordinator.data.zones[self.zone_id]\n\n    @property\n    def sensor(self) -> Sensor:\n        \"\"\"Return the entity sensor.\"\"\"\n        assert self.sensor_id is not None  # needed for mypy\n        return self.coordinator.data.sensors[self.sensor_id]\n\n    def _update_attrs(self) -> None:\n        \"\"\"Update state attributes.\"\"\"\n        return  # pragma: no cover\n\n    @callback\n    @override\n    def _handle_coordinator_update(self) -> None:\n        \"\"\"Get the latest data and updates the state.\"\"\"\n        # Guard against updates arriving after what the entity reads on has gone\n        # but before the entity has been unsubscribed from the coordinator.\n        data = self.coordinator.data\n        if (\n            self.controller.id not in data.controllers\n            or (self.zone_id is not None and self.zone_id not in data.zones)\n            or (self.sensor_id is not None and self.sensor_id not in data.sensors)\n        ):\n            return\n        self.controller = data.controllers[self.controller.id]\n        self._update_attrs()\n        super()._handle_coordinator_update()\n\n    @property\n    @override\n    def available(self) -> bool:\n        \"\"\"Set the entity availability.\"\"\"\n        return super().available and self.controller.online\n\n\ndef exception_handler[_EntityT: HydrawiseEntity, **_P](\n    func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],\n) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:\n    \"\"\"Decorate Hydrawise API calls to raise translated errors.\"\"\"\n\n    async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:\n        try:\n            await func(self, *args, **kwargs)\n        except NotAuthorizedError as error:\n            raise HomeAssistantError(\n                translation_domain=DOMAIN,\n                translation_key=\"invalid_auth\",\n            ) from error\n        # Fetching the auth token happens outside of pydrawise's own error\n        # translation, so raw aiohttp and timeout errors can surface too.\n        except (PydrawiseError, ClientError, TimeoutError) as error:\n            raise HomeAssistantError(\n                translation_domain=DOMAIN,\n                translation_key=\"command_error\",\n                translation_placeholders={\"error\": str(error)},\n            ) from error\n\n    return handler\n",
+  "anchor_line": 112,
+  "after_code": "\"\"\"Base classes for Hydrawise entities.\"\"\"\n\nfrom collections.abc import Callable, Coroutine\nfrom functools import wraps\nfrom typing import Any, Concatenate, override\n\nfrom aiohttp import ClientError\nfrom pydrawise import Error as PydrawiseError, NotAuthorizedError\nfrom pydrawise.schema import Controller, Sensor, Zone\n\nfrom homeassistant.core import callback\nfrom homeassistant.exceptions import HomeAssistantError\nfrom homeassistant.helpers import device_registry as dr\nfrom homeassistant.helpers.device_registry import DeviceInfo\nfrom homeassistant.helpers.entity import EntityDescription\nfrom homeassistant.helpers.update_coordinator import CoordinatorEntity\n\nfrom .const import DOMAIN, MANUFACTURER, MODEL_ZONE\nfrom .coordinator import HydrawiseDataUpdateCoordinator\n\n\nclass HydrawiseEntity(CoordinatorEntity[HydrawiseDataUpdateCoordinator]):\n    \"\"\"Entity class for Hydrawise devices.\"\"\"\n\n    _attr_attribution = \"Data provided by hydrawise.com\"\n    _attr_has_entity_name = True\n\n    def __init__(\n        self,\n        coordinator: HydrawiseDataUpdateCoordinator,\n        description: EntityDescription,\n        controller: Controller,\n        *,\n        zone_id: int | None = None,\n        sensor_id: int | None = None,\n    ) -> None:\n        \"\"\"Initialize the Hydrawise entity.\"\"\"\n        super().__init__(coordinator=coordinator)\n        self.entity_description = description\n        self.controller = controller\n        self.zone_id = zone_id\n        self.sensor_id = sensor_id\n        self._device_id = str(zone_id) if zone_id is not None else str(controller.id)\n        self._attr_unique_id = f\"{self._device_id}_{description.key}\"\n        self._attr_device_info = DeviceInfo(\n            identifiers={(DOMAIN, self._device_id)},\n            name=self.zone.name if zone_id is not None else controller.name,\n            model=(\n                MODEL_ZONE\n                if zone_id is not None\n                else controller.hardware.model.description\n            ),\n            manufacturer=MANUFACTURER,\n        )\n        if zone_id is not None:\n            # Only zones get their own device; sensor entities share the\n            # controller device, so linking them to the controller would create\n            # a self-referential via_device.\n            self._attr_device_info[\"via_device_id\"] = (\n                dr.async_get_device_id_by_identifier(\n                    self.coordinator.hass,\n                    (DOMAIN, str(controller.id)),\n                    config_entry_id=self.coordinator.config_entry.entry_id,\n                )\n            )\n        self._update_attrs()\n\n    @property\n    def zone(self) -> Zone:\n        \"\"\"Return the entity zone.\"\"\"\n        assert self.zone_id is not None  # needed for mypy\n        return self.coordinator.data.zones[self.zone_id]\n\n    @property\n    def sensor(self) -> Sensor:\n        \"\"\"Return the entity sensor.\"\"\"\n        assert self.sensor_id is not None  # needed for mypy\n        return self.coordinator.data.sensors[self.sensor_id]\n\n    def _update_attrs(self) -> None:\n        \"\"\"Update state attributes.\"\"\"\n        return  # pragma: no cover\n\n    @callback\n    @override\n    def _handle_coordinator_update(self) -> None:\n        \"\"\"Get the latest data and updates the state.\"\"\"\n        # Guard against updates arriving after what the entity reads on has gone\n        # but before the entity has been unsubscribed from the coordinator.\n        data = self.coordinator.data\n        if (\n            self.controller.id not in data.controllers\n            or (self.zone_id is not None and self.zone_id not in data.zones)\n            or (self.sensor_id is not None and self.sensor_id not in data.sensors)\n        ):\n            return\n        self.controller = data.controllers[self.controller.id]\n        self._update_attrs()\n        super()._handle_coordinator_update()\n\n    @property\n    @override\n    def available(self) -> bool:\n        \"\"\"Set the entity availability.\"\"\"\n        return super().available and self.controller.online\n\n\ndef exception_handler[_EntityT: HydrawiseEntity, **_P](\n    func: Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, Any]],\n) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:\n    \"\"\"Decorate Hydrawise API calls to raise translated errors.\"\"\"\n\n    @wraps(func)\n    async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:\n        try:\n            await func(self, *args, **kwargs)\n        except NotAuthorizedError as error:\n            raise HomeAssistantError(\n                translation_domain=DOMAIN,\n                translation_key=\"invalid_auth\",\n            ) from error\n        # Fetching the auth token happens outside of pydrawise's own error\n        # translation, so raw aiohttp and timeout errors can surface too.\n        except (PydrawiseError, ClientError, TimeoutError) as error:\n            raise HomeAssistantError(\n                translation_domain=DOMAIN,\n                translation_key=\"command_error\",\n            ) from error\n\n    return handler\n",
+  "unified_diff": "--- a/homeassistant/components/hydrawise/entity.py\n+++ b/homeassistant/components/hydrawise/entity.py\n@@ -1,6 +1,7 @@\n \"\"\"Base classes for Hydrawise entities.\"\"\"\n \n from collections.abc import Callable, Coroutine\n+from functools import wraps\n from typing import Any, Concatenate, override\n \n from aiohttp import ClientError\n@@ -109,6 +110,7 @@\n ) -> Callable[Concatenate[_EntityT, _P], Coroutine[Any, Any, None]]:\n     \"\"\"Decorate Hydrawise API calls to raise translated errors.\"\"\"\n \n+    @wraps(func)\n     async def handler(self: _EntityT, *args: _P.args, **kwargs: _P.kwargs) -> None:\n         try:\n             await func(self, *args, **kwargs)\n@@ -123,7 +125,6 @@\n             raise HomeAssistantError(\n                 translation_domain=DOMAIN,\n                 translation_key=\"command_error\",\n-                translation_placeholders={\"error\": str(error)},\n             ) from error\n \n     return handler\n",
+  "changed_files": [
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arve/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/indieauth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/login_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_service_bus/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/azure_service_bus/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bosch_shc/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bosch_shc/light.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/brands/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/services.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ccm15/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ccm15/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cisco_webex_teams/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cisco_webex_teams/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comelit/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/command_line/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/deconz/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/decora_wifi/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/decora_wifi/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/decora_wifi/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/denon_rs232/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/denon_rs232/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/discord/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/discord/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/egardia/alarm_control_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/egardia/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/eq3btsmart/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/eq3btsmart/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ezviz/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flock/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flock/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fritz/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fritz/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fritz/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fritz/models.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fritz/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gree/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hisense_aehw4a1/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hisense_aehw4a1/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hisense_aehw4a1/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/horizon/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/horizon/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/husqvarna_automower/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/husqvarna_automower/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hydrawise/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/hydrawise/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hydrawise/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/hydrawise/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/image/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/image/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imap/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/imou/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kaco_modbus/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kaco_modbus/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kaco_modbus/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kiwi/lock.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/kiwi/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/config_store.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/entity_store_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/knx_selector.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/knx/storage/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lg_infrared/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lg_tv_rs232/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/linkplay/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/linkplay/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/linkplay/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/linkplay/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/local_file/camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/local_file/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/lutron/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/matter/lock_helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mcp/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mcp/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/message_bird/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/message_bird/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/motion_blinds/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/motion_blinds/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mystrom/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mystrom/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/neato/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/neato/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/neato/vacuum.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ness_alarm/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/netio/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nibe_heatpump/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nintendo_parental_controls/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nintendo_parental_controls/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nintendo_parental_controls/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nintendo_parental_controls/services.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/nintendo_parental_controls/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/noaa_tides/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/numato/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/numato/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/onkyo/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/onkyo/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/opnsense/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/orvibo/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ovo_energy/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/owntracks/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/owntracks/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/owntracks/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/portainer/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/portainer/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/portainer/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/powerfox/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/private_ble_device/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/profiler/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/profiler/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/profiler/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/proxmoxve/update.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/pvoutput/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/pvoutput/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/rejseplanen/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/remember_the_milk/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/reolink/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/saj/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/samsung_exlink/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/samsung_infrared/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/schluter/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/schluter/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/seventeentrack/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shelly/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shopping_list/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/shopping_list/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sinch/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sinch/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/solaredge/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/solaredge_modbus/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/solaredge_modbus/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/starlink/time.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/discovery.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/steamist/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/subaru/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/suez_water/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/supla/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tailscale/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tailscale/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/teslemetry/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tolo/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tplink_omada/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tuya/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tuya/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tuya/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tuya/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/tuya/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/twilio_call/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/twilio_call/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/unifi_direct/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/usb/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/usb/consumers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/volkszaehler/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/weatherflow/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/wiim/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/xbox/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/xiaomi_miio/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/xiaomi_miio/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/xiaomi_miio/vacuum.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yale/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yalexs_ble/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yamaha/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yamaha/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yardian/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/zhong_hong/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/config_entries.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/exceptions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/generated/usb.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/helpers/os_error.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/helpers/template/extensions/devices.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/helpers/trigger/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements_all.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements_test.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "script/hassfest/usb.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/arve/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/aseko_pool_live/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/auth/test_indieauth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/auth/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/axis/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/azure_devops/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/azure_event_hub/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/backblaze_b2/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/baf/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/balboa/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bang_olufsen/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bayesian/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bitvis/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/blebox/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/blink/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bond/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bosch_shc/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bosch_shc/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bosch_shc/test_light.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/brands/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/braviatv/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bring/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/broadlink/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/brunt/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bryant_evolution/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/fixtures/heating_schedule.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/snapshots/test_diagnostics.ambr",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/bsblan/test_services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/buienradar/test_camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/caldav/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/canary/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/casper_glow/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/ccm15/test_climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/cert_expiry/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/cloudflare/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/coinbase/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/comelit/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/comelit/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/command_line/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/coolmaster/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/crownstone/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/daikin/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/datadog/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/deconz/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/deconz/test_light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/decora_wifi/test_light.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/deluge/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/denon_rs232/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/denonavr/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/devialet/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/devolo_home_control/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dexcom/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/directv/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/discord/test_notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dlna_dmr/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dnsip/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/doorbird/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dormakaba_dkey/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dsmr/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dunehd/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/dwd_weather_warnings/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/econet/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/ecovacs/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/efergy/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electrasmart/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/elmax/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/emoncms/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/emonitor/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/emulated_hue/test_hue_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/energieleser/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/energyid/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/enocean/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/eq3btsmart/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/eq3btsmart/test_climate.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/esphome/test_manager.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/ezviz/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/fritz/snapshots/test_switch.ambr",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/fritz/test_image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/fritz/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/fritz/test_switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/generic/test_camera.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/generic/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/go2rtc/test_server.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/hassio/test_backup.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/hassio/test_binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/history/test_websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/husqvarna_automower/snapshots/test_event.ambr",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/husqvarna_automower/snapshots/test_sensor.ambr",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/hydrawise/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "tests/components/image/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/imou/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/imou/snapshots/test_switch.ambr",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/imou/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/insteon/test_api_aldb.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/insteon/test_api_device.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "tests/components/hydrawise/test_init.py": "\"\"\"Tests for the Hydrawise integration.\"\"\"\n\nfrom copy import deepcopy\nfrom unittest.mock import AsyncMock\n\nfrom aiohttp import ClientError\nfrom freezegun.api import FrozenDateTimeFactory\nfrom pydrawise import APIError, NotAuthorizedError\nfrom pydrawise.schema import Controller, User, Zone\nimport pytest\n\nfrom homeassistant.components.hydrawise.const import DOMAIN, MAIN_SCAN_INTERVAL\nfrom homeassistant.config_entries import ConfigEntryState\nfrom homeassistant.const import STATE_UNAVAILABLE\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.helpers import device_registry as dr\nfrom homeassistant.helpers.device_registry import DeviceRegistry\n\nfrom tests.common import MockConfigEntry, async_fire_time_changed\n\n\n@pytest.mark.parametrize(\"side_effect\", [ClientError, APIError(\"unavailable\")])\nasync def test_connect_retry(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    side_effect: Exception,\n) -> None:\n    \"\"\"Test that a connection error triggers a retry.\"\"\"\n    mock_pydrawise.get_user.side_effect = side_effect\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY\n\n\nasync def test_setup_auth_error_starts_reauth(\n    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_pydrawise: AsyncMock\n) -> None:\n    \"\"\"Test that an authorization error during setup starts a reauth flow.\"\"\"\n    mock_pydrawise.get_user.side_effect = NotAuthorizedError(\"HTTP 401\")\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry.state is ConfigEntryState.SETUP_ERROR\n    assert any(mock_config_entry.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_update_api_error(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    freezer: FrozenDateTimeFactory,\n    caplog: pytest.LogCaptureFixture,\n) -> None:\n    \"\"\"Test that an API error during a refresh is an update failure, not unexpected.\"\"\"\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state != STATE_UNAVAILABLE\n\n    mock_pydrawise.get_user.side_effect = APIError(\"{'message': 'unavailable'}\")\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state == STATE_UNAVAILABLE\n    assert \"Unexpected error fetching hydrawise data\" not in caplog.text\n    assert \"Error communicating with the Hydrawise API\" in caplog.text\n\n    mock_pydrawise.get_user.side_effect = None\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state != STATE_UNAVAILABLE\n\n\nasync def test_update_auth_error_starts_reauth(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test that an authorization error during a refresh starts a reauth flow.\"\"\"\n    mock_pydrawise.get_user.side_effect = NotAuthorizedError(\"HTTP 401\")\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert any(mock_added_config_entry.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_update_version(\n    hass: HomeAssistant, mock_config_entry_legacy: MockConfigEntry\n) -> None:\n    \"\"\"Test updating to the GaphQL API works.\"\"\"\n    mock_config_entry_legacy.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry_legacy.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry_legacy.state is ConfigEntryState.SETUP_ERROR\n    assert (\n        mock_config_entry_legacy.error_reason_translation_key == \"missing_credentials\"\n    )\n\n    # Make sure reauth flow has been initiated\n    assert any(mock_config_entry_legacy.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_auto_add_devices(\n    hass: HomeAssistant,\n    device_registry: DeviceRegistry,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    user: User,\n    controller: Controller,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test new devices are auto-added to the device registry.\"\"\"\n    device = device_registry.async_get_device_by_identifier(\n        (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n    )\n    assert device is not None\n    for zone in zones:\n        zone_device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert zone_device is not None\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    # 1 controller + 2 zones\n    assert len(all_devices) == 3\n\n    # Sensors that use the water-use coordinator should exist for the initial zones.\n    assert hass.states.get(\"sensor.zone_one_daily_active_water_use\") is not None\n    assert hass.states.get(\"sensor.zone_one_daily_active_watering_time\") is not None\n    assert hass.states.get(\"sensor.zone_two_daily_active_water_use\") is not None\n    assert hass.states.get(\"sensor.zone_two_daily_active_watering_time\") is not None\n\n    controller2 = deepcopy(controller)\n    controller2.id += 10\n    controller2.name += \" 2\"\n    controller2.sensors = []\n\n    zones2 = deepcopy(zones)\n    for zone in zones2:\n        zone.id += 10\n        zone.name += \" 2\"\n\n    user.controllers = [controller, controller2]\n    mock_pydrawise.get_zones.side_effect = [zones, zones2]\n\n    # Make the coordinator refresh data.\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    new_controller_device = device_registry.async_get_device_by_identifier(\n        (DOMAIN, str(controller2.id)), mock_added_config_entry.entry_id\n    )\n    assert new_controller_device is not None\n\n    # The new controller's own entities must also be added, not just its device.\n    # Registering the controller device must not make _add_remove_zones treat the\n    # controller as already-known and skip the new-controller callbacks.\n    assert hass.states.get(\"binary_sensor.home_controller_2_connectivity\") is not None\n\n    for zone in zones2:\n        new_zone_device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert new_zone_device is not None\n\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    # 2 controllers + 4 zones\n    assert len(all_devices) == 6\n\n    # Sensors that use the water-use coordinator must also be created for the\n    # newly added zones, even though the water-use coordinator hasn't refreshed.\n    assert hass.states.get(\"sensor.zone_one_2_daily_active_watering_time\") is not None\n    assert hass.states.get(\"sensor.zone_two_2_daily_active_watering_time\") is not None\n\n\nasync def test_auto_remove_devices(\n    hass: HomeAssistant,\n    device_registry: DeviceRegistry,\n    mock_added_config_entry: MockConfigEntry,\n    user: User,\n    controller: Controller,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test old devices are auto-removed from the device registry.\"\"\"\n    assert (\n        device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n        )\n        is not None\n    )\n    for zone in zones:\n        device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert device is not None\n\n    user.controllers = []\n    # Make the coordinator refresh data.\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert (\n        device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n        )\n        is None\n    )\n    for zone in zones:\n        device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert device is None\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    assert len(all_devices) == 0\n\n\nasync def test_zones_of_one_controller_go_missing(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n    caplog: pytest.LogCaptureFixture,\n) -> None:\n    \"\"\"Test a controller answering without its zones does not crash the update.\n\n    The controller is still there, so the entities of its zones are still\n    subscribed when the refresh that drops them arrives.\n    \"\"\"\n    assert hass.states.get(\"binary_sensor.zone_one_watering\") is not None\n\n    mock_pydrawise.get_zones.return_value = []\n\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    mock_pydrawise.get_zones.return_value = zones\n\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\") is not None\n    assert \"KeyError\" not in caplog.text\n"
+  },
+  "test_files_before": {
+    "tests/components/hydrawise/test_init.py": "\"\"\"Tests for the Hydrawise integration.\"\"\"\n\nfrom copy import deepcopy\nfrom unittest.mock import AsyncMock\n\nfrom aiohttp import ClientError\nfrom freezegun.api import FrozenDateTimeFactory\nfrom pydrawise import APIError, NotAuthorizedError\nfrom pydrawise.schema import Controller, User, Zone\nimport pytest\n\nfrom homeassistant.components.hydrawise.const import DOMAIN, MAIN_SCAN_INTERVAL\nfrom homeassistant.config_entries import ConfigEntryState\nfrom homeassistant.const import STATE_UNAVAILABLE\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.helpers import device_registry as dr\nfrom homeassistant.helpers.device_registry import DeviceRegistry\n\nfrom tests.common import MockConfigEntry, async_fire_time_changed\n\n\n@pytest.mark.parametrize(\"side_effect\", [ClientError, APIError(\"unavailable\")])\nasync def test_connect_retry(\n    hass: HomeAssistant,\n    mock_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    side_effect: Exception,\n) -> None:\n    \"\"\"Test that a connection error triggers a retry.\"\"\"\n    mock_pydrawise.get_user.side_effect = side_effect\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry.state is ConfigEntryState.SETUP_RETRY\n\n\nasync def test_setup_auth_error_starts_reauth(\n    hass: HomeAssistant, mock_config_entry: MockConfigEntry, mock_pydrawise: AsyncMock\n) -> None:\n    \"\"\"Test that an authorization error during setup starts a reauth flow.\"\"\"\n    mock_pydrawise.get_user.side_effect = NotAuthorizedError(\"HTTP 401\")\n    mock_config_entry.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry.state is ConfigEntryState.SETUP_ERROR\n    assert any(mock_config_entry.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_update_api_error(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    freezer: FrozenDateTimeFactory,\n    caplog: pytest.LogCaptureFixture,\n) -> None:\n    \"\"\"Test that an API error during a refresh is an update failure, not unexpected.\"\"\"\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state != STATE_UNAVAILABLE\n\n    mock_pydrawise.get_user.side_effect = APIError(\"{'message': 'unavailable'}\")\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state == STATE_UNAVAILABLE\n    assert \"Unexpected error fetching hydrawise data\" not in caplog.text\n    assert \"Error communicating with the Hydrawise API\" in caplog.text\n\n    mock_pydrawise.get_user.side_effect = None\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\").state != STATE_UNAVAILABLE\n\n\nasync def test_update_auth_error_starts_reauth(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test that an authorization error during a refresh starts a reauth flow.\"\"\"\n    mock_pydrawise.get_user.side_effect = NotAuthorizedError(\"HTTP 401\")\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert any(mock_added_config_entry.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_update_version(\n    hass: HomeAssistant, mock_config_entry_legacy: MockConfigEntry\n) -> None:\n    \"\"\"Test updating to the GaphQL API works.\"\"\"\n    mock_config_entry_legacy.add_to_hass(hass)\n    await hass.config_entries.async_setup(mock_config_entry_legacy.entry_id)\n    await hass.async_block_till_done()\n    assert mock_config_entry_legacy.state is ConfigEntryState.SETUP_ERROR\n\n    # Make sure reauth flow has been initiated\n    assert any(mock_config_entry_legacy.async_get_active_flows(hass, {\"reauth\"}))\n\n\nasync def test_auto_add_devices(\n    hass: HomeAssistant,\n    device_registry: DeviceRegistry,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    user: User,\n    controller: Controller,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test new devices are auto-added to the device registry.\"\"\"\n    device = device_registry.async_get_device_by_identifier(\n        (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n    )\n    assert device is not None\n    for zone in zones:\n        zone_device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert zone_device is not None\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    # 1 controller + 2 zones\n    assert len(all_devices) == 3\n\n    # Sensors that use the water-use coordinator should exist for the initial zones.\n    assert hass.states.get(\"sensor.zone_one_daily_active_water_use\") is not None\n    assert hass.states.get(\"sensor.zone_one_daily_active_watering_time\") is not None\n    assert hass.states.get(\"sensor.zone_two_daily_active_water_use\") is not None\n    assert hass.states.get(\"sensor.zone_two_daily_active_watering_time\") is not None\n\n    controller2 = deepcopy(controller)\n    controller2.id += 10\n    controller2.name += \" 2\"\n    controller2.sensors = []\n\n    zones2 = deepcopy(zones)\n    for zone in zones2:\n        zone.id += 10\n        zone.name += \" 2\"\n\n    user.controllers = [controller, controller2]\n    mock_pydrawise.get_zones.side_effect = [zones, zones2]\n\n    # Make the coordinator refresh data.\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    new_controller_device = device_registry.async_get_device_by_identifier(\n        (DOMAIN, str(controller2.id)), mock_added_config_entry.entry_id\n    )\n    assert new_controller_device is not None\n\n    # The new controller's own entities must also be added, not just its device.\n    # Registering the controller device must not make _add_remove_zones treat the\n    # controller as already-known and skip the new-controller callbacks.\n    assert hass.states.get(\"binary_sensor.home_controller_2_connectivity\") is not None\n\n    for zone in zones2:\n        new_zone_device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert new_zone_device is not None\n\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    # 2 controllers + 4 zones\n    assert len(all_devices) == 6\n\n    # Sensors that use the water-use coordinator must also be created for the\n    # newly added zones, even though the water-use coordinator hasn't refreshed.\n    assert hass.states.get(\"sensor.zone_one_2_daily_active_watering_time\") is not None\n    assert hass.states.get(\"sensor.zone_two_2_daily_active_watering_time\") is not None\n\n\nasync def test_auto_remove_devices(\n    hass: HomeAssistant,\n    device_registry: DeviceRegistry,\n    mock_added_config_entry: MockConfigEntry,\n    user: User,\n    controller: Controller,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n) -> None:\n    \"\"\"Test old devices are auto-removed from the device registry.\"\"\"\n    assert (\n        device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n        )\n        is not None\n    )\n    for zone in zones:\n        device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert device is not None\n\n    user.controllers = []\n    # Make the coordinator refresh data.\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert (\n        device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(controller.id)), mock_added_config_entry.entry_id\n        )\n        is None\n    )\n    for zone in zones:\n        device = device_registry.async_get_device_by_identifier(\n            (DOMAIN, str(zone.id)), mock_added_config_entry.entry_id\n        )\n        assert device is None\n    all_devices = dr.async_entries_for_config_entry(\n        device_registry, mock_added_config_entry.entry_id\n    )\n    assert len(all_devices) == 0\n\n\nasync def test_zones_of_one_controller_go_missing(\n    hass: HomeAssistant,\n    mock_added_config_entry: MockConfigEntry,\n    mock_pydrawise: AsyncMock,\n    zones: list[Zone],\n    freezer: FrozenDateTimeFactory,\n    caplog: pytest.LogCaptureFixture,\n) -> None:\n    \"\"\"Test a controller answering without its zones does not crash the update.\n\n    The controller is still there, so the entities of its zones are still\n    subscribed when the refresh that drops them arrives.\n    \"\"\"\n    assert hass.states.get(\"binary_sensor.zone_one_watering\") is not None\n\n    mock_pydrawise.get_zones.return_value = []\n\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    mock_pydrawise.get_zones.return_value = zones\n\n    freezer.tick(MAIN_SCAN_INTERVAL)\n    async_fire_time_changed(hass)\n    await hass.async_block_till_done(wait_background_tasks=True)\n\n    assert hass.states.get(\"binary_sensor.zone_one_watering\") is not None\n    assert \"KeyError\" not in caplog.text\n"
+  },
+  "ingested_at": "2026-10-11T10:38:19.728970Z"
+}

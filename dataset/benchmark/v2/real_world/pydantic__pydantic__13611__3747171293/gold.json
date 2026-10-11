@@ -1,23 +1,17 @@
 {
   "label": {
     "case_id": "pydantic__pydantic__13611__3747171293",
-    "include": true,
-    "requirements": [
-      {
-        "category": "other",
-        "description": "Delete the explanatory comment block on lines 654-658 (empty multi-line suggestion)",
-        "status": "satisfied"
-      }
-    ],
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "pydantic/experimental/pipeline.py:651-654: the five comment lines are gone; s['pattern'] = constraint remains",
-    "confidence": "high",
+    "evidence": "",
+    "confidence": "medium",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

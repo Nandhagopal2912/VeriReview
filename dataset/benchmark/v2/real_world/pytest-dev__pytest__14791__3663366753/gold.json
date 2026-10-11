@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "error_handling",
-        "description": "Turn invalid ini values into UsageError inside getini by default instead of wrapping each call site",
+        "description": "Raise UsageError for invalid configuration values by default.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/tmpdir.py:101: the local try/except -> UsageError is removed; testing/test_config.py now expects UsageError from getini for invalid types",
-    "confidence": "medium",
-    "notes": "getini itself (config/__init__.py) is not in this case; the change is judged from the removed wrapper and the updated getini tests."
+    "evidence": "src/_pytest/config/__init__.py — the diff removes the try/except around config.getini(\"tmp_path_retention_policy\"), allowing the configuration error to be handled directly. The tests in testing/test_config.py also change expected exceptions from TypeError to UsageError.",
+    "confidence": "high",
+    "notes": "The reviewer recommends making invalid configuration values produce UsageError directly in getini(). The implementation removes the local exception conversion in tmpdir.py and updates configuration tests to expect UsageError for invalid values."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

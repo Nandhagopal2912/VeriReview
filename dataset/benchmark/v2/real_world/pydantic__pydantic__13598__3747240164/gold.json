@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Fix the indentation of the `if decimal_places_ > decimal_places:` line (suggestion)",
+        "description": "Incorrect indentation to be changed",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "pydantic/_internal/_validators.py:392: the line is indented inside the try block",
+    "evidence": "pydantic/_internal/_validators.py:392",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

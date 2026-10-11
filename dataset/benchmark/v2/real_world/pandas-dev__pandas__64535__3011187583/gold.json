@@ -4,20 +4,25 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Let _get_plot_converter signal 'not plottable' itself so the separate _is_plottable attribute is not needed",
+        "category": "api_behavior",
+        "description": "Remove the separate _is_plottable attribute from ExtensionDtype.",
+        "status": "satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Make _get_plot_converter's own return value indicate \"not plottable\" (here an empty list) instead of relying on the flag.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "pandas/core/dtypes/base.py:476-497: _get_plot_converter returns [] by default (not plottable); _is_plottable is no longer documented or used",
+    "evidence": "pandas/core/dtypes/base.py after code: _is_plottable attribute and docstring entry removed; _get_plot_converter (from line 477) returns [] by default and documents \"empty list = not plottable\"",
     "confidence": "medium",
-    "notes": "Phrased as a question; the author treats it as a suggestion and implements it (returns an empty list rather than None)."
+    "notes": "Reviewer asked (as a question) whether _is_plottable is needed if _get_plot_converter signals non-plottability; the author agreed and implemented it (2bd6cb4). In base.py _is_plottable is removed and _get_plot_converter now returns [] by default. The sentinel is [] rather than the None the reviewer hypothesized. Other changes in the diff (GH#46093 name checks, docstring sections) are unrelated."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

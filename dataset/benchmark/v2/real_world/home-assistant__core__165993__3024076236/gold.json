@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Also assert the unique id of the created entry in the test",
+        "description": "Assert that the created config entry has the expected unique ID.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "test_config_flow.py:71: assert result[\"result\"].unique_id == MOCK_GATEWAY_ID",
+    "evidence": "tests/components/threema/test_config_flow.py — the line assert result[\"result\"].unique_id == MOCK_GATEWAY_ID.",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

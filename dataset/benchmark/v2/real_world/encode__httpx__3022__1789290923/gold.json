@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Include trust_env in SSLContext.__repr__ (suggestion)",
+        "category": "validation",
+        "description": "Update the __repr__ method to include the trust_env value alongside verify.",
         "status": "not_satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "NOT_SATISFIED",
-    "evidence": "httpx/_config.py:134: __repr__ still returns only verify=...; trust_env was removed from SSLContext instead",
-    "confidence": "low",
-    "notes": "Superseded: the author removed the trust_env attribute, so the suggestion no longer applies. Not done as written; a human decides whether superseded counts as satisfied."
+    "evidence": "nothing added",
+    "confidence": "high",
+    "notes": "diff changes doesn't reflect requested change"
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -10,6 +10,7 @@
     verireview build-gold A.json --single-source model              provisional one-annotator gold
     verireview benchmark-freeze [--benchmark-version v2]   write the frozen test manifest
     verireview eval-benchmark --split dev             Phase 10 ablation (test: --final-test-run)
+    verireview rescore-report REPORT.json [--system F]   a recorded run against the current labels
 
 Mining only works for repositories listed in ``dataset/benchmark/repositories.json``, which records
 the project owner's approval (roadmap D9). Annotation pages embed third-party code, so they default
@@ -19,6 +20,7 @@ to ``dataset/raw/`` (not committed).
 import argparse
 import json
 import sys
+from collections import Counter
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -65,6 +67,7 @@ COMMANDS = (
     "benchmark-freeze",
     "eval-benchmark",
     "compare-reports",
+    "rescore-report",
 )
 
 
@@ -83,6 +86,7 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p.add_argument("--n", type=int, required=True)
     p.add_argument("--seed", type=int, required=True)
     p.add_argument("--test-fraction", type=float, default=0.5)
+    p.add_argument("--max-per-pull", type=int, help="at most this many cases from one pull request")
     p.add_argument("--dataset", type=Path, default=DATASET)
 
     p = sub.add_parser("annotation-sheet", help="write the offline annotation page")
@@ -93,6 +97,12 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
         action="store_true",
         help="also include cases that only have provisional model gold (for human relabelling); "
         "the model's labels are never shown on the page",
+    )
+    p.add_argument(
+        "--cases",
+        type=Path,
+        help="file with one case id per line: put exactly these cases on the page, whatever "
+        "labels they already have (a second annotator, or splitting a batch); never shows labels",
     )
     p.add_argument("--dataset", type=Path, default=DATASET)
     p.add_argument("--out", type=Path)
@@ -144,6 +154,16 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p.add_argument("--resamples", type=int, default=2000)
     p.add_argument("--out", type=Path)
 
+    p = sub.add_parser(
+        "rescore-report",
+        help="score a recorded run's stored predictions against the current real-world labels",
+    )
+    p.add_argument("report", type=Path, help="eval-benchmark report (JSON)")
+    p.add_argument("--system", default="F", help="system in the report (default F)")
+    p.add_argument("--resamples", type=int, default=2000)
+    p.add_argument("--dataset", type=Path, default=DATASET)
+    p.add_argument("--out", type=Path)
+
     p = sub.add_parser("benchmark-freeze", help="write the frozen test-split manifest")
     p.add_argument("--dataset", type=Path, default=DATASET)
     _add_version_arguments(sub)
@@ -158,6 +178,7 @@ def _add_version_arguments(sub: "argparse._SubParsersAction[argparse.ArgumentPar
         "build-gold",
         "benchmark-freeze",
         "eval-benchmark",
+        "rescore-report",
     ):
         sub.choices[name].add_argument(
             "--benchmark-version",
@@ -181,6 +202,7 @@ def run(args: argparse.Namespace) -> int:
             args.out,
             args.benchmark_version,
             relabel_model=args.relabel_model,
+            only=args.cases,
         )
     if command == "agreement":
         return _agreement(_annotations(args.a), _annotations(args.b), args.out)
@@ -192,6 +214,8 @@ def run(args: argparse.Namespace) -> int:
         return _eval_benchmark(args)
     if command == "compare-reports":
         return _compare_reports(args)
+    if command == "rescore-report":
+        return _rescore_report(args)
     return _freeze(args.benchmark_version, args.dataset)
 
 
@@ -253,6 +277,67 @@ def _compare_reports(args: argparse.Namespace) -> int:
     return 0
 
 
+def _rescore_report(args: argparse.Namespace) -> int:
+    """A recorded run scored against the labels the dataset holds now (no verifier runs)."""
+    from verireview.evaluation.rescore import Rescore, rescore
+    from verireview.evaluation.systems import BenchmarkReport
+
+    report = BenchmarkReport.model_validate_json(args.report.read_text(encoding="utf-8"))
+    system = next((s for s in report.systems if s.system == args.system), None)
+    if system is None:
+        print(f"error: no system {args.system!r} in {args.report}", file=sys.stderr)
+        return 2
+    root = args.dataset / get_version(args.benchmark_version).real_world
+    labelled = [rw for rw in iter_real_world(root) if rw.gold is not None] if root.is_dir() else []
+    current = {
+        rw.case_id: (rw.gold.label.verdict if rw.gold.label.include else None)
+        for rw in labelled
+        if rw.gold is not None
+    }
+    pooled, real_world, excluded, unseen, changes = rescore(system.cases, current, args.resamples)
+    result = Rescore(
+        system=args.system,
+        source_report=args.report.name,
+        label_sources=dict(Counter(rw.gold.label_source for rw in labelled if rw.gold is not None)),
+        pooled=pooled,
+        real_world=real_world,
+        now_excluded=excluded,
+        included_without_prediction=unseen,
+        label_changes=changes,
+    )
+    sources = ", ".join(f"{k} {v}" for k, v in sorted(result.label_sources.items())) or "none"
+    print(
+        f"{args.system} of {args.report.name} against the current real-world labels "
+        f"({args.benchmark_version}: {sources}); stored predictions, no verifier run"
+    )
+    for name, group in (("pooled", pooled), ("real-world", real_world)):
+        for label, part in (
+            ("as recorded", group.recorded),
+            ("same cases, recorded labels", group.same_cases_recorded_labels),
+            ("same cases, current labels", group.same_cases_current_labels),
+        ):
+            m = part.metrics
+            print(
+                f"  {name:10} {label:28} n={part.n:3}  acc {_ci(part.intervals['accuracy'])}  "
+                f"FAR {_ci(part.intervals['false_acceptance_rate'])}  "
+                f"FBR {_fmt(m.false_blocking_rate)}  cov {_fmt(part.coverage)}  "
+                f"right-when-decided {_fmt(part.selective_accuracy)}"
+            )
+    print(
+        f"  excluded by the current labels: {len(excluded)}; included now but never run "
+        f"(no stored prediction, not scored): {len(unseen)}; verdict changed: {len(changes)}"
+    )
+    for change in changes:
+        print(
+            f"    {change.case_id}: {change.recorded.value} -> {change.current.value} "
+            f"(predicted {change.predicted.value})"
+        )
+    if args.out is not None:
+        _write(args.out, result.model_dump_json(indent=2) + "\n")
+        print(f"wrote {args.out}")
+    return 0
+
+
 _COMPARED = {
     "accuracy": "acc",
     "false_acceptance_rate": "FAR",
@@ -279,7 +364,8 @@ def _stats(dataset: Path, version: str) -> int:
     rw = s.real_world
     print(
         f"real-world:       collected {rw.collected} (dev {rw.dev}, test {rw.test}), "
-        f"gold {rw.with_gold} (human {rw.human_gold}, provisional model {rw.model_gold}; "
+        f"gold {rw.with_gold} (human {rw.human_gold}, of which one annotator "
+        f"{rw.single_human_gold}; provisional model {rw.model_gold}; "
         f"included {rw.included}, excluded {rw.excluded})"
     )
     print("\ntargets (v1):")
@@ -320,6 +406,7 @@ def _network(args: argparse.Namespace) -> int:
                     args.dataset,
                     [v.real_world for v in VERSIONS.values() if v.name != layout.name],
                 ),
+                max_per_pull=args.max_per_pull,
             )
     except (GitHubError, LicenseNotAllowedError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
@@ -365,6 +452,7 @@ def _annotation_sheet(
     version: str,
     *,
     relabel_model: bool = False,
+    only: Path | None = None,
 ) -> int:
     if calibration:
         cases = []
@@ -394,6 +482,17 @@ def _annotation_sheet(
             if root.is_dir()
             else []
         )
+        if only is not None:
+            # An explicit selection (a second annotator, or one person's share of a batch):
+            # exactly these cases, labelled or not. Their labels are still never shown.
+            wanted = {line.strip() for line in only.read_text(encoding="utf-8").splitlines()}
+            wanted.discard("")
+            known = {rw.case_id: rw for rw in iter_real_world(root)} if root.is_dir() else {}
+            missing = sorted(wanted - set(known))
+            if missing:
+                print(f"error: case(s) not in {root}: {missing[:5]}", file=sys.stderr)
+                return 1
+            pending = [known[case_id] for case_id in sorted(wanted)]
         cases = [sheet_case(rw.case_id, rw.case) for rw in pending]
         mode = "annotate"
     out = out or RAW / "sheets" / f"{batch}.html"
@@ -477,6 +576,12 @@ def _build_gold(args: argparse.Namespace) -> int:
     gold = {k: v for k, v in gold.items() if k not in kept}
     if kept:
         print(f"kept human gold for {len(kept)} case(s): {kept}")
+    if args.b is None:
+        print(
+            f"wrote gold for {len(gold)} case(s) from one {args.single_source} annotator "
+            "(not adjudicated)"
+        )
+        return 0
     agreed = sum(g.agreed for g in gold.values())
     print(f"wrote gold for {len(gold)} case(s): {agreed} agreed, {len(gold) - agreed} adjudicated")
     return 0
@@ -515,6 +620,15 @@ def _eval_benchmark(args: argparse.Namespace) -> int:
         print(
             "error: the test split is frozen and evaluated once (Phase 10); "
             "pass --final-test-run to run it",
+            file=sys.stderr,
+        )
+        return 2
+    manifest_file = args.dataset / get_version(args.benchmark_version).manifest
+    if not manifest_file.is_file():
+        print(
+            f"error: benchmark {args.benchmark_version} is not frozen "
+            f"({manifest_file} is missing). Its dev split holds the previous version's test "
+            "split, which stays locked until the new test split is frozen (benchmark-freeze)",
             file=sys.stderr,
         )
         return 2

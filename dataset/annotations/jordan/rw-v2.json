@@ -1,0 +1,1019 @@
+{
+  "annotator": "Jordan",
+  "batch": "rw-v2",
+  "sheet_version": "phase9-sheet-1",
+  "annotations": [
+    {
+      "case_id": "encode__httpx__2854__1330167002",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Explain why the Python 3.8 conditionals are being removed.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "Can't see changes made",
+      "confidence": "medium",
+      "notes": "The reviewer asks why Python 3.8 conditionals are being removed, and the author provides an explanation. However, the supplied before/after code does not show the referenced conditional or any subsequent removal, so the underlying code change cannot be independently verified from this case."
+    },
+    {
+      "case_id": "encode__httpx__2879__1353991206",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the URL import from httpx to .._urls, as suggested by the reviewer.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_transports/default.py:51-52",
+      "confidence": "high",
+      "notes": "The reviewers suggests to remove from httpx import URL and adds from .._urls import URL.\nThe diff also contains unrelated changes, so attribution to this review comment is not fully certain."
+    },
+    {
+      "case_id": "encode__httpx__2909__1376184439",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Simplify boundary generation by using os.urandom(16).hex().encode(\"ascii\").",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_multipart.py:202\nboundary intialization line replaced.",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__2990__1421694231",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Consider eplacing parts.append(...) with string concatenation (parts += ...) in quote().",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "Nothing added",
+      "confidence": "high",
+      "notes": "diff changes unrelated to suggestion."
+    },
+    {
+      "case_id": "encode__httpx__3022__1789290923",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Update the __repr__ method to include the trust_env value alongside verify.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "nothing added",
+      "confidence": "high",
+      "notes": "diff changes doesn't reflect requested change"
+    },
+    {
+      "case_id": "encode__httpx__3022__1789295895",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use SSLContext(trust_env=trust_env) as the fallback when ssl_context is not provided.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "nothing added",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790219159",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790223381",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Replace import typing as t with import typing.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_config.py:2",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790231357",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add transport and trust_env parameters to _init_transport().",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_client.py:691-692",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3139__1518813076",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Explain why the zstandard version check is needed despite specifying zstandard>=0.18.0.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "nothing added",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024038116",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use entry.get_subentries_of_type() to retrieve only subentries of the expected type.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "custom_components/threema/notify.py:23-24",
+      "confidence": "high",
+      "notes": "The reviewer suggests using entry.get_subentries_of_type() instead of iterating through all subentries. The author acknowledges the suggestion and agrees to switch when the method becomes available, but the displayed code still uses entry.subentries.items() with manual type filtering."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024046975",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Store the client directly in the notify entity instead of storing the entire config entry.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/threema/notify.py:42",
+      "confidence": "high",
+      "notes": "The reviewer suggests storing the client directly instead of the full config entry. The implementation replaces self._entry = entry with self._client = entry.runtime_data and uses self._client when sending messages, satisfying the suggestion."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024075382",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024076236",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Assert that the created config entry has the expected unique ID.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/threema/test_config_flow.py — the line assert result[\"result\"].unique_id == MOCK_GATEWAY_ID.",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039619973",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Keep only the key-generation operation that can raise inside the try block; move subsequent assignments outside it.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/threema/config_flow.py:79-85",
+      "confidence": "high",
+      "notes": "The updated code keeps generate_key_pair() inside the block and moves the assignments to self._private_key and self._public_key outside it."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039629583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Explain the rationale for allowing users to edit generated keys, and consider displaying them as non-editable placeholders instead.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/threema/config_flow.py:128-139",
+      "confidence": "medium",
+      "notes": "The reviewer questions why generated keys are editable and suggests displaying them as placeholders. The updated code removes the editable key fields and supplies public_key and private_key through description_placeholders."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039647302",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Use the mock_config_entry fixture instead of manually constructing a config entry in the test.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/threema/test_notify.py:75-85",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__174407__3452221153",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the setup and initialization work that belongs to the coordinator into its _async_setup() method.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "homeassistant/components/theben_conexa/__init__.py:19-39",
+      "confidence": "medium",
+      "notes": "The diff removes setup logic from async_setup_entry() and calls the coordinator's initialization method, but the coordinator's _async_setup() implementation isn't shown, so the requested relocation cannot be verified."
+    },
+    {
+      "case_id": "home-assistant__core__174407__3656594773",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Reuse the grouped fixtures and configure the relevant mock's side_effect directly, rather than using patch() around the operation.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/theben_conexa/test_config_flow.py:78-80",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__181382__3976371899",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move OAuth token persistence and refresh handling into the API library, exposing updated token data to the integration through a callback.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "homeassistant/components/cookidoo/coordinator.py — the diff removes _AuthDataHolder, persist_auth_data, and save_auth_data, as well as the integration's token-persistence logic.",
+      "confidence": "high",
+      "notes": "The reviewer recommends moving token persistence into the API layer. The author subsequently confirms that upstream version 0.18.4 implements an on_auth_data_update callback and that the integration's previous persistence code has been removed."
+    },
+    {
+      "case_id": "pallets__click__2233__838196880",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Change the first Group.command overload's __func type from Command to t.Callable[..., t.Any]",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1813\n+def command(self, __func: t.Callable[..., t.Any]) -> Command:\n+ if args and callable(args[0]):\n+            assert (\n+                len(args) == 1 and not kwargs\n+            ), \"Use 'command(**kwargs)(callable)' to provide arguments.\"\n@t.overload\n+    def group(self, __func: t.Callable[..., t.Any]) -> \"Group\":\n+        ...\n+\n+    @t.overload\n+    def group(\n+        self, *args: t.Any, **kwargs: t.Any\n+    ) -> t.Callable[[t.Callable[..., t.Any]], \"Group\"]:\n+        ...\n+            assert (\n+                len(args) == 1 and not kwargs\n+            ), \"Use 'group(**kwargs)(callable)' to provide arguments.\"\n+            (func,) = args\n+            args = ()",
+      "confidence": "high",
+      "notes": "The requested type change is present in the after-code."
+    },
+    {
+      "case_id": "pallets__click__2233__838668489",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Change the group overload parameter to __func: t.Callable[..., t.Any] to be consistent with the changes in core.py.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/decorators.py:126",
+      "confidence": "high",
+      "notes": "The requested __func parameter and Callable type are present in the after-code, consistent with core.py."
+    },
+    {
+      "case_id": "pallets__click__2233__838669013",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Rename the first group() overload's parameter from __name to __func, keeping t.Callable (naming): satisfied",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1813 (the after code has def command(self, __func: t.Callable[..., t.Any]) -> Command:)",
+      "confidence": "high",
+      "notes": "Reviewer's suggestion applied verbatim at the anchor line. The same diff also adds assertions and group() overloads not requested in this thread; they don't affect this requirement. No test changes, expected for a type-annotation-only request."
+    },
+    {
+      "case_id": "pallets__click__2421__1186943308",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Save a copy of the pre-existing _available_shells contents before the test clears it.",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Clear _available_shells for the duration of the test.",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Restore the saved shells after the test so other tests aren't affected.",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Implement this as a pytest fixture with yield for setup and teardown, as the reviewer suggested.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_shell_completion.py:349-355 (the _restore_available_shells fixture), :358, :378, :404 (applied to all three tests)",
+      "confidence": "high",
+      "notes": "Author added a yield fixture (349-355) that copies _available_shells, clears it, yields, then clears and restores the copy; applied via usefixtures to all shell-registration tests, and the in-test .clear() calls are removed. Extra assertions and a new test (test_add_completion_class_with_name) were added but not requested. Teardown after yield runs even if the test fails, so isolation holds."
+    },
+    {
+      "case_id": "pallets__click__2462__1189061605",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Either read BASH_VERSION via os.environ instead of the subprocess call, or explain why the subprocess call is needed.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "src/click/shell_completion.py:305-308 (after code still uses subprocess.run([\"bash\", \"-c\", 'echo \"${BASH_VERSION}\"']); no author reply in the thread)",
+      "confidence": "medium",
+      "notes": "Reviewer asked why os.environ isn't used for BASH_VERSION. Lines 305-308 are unchanged and the thread has no author reply, so neither a change nor an explanation is visible."
+    },
+    {
+      "case_id": "pallets__click__2509__1186767930",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add a comment in the test explaining what is being checked.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_termui.py:458-459 (after code): the new comment above the runner.invoke call in the renamed test",
+      "confidence": "high",
+      "notes": "Reviewer asked for an explanatory comment in the test; a two-line comment now precedes runner.invoke saying the default value must not appear in the output when show_default is False, and the author replied Done."
+    },
+    {
+      "case_id": "pallets__click__2818__1886678659",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reword the catch_exceptions docstring from \"any other exceptions than\" to \"any exceptions other than\".",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/testing.py:230-231 (after code): :param catch_exceptions: Whether to catch any exceptions other than followed by the unchanged second line",
+      "confidence": "high",
+      "notes": "Suggestion applied verbatim in the CliRunner docstring (\"any exceptions other than\"). "
+    },
+    {
+      "case_id": "pallets__click__2840__1998835949",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the dummy_func in get_help_option; apply help_option(*help_option_names) to self and pop the resulting option from self.params.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1029-1031 (after code): help_option(*help_option_names)(self) then return self.params.pop(); dummy_func removed",
+      "confidence": "high",
+      "notes": "Reviewer's suggestion applied verbatim at core.py:1029-1031; dummy_func and its comment removed. The same diff also rewords the get_help_option docstring and adds a ctx parameter to make_metavar"
+    },
+    {
+      "case_id": "pallets__click__2840__1998839852",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reword the get_help_option docstring to \"Skipped if :attr:add_help_option is ``False``.\"",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:1019 (after code): Skipped if :attr:`add_help_option` is False.",
+      "confidence": "high",
+      "notes": "Suggestion applied verbatim at the get_help_option docstring (core.py:1019). Other changes in the diff (dummy_func removal, make_metavar ctx parameter) belong to other threads and don't affect this requirement."
+    },
+    {
+      "case_id": "pallets__click__2940__2105687974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the input-size check (text_input_size / text_input.tell() comparison) that the new pattern makes unnecessary.",
+          "status": "satisfied"
+        },
+        {
+          "category": "error_handling",
+          "description": "In visible_input, read with next(text_input).rstrip(\"\\r\\n\") and raise EOFError() from e on StopIteration.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/testing.py:355-358 (the try/next(text_input)/except StopIteration → EOFError); input-size check removed from visible_input and the text_input_size setup deleted; same pattern also at :367-370 in hidden_input",
+      "confidence": "high",
+      "notes": "Reviewer's suggested try/next/except StopIteration → EOFError pattern is applied verbatim in visible_input (355-358), and the text_input_size setup and check are removed. The author also applied the same pattern to hidden_input and made unrelated changes (stream mixer __del__, shutil import move); none affect these requirements."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3005136419",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Stop hard-coding \"datetimetz\" in plottable_types(); let the extension-dtype registry supply it",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Provide the Timestamp and Period converter pairs from DatetimeTZDtype/PeriodDtype instead of hard-coding them in get_pairs().",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "converter.py:87-101 (\"datetimetz\" removed, EA types via plottable_ea_pairs(), lines 77-84); :107-108 (get_pairs still hard-codes Timestamp and Period); dtype-side changes not in the diff",
+      "confidence": "low",
+      "notes": "Reviewer comment is a hunch about \"datetimetz\" being covered by plottable_ea_dtypes; the author later describes an offline agreement to move the Timestamp/Period pairs into the ExtensionDtypes (fec4d87), which is not in this diff. \"datetimetz\" is removed from plottable_types, but get_pairs still hard-codes (Timestamp, ...) and (Period, ...) at 107-108, and the dtype-side change can't be verified from converter.py."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3011187583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Remove the separate _is_plottable attribute from ExtensionDtype.",
+          "status": "satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Make _get_plot_converter's own return value indicate \"not plottable\" (here an empty list) instead of relying on the flag.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/dtypes/base.py after code: _is_plottable attribute and docstring entry removed; _get_plot_converter (from line 477) returns [] by default and documents \"empty list = not plottable\"",
+      "confidence": "medium",
+      "notes": "Reviewer asked (as a question) whether _is_plottable is needed if _get_plot_converter signals non-plottability; the author agreed and implemented it (2bd6cb4). In base.py _is_plottable is removed and _get_plot_converter now returns [] by default. The sentinel is [] rather than the None the reviewer hypothesized. Other changes in the diff (GH#46093 name checks, docstring sections) are unrelated."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3546215362",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the stale _is_plottable entry from the ExtensionDtype docstring, since it was replaced by _get_plot_converter.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/dtypes/base.py:90-92 (after code): the docstring list now has only _is_numeric, _is_boolean, _get_common_dtype; _is_plottable no longer appears in the file",
+      "confidence": "high",
+      "notes": "Reviewer asked if the _is_plottable docstring entry was stale; the author confirmed it was replaced by _get_plot_converter. The entry is removed from the docstring list (now 90-92) and _is_plottable no longer appears in base.py. The diff's other changes (GH#46093 name checks, docstring sections) are unrelated."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555873359",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Replace object in the scatter include_type list with np.object_ so the dtype predicate no longer matches every dtype.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/plotting/_matplotlib/core.py:715 (after code): include_type.extend([np.object_, CategoricalDtypeType, str]); comment updated at :714",
+      "confidence": "high",
+      "notes": "Reviewer pointed out that object in include_type makes the issubclass predicate match everything. The author proposed np.object_, and the after code uses np.object_ (core.py:715) with the comment updated. The reviewer didn't explicitly confirm the replacement, but the match-everything behavior is gone. The test diff (conftest.py) is unrelated."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555961427",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Remove the bool-specific include_bool handling from the masked-dtype test_plot_on_y_axis override.",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Handle the boolean/include_bool case in the shared base test instead of the masked test.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "pandas/tests/extension/test_masked.py:359-383 (after code): include_bool/is_bool_dtype special case removed from the masked test; replaced by new plot_data-based overrides. Base test not in the diff.",
+      "confidence": "medium",
+      "notes": "Reviewer asked whether the bool include_bool handling belongs in the base test; the author said they'd change it. The include_bool/is_bool_dtype special case is gone from test_masked.py, but the base test file isn't in the diff, so I can't confirm it was moved there. The masked file now has new x/y-axis overrides expecting TypeError with NA values, which is different handling rather than a move."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3574519955",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "In the categorical test_plot_on_y_axis, replace the xfail with with pytest.raises(TypeError, ...).",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Apply the same xfail → pytest.raises change to the other dtypes' plot tests that expect the same error.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "pandas/tests/extension/test_categorical.py:183-187 (after code): xfail removed, replaced by pytest.raises(TypeError, match=\"no numeric data to plot\"); other dtypes' files not in the diff",
+      "confidence": "medium",
+      "notes": "Reviewer said the categorical plot test shouldn't be an xfail and should assert the TypeError with pytest.raises, and the same for some other dtypes. Categorical: xfail removed and replaced by pytest.raises (183-187), also switching the fixture to plot_data. The other dtypes' test files are not in this window, so the second part can't be verified."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759896069",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Replace the skip_if_no_matplotlib helper with class-level decorators on BasePlottingTests (td.skip_if_no(\"matplotlib\") plus the pyparsing filterwarnings mark).",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "pandas/tests/extension/base/plotting.py:123 (after code): class BasePlottingTests: has no decorators; the helper method and the warnings/Version imports are removed; tests use mpl_cleanup_context()",
+      "confidence": "medium",
+      "notes": "Reviewer asked to replace skip_if_no_matplotlib with class-level td.skip_if_no and filterwarnings decorators. The author reported that this fails in the minimum-versions environment and the reviewer accepted (\"Gotcha, thanks for checking\"). The final code has no class decorators; the helper is removed and tests use mpl_cleanup_context instead. Where the matplotlib skip and pyparsing warning filter now live is not visible in the diff."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759903875",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Replace the _get_plot_df helper with a pytest fixture (plot_data) on BasePlottingTests that the plot tests receive as an argument.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/extension/base/plotting.py after code: _get_plot_df removed; @pytest.fixture plot_data in BasePlottingTests (about lines 126-131); test_plot_on_x_axis/test_plot_on_y_axis take plot_data",
+      "confidence": "high",
+      "notes": "Reviewer asked for the DataFrame-building helper to become a fixture on BasePlottingTests; _get_plot_df is removed and a plot_data fixture is added and used by the x/y-axis tests (author reply points to d1c1e10). The fixture is also parametrized on skipna, which the author proposed and the reviewer did not object to."
+    },
+    {
+      "case_id": "pandas-dev__pandas__68005__3934920872",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Change df = df_out.set_index(\"a\") to df_out = df_out.set_index(\"a\") so the expected frame, not the input frame, gets the index.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/tests/groupby/test_reductions.py:1642 (after code): df_out = df_out.set_index(\"a\")",
+      "confidence": "high",
+      "notes": "Reviewer's suggestion applied verbatim at line 1642: the expected frame df_out now gets the \"a\" index instead of overwriting the input df. The author confirmed it fixed most of the failing tests. No other changes in this file."
+    },
+    {
+      "case_id": "pandas-dev__pandas__68702__4057026062",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Refactor the multi-line paragraph construction to use lines = pvalue.split(\"\\n\"), P(text=lines[0]), and a loop over lines[1:] adding a LineBreak before each addText.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/io/excel/_odswriter.py:155-159 (after code): matches the suggestion block exactly",
+      "confidence": "high",
+      "notes": "Reviewer's suggested cleanup applied verbatim at _odswriter.py:155-159 (split once, seed P with the first line, loop over the remaining lines adding LineBreak before each addText). No other changes and no test changes, expected for a behavior-preserving refactor."
+    },
+    {
+      "case_id": "pydantic__pydantic__13505__3719304974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Delete the commented-out \"# pos: Position\" line in the Model class of test_namedtuple.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/types/test_namedtuple.py:34-35 (after code): class Model(BaseModel): is followed directly by event: Event; the # pos: Position line is gone",
+      "confidence": "medium",
+      "notes": "Empty suggestion block = delete the anchored line (the commented-out \"# pos: Position\"). The line is removed in the after code. No other changes in this file's diff."
+    },
+    {
+      "case_id": "pydantic__pydantic__13523__3677536114",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "tests/benchmarks/test_model_schema_generation.py:348-357 (after code): test_interconnected_models is still present; the diff for this file is empty",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "tests/benchmarks/test_model_schema_generation.py:348-357 (after code): test_interconnected_models is still present; the diff for this file is empty",
+      "confidence": "medium",
+      "notes": "Reviewer's suggestion replaces lines 348-359 (the test_interconnected_models benchmark) with nothing, i.e. delete it. The after code is identical to the before code in this file, so the test is still present, and there is no author reply. The only changed test file in the window (tests/test_edge_cases.py) is unrelated. The request may have been settled off-thread, hence medium confidence."
+    },
+    {
+      "case_id": "pydantic__pydantic__13537__3674583864",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Encode both secret values using UTF-8 with errors=\"surrogatepass\" before comparing them with secrets.compare_digest().",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/types.py:1892-1895",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13598__3747238083",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Avoid the unnecessary normalized-value extraction when the initial decimal-place check passes.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:392-397",
+      "confidence": "high",
+      "notes": "The updated code performs normalization and the second check only when the initial decimal-place count exceeds the limit."
+    },
+    {
+      "case_id": "pydantic__pydantic__13598__3747240164",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Incorrect indentation to be changed",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:392",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747171293",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747175053",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747176318",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13623__3802616258",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Support frozendict as the allowed default type for collections.abc.Mapping.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pydantic/_internal/_validators.py:436-437",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13690__3842248596",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add a regression test for Pydantic PR #13573.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "tests/types/test_list.py:295",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559253",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559297",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702561507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the marker/keyword-specific wording from the idents() docstring.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/mark/expression.py:349-351",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2714516856",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14791__3663366753",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Raise UsageError for invalid configuration values by default.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/__init__.py — the diff removes the try/except around config.getini(\"tmp_path_retention_policy\"), allowing the configuration error to be handled directly. The tests in testing/test_config.py also change expected exceptions from TypeError to UsageError.",
+      "confidence": "high",
+      "notes": "The reviewer recommends making invalid configuration values produce UsageError directly in getini(). The implementation removes the local exception conversion in tmpdir.py and updates configuration tests to expect UsageError for invalid values."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14807__3696472652",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Rename CONFIG_SUFFIXES to a clearer name, such as CONFIG_LOADERS_BY_SUFFIX.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/__init__.py:217",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14824__3871709270",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Add a descriptive message to the assertion checking that the plugin import error has an exception cause.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/config/__init__.py:188",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14865__3774173657",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Change lines from docstring to code comment",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/pathlib.py:1100",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14865__3789364254",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Change conditional checks",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/_pytest/pathlib.py:1108",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14875__3776696299",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add a test verifying that XFAIL reports identify the setup phase.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "testing/test_skipping.py:792–810",
+      "confidence": "medium",
+      "notes": "The test creates a fixture that raises an exception during setup, marks the test as xfail, and checks that the report contains XFAIL at setup."
+    }
+  ]
+}

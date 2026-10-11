@@ -1,0 +1,82 @@
+{
+  "schema_version": "3",
+  "case_id": "encode/httpx#3335/1795331591",
+  "repository": "encode/httpx",
+  "pull_number": 3335,
+  "pull_title": "Drop overloaded usage of 'verify' and 'cert'.",
+  "base_sha": "2763690e1b2c0f72505397f34fc3c7dc2971955a",
+  "head_sha": "ff94a9985a9f1695bee54de7762d956ee3b53ecd",
+  "thread": {
+    "root_comment_id": 1795331591,
+    "path": "httpx/_compat.py",
+    "line": null,
+    "original_line": 39,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -38,26 +36,4 @@\n         zstd = None\n \n \n-if sys.version_info >= (3, 10) or ssl.OPENSSL_VERSION_INFO >= (1, 1, 0, 7):\n-\n-    def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:\n-        # The OP_NO_SSL* and OP_NO_TLS* become deprecated in favor of\n-        # 'SSLContext.minimum_version' from Python 3.7 onwards, however\n-        # this attribute is not available unless the ssl module is compiled\n-        # with OpenSSL 1.1.0g or newer.\n-        # https://docs.python.org/3.10/library/ssl.html#ssl.SSLContext.minimum_version\n-        # https://docs.python.org/3.7/library/ssl.html#ssl.SSLContext.minimum_version\n-        context.minimum_version = ssl.TLSVersion.TLSv1_2\n-\n-else:\n-\n-    def set_minimum_tls_version_1_2(context: ssl.SSLContext) -> None:\n-        # If 'minimum_version' isn't available, we configure these options with\n-        # the older deprecated variants.\n-        context.options |= ssl.OP_NO_SSLv2\n-        context.options |= ssl.OP_NO_SSLv3\n-        context.options |= ssl.OP_NO_TLSv1\n-        context.options |= ssl.OP_NO_TLSv1_1\n-\n-\n-__all__ = [\"brotli\", \"set_minimum_tls_version_1_2\"]\n+__all__ = [\"brotli\"]",
+    "original_commit_sha": "e070d27001bab93feb6d12de528d90ceab5c7200",
+    "commit_sha": "ff94a9985a9f1695bee54de7762d956ee3b53ecd",
+    "comments": [
+      {
+        "id": 1795331591,
+        "author": "reviewer",
+        "body": "_zstd_ not exposed?",
+        "created_at": "2024-10-10T12:29:47Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "e070d27001bab93feb6d12de528d90ceab5c7200",
+    "end_commit_sha": "ff94a9985a9f1695bee54de7762d956ee3b53ecd",
+    "subsequent_commits": [
+      {
+        "sha": "f7c0b9a073085a5b73329e0fbfd7ce8692f66f35",
+        "message": "Consistent '__all__' in compat.py",
+        "authored_at": "2024-10-10T12:58:21Z",
+        "committed_at": "2024-10-10T12:58:21Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ff94a9985a9f1695bee54de7762d956ee3b53ecd",
+        "message": "Update httpx/_config.py\n\nCo-authored-by: T-256 <<email>>",
+        "authored_at": "2024-10-10T13:13:25Z",
+        "committed_at": "2024-10-10T13:13:25Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown"
+    ]
+  },
+  "file_path": "httpx/_compat.py",
+  "before_code": "\"\"\"\nThe _compat module is used for code which requires branching between different\nPython environments. It is excluded from the code coverage checks.\n\"\"\"\n\nimport re\nfrom types import ModuleType\nfrom typing import Optional\n\n# Brotli support is optional\n# The C bindings in `brotli` are recommended for CPython.\n# The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.\ntry:\n    import brotlicffi as brotli\nexcept ImportError:  # pragma: no cover\n    try:\n        import brotli\n    except ImportError:\n        brotli = None\n\n# Zstandard support is optional\nzstd: Optional[ModuleType] = None\ntry:\n    import zstandard as zstd\nexcept (AttributeError, ImportError, ValueError):  # Defensive:\n    zstd = None\nelse:\n    # The package 'zstandard' added the 'eof' property starting\n    # in v0.18.0 which we require to ensure a complete and\n    # valid zstd stream was fed into the ZstdDecoder.\n    # See: https://github.com/urllib3/urllib3/pull/2624\n    _zstd_version = tuple(\n        map(int, re.search(r\"^([0-9]+)\\.([0-9]+)\", zstd.__version__).groups())  # type: ignore[union-attr]\n    )\n    if _zstd_version < (0, 18):  # Defensive:\n        zstd = None\n\n\n__all__ = [\"brotli\"]\n",
+  "anchor_line": 39,
+  "after_code": "\"\"\"\nThe _compat module is used for code which requires branching between different\nPython environments. It is excluded from the code coverage checks.\n\"\"\"\n\nimport re\nfrom types import ModuleType\nfrom typing import Optional\n\n# Brotli support is optional\n# The C bindings in `brotli` are recommended for CPython.\n# The CFFI bindings in `brotlicffi` are recommended for PyPy and everything else.\ntry:\n    import brotlicffi as brotli\nexcept ImportError:  # pragma: no cover\n    try:\n        import brotli\n    except ImportError:\n        brotli = None\n\n# Zstandard support is optional\nzstd: Optional[ModuleType] = None\ntry:\n    import zstandard as zstd\nexcept (AttributeError, ImportError, ValueError):  # Defensive:\n    zstd = None\nelse:\n    # The package 'zstandard' added the 'eof' property starting\n    # in v0.18.0 which we require to ensure a complete and\n    # valid zstd stream was fed into the ZstdDecoder.\n    # See: https://github.com/urllib3/urllib3/pull/2624\n    _zstd_version = tuple(\n        map(int, re.search(r\"^([0-9]+)\\.([0-9]+)\", zstd.__version__).groups())  # type: ignore[union-attr]\n    )\n    if _zstd_version < (0, 18):  # Defensive:\n        zstd = None\n\n__all__ = [\"brotli\", \"zstd\"]\n",
+  "unified_diff": "--- a/httpx/_compat.py\n+++ b/httpx/_compat.py\n@@ -35,5 +35,4 @@\n     if _zstd_version < (0, 18):  # Defensive:\n         zstd = None\n \n-\n-__all__ = [\"brotli\"]\n+__all__ = [\"brotli\", \"zstd\"]\n",
+  "changed_files": [
+    {
+      "path": "httpx/_compat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "httpx/_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-10-11T10:37:12.268313Z"
+}

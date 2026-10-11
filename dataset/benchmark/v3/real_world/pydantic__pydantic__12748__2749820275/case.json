@@ -1,0 +1,898 @@
+{
+  "schema_version": "3",
+  "case_id": "pydantic/pydantic#12748/2749820275",
+  "repository": "pydantic/pydantic",
+  "pull_number": 12748,
+  "pull_title": "Support `exclude_if` in computed fields",
+  "base_sha": "61a06734ed07f00c018acf41809913e0857c728a",
+  "head_sha": "05678454c8bd078eabdfe1bc326ddfb2113d5cab",
+  "thread": {
+    "root_comment_id": 2749820275,
+    "path": "pydantic-core/tests/serializers/test_model.py",
+    "line": 1,
+    "original_line": 1,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "",
+    "original_commit_sha": "9d9012e11e9f0e26a579ac39d502f7625793dd57",
+    "commit_sha": "88c732a3b53bb37bee748f2c87c44d175bb0bfc1",
+    "comments": [
+      {
+        "id": 2749820275,
+        "author": "reviewer",
+        "body": "Similar to the other PR, I wouldn't bother with tests in the `pydantic-core` test suite now that we can have them in the pydantic `tests` directory (as you already have added in this PR). Happy to just drop the additions to this file.",
+        "created_at": "2026-01-31T18:16:13Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "participant-1",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "9d9012e11e9f0e26a579ac39d502f7625793dd57",
+    "end_commit_sha": "05678454c8bd078eabdfe1bc326ddfb2113d5cab",
+    "subsequent_commits": [
+      {
+        "sha": "1cf157392de45fd9348739ca2bba8bb7f26cc712",
+        "message": "Remove support for annotations",
+        "authored_at": "2026-03-07T14:25:59Z",
+        "committed_at": "2026-03-07T14:25:59Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "5d9ce6466dc76cad4b0e154d1d122b8114bb3ee8",
+        "message": "docs",
+        "authored_at": "2026-03-17T10:57:13Z",
+        "committed_at": "2026-03-17T10:57:13Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "e9a9b738dfef5733c18aaf04a08ec6cfb50ed40b",
+        "message": "Fix link to model_dump method in fields.md",
+        "authored_at": "2026-03-17T11:00:08Z",
+        "committed_at": "2026-03-17T11:00:08Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "2333afe60f6e0dcdd216b765ed78047e27ba08cd",
+        "message": "Update computed_field decorator syntax in documentation",
+        "authored_at": "2026-03-17T11:01:47Z",
+        "committed_at": "2026-03-17T11:01:47Z",
+        "author_login": "participant-1"
+      },
+      {
+        "sha": "05678454c8bd078eabdfe1bc326ddfb2113d5cab",
+        "message": "Fix formatting in fields.md regarding @property usage",
+        "authored_at": "2026-03-17T11:06:05Z",
+        "committed_at": "2026-03-17T11:06:05Z",
+        "author_login": "participant-1"
+      }
+    ],
+    "ambiguous_rewritten_commits": [
+      {
+        "sha": "e877b42996033d4bf4c082e8a0a226bb38d884ee",
+        "message": "Support exclude if in computed fields",
+        "authored_at": "2026-01-28T01:40:15Z",
+        "committed_at": "2026-03-07T14:05:02Z",
+        "author_login": null
+      },
+      {
+        "sha": "6c83808f72a3b9d9217d80aca21e45ffd261789c",
+        "message": "Update comments",
+        "authored_at": "2026-01-28T01:54:37Z",
+        "committed_at": "2026-03-07T14:05:02Z",
+        "author_login": null
+      }
+    ],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "original_commit_not_in_pr",
+      "history_rewritten",
+      "ordered_by_timestamp",
+      "ambiguous_rewritten_commits",
+      "resolution_time_unknown",
+      "base_drift_possible",
+      "anchor_not_found"
+    ]
+  },
+  "file_path": "pydantic-core/tests/serializers/test_model.py",
+  "before_code": "import dataclasses\nimport json\nimport platform\nimport warnings\nfrom functools import cached_property\nfrom random import randint\nfrom typing import Any, ClassVar\n\nimport pytest\nfrom dirty_equals import IsJson\n\nfrom pydantic_core import (\n    PydanticSerializationError,\n    SchemaSerializer,\n    SchemaValidator,\n    core_schema,\n)\n\nfrom ..conftest import plain_repr\n\non_pypy = platform.python_implementation() == 'PyPy'\n# pypy doesn't seem to maintain order of `__dict__`\nif on_pypy:\n    IsStrictDict = dict\nelse:\n    from dirty_equals import IsStrictDict\n\n\nclass BasicModel:\n    def __init__(self, **kwargs):\n        for key, value in kwargs.items():\n            setattr(self, key, value)\n\n\nclass BasicSubModel(BasicModel):\n    pass\n\n\ndef test_model():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        )\n    )\n    assert 'mode:SimpleDict' in plain_repr(s)\n    assert 'has_extra:false' in plain_repr(s)\n    assert s.to_python(BasicModel(foo=1, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicSubModel(foo=1, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1)) == IsStrictDict(bar=b'more', foo=1)\n    assert s.to_python(BasicModel(foo=1, c=3, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1, c=3), mode='json') == IsStrictDict(bar='more', foo=1)\n    assert s.to_python(BasicSubModel(bar=b'more', foo=1, c=3), mode='json') == IsStrictDict(bar='more', foo=1)\n\n    j = s.to_json(BasicModel(bar=b'more', foo=1, c=3))\n    if on_pypy:\n        assert json.loads(j) == {'bar': 'more', 'foo': 1}\n    else:\n        assert j == b'{\"bar\":\"more\",\"foo\":1}'\n\n    assert json.loads(s.to_json(BasicSubModel(bar=b'more', foo=1, c=3))) == {'bar': 'more', 'foo': 1}\n\n\n@dataclasses.dataclass\nclass DataClass:\n    class_var: ClassVar[int] = 1\n    foo: int\n    bar: str\n    spam: bytes\n    frog: dataclasses.InitVar[int]\n\n\ndef test_dataclass():\n    schema = core_schema.call_schema(\n        core_schema.arguments_schema(\n            [\n                core_schema.arguments_parameter('foo', core_schema.int_schema()),\n                core_schema.arguments_parameter('bar', core_schema.str_schema()),\n                core_schema.arguments_parameter('spam', core_schema.bytes_schema(), mode='keyword_only'),\n                core_schema.arguments_parameter('frog', core_schema.int_schema(), mode='keyword_only'),\n            ]\n        ),\n        DataClass,\n        serialization=core_schema.model_ser_schema(\n            DataClass,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.str_schema()),\n                    'spam': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        ),\n    )\n    # just check validation works as expected\n    v = SchemaValidator(schema)\n    dc = v.validate_python({'foo': 1, 'bar': 'bar-str', 'spam': 'bite', 'frog': 123})\n    assert dc == DataClass(foo=1, bar='bar-str', spam=b'bite', frog=123)\n    dc.class_var = 2\n    assert dataclasses.is_dataclass(dc)\n\n    s = SchemaSerializer(schema)\n\n    assert dataclasses.asdict(dc) == IsStrictDict(foo=1, bar='bar-str', spam=b'bite')\n    assert s.to_python(dc) == IsStrictDict(foo=1, bar='bar-str', spam=b'bite')\n\n    assert s.to_python(dc, mode='json') == {'foo': 1, 'bar': 'bar-str', 'spam': 'bite'}\n    assert json.loads(s.to_json(dc)) == {'foo': 1, 'bar': 'bar-str', 'spam': 'bite'}\n\n\ndef test_model_allow_extra():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                },\n                extra_behavior='allow',\n            ),\n            extra_behavior='allow',\n        )\n    )\n    assert s.to_python(BasicModel(foo=1, bar=b'more', __pydantic_extra__={})) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1, __pydantic_extra__={})) == IsStrictDict(bar=b'more', foo=1)\n    assert s.to_python(BasicModel(foo=1, __pydantic_extra__=dict(c=3), bar=b'more')) == IsStrictDict(\n        foo=1, bar=b'more', c=3\n    )\n    assert s.to_python(BasicModel(bar=b'more', __pydantic_extra__=dict(c=3, foo=1)), mode='json') == IsStrictDict(\n        bar='more', c=3, foo=1\n    )\n\n    j = s.to_json(BasicModel(bar=b'more', foo=1, __pydantic_extra__=dict(c=3)))\n    if on_pypy:\n        assert j == IsJson({'bar': 'more', 'foo': 1, 'c': 3})\n    else:\n        assert j == b'{\"bar\":\"more\",\"foo\":1,\"c\":3}'\n\n\ndef test_model_recursive_in_extra():\n    # See https://github.com/pydantic/pydantic/issues/6571\n\n    class Model(BasicModel):\n        __slots__ = '__pydantic_extra__'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model, core_schema.model_fields_schema({}, extra_behavior='allow'), extra_behavior='allow'\n        )\n    )\n    Model.__pydantic_serializer__ = s\n\n    assert s.to_json(Model(__pydantic_extra__=dict(other=Model(__pydantic_extra__={})))) == b'{\"other\":{}}'\n\n\n@pytest.mark.parametrize(\n    'params',\n    [\n        dict(include=None, exclude=None, expected={'a': 0, 'b': 1, 'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include={'a': ..., 'b': ...}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include={'a': {1}, 'b': {1}}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include=None, exclude={'a', 'b'}, expected={'c': 2, 'd': 3}),\n        dict(include=None, exclude={'a': ..., 'b': ...}, expected={'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude={'b', 'c'}, expected={'a': 0}),\n        dict(include=None, exclude={'d': {1}}, expected={'a': 0, 'b': 1, 'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude={'d': {1}}, expected={'a': 0, 'b': 1}),\n        dict(include={'a', 'b'}, exclude={'b': {1}}, expected={'a': 0, 'b': 1}),\n        dict(include={'a', 'b'}, exclude={'b': ...}, expected={'a': 0}),\n        dict(include=None, exclude={'__all__'}, expected={}),\n    ],\n)\ndef test_include_exclude_args(params):\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'a': core_schema.model_field(core_schema.int_schema()),\n                    'b': core_schema.model_field(core_schema.int_schema()),\n                    'c': core_schema.model_field(core_schema.int_schema()),\n                    'd': core_schema.model_field(core_schema.int_schema()),\n                }\n            ),\n        )\n    )\n\n    # user IsStrictDict to check dict order\n    include, exclude, expected = params['include'], params['exclude'], IsStrictDict(params['expected'])\n    value = BasicModel(a=0, b=1, c=2, d=3)\n    assert s.to_python(value, include=include, exclude=exclude) == expected\n    assert s.to_python(value, mode='json', include=include, exclude=exclude) == expected\n    assert json.loads(s.to_json(value, include=include, exclude=exclude)) == expected\n\n\ndef test_exclude_if():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'a': core_schema.model_field(core_schema.int_schema(), serialization_exclude_if=lambda x: x > 1),\n                    'b': core_schema.model_field(\n                        core_schema.str_schema(), serialization_exclude_if=lambda x: 'foo' in x\n                    ),\n                    'c': core_schema.model_field(\n                        core_schema.str_schema(),\n                        serialization_exclude=True,\n                        serialization_exclude_if=lambda x: 'foo' in x,\n                    ),\n                }\n            ),\n        )\n    )\n    assert s.to_python(BasicModel(a=0, b='bar', c='bar')) == {'a': 0, 'b': 'bar'}\n    assert s.to_python(BasicModel(a=2, b='bar', c='bar')) == {'b': 'bar'}\n    assert s.to_python(BasicModel(a=0, b='foo', c='bar')) == {'a': 0}\n    assert s.to_python(BasicModel(a=2, b='foo', c='bar')) == {}\n\n    assert s.to_json(BasicModel(a=0, b='bar', c='bar')) == b'{\"a\":0,\"b\":\"bar\"}'\n    assert s.to_json(BasicModel(a=2, b='bar', c='bar')) == b'{\"b\":\"bar\"}'\n    assert s.to_json(BasicModel(a=0, b='foo', c='bar')) == b'{\"a\":0}'\n    assert s.to_json(BasicModel(a=2, b='foo', c='bar')) == b'{}'\n\n\ndef test_alias():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'cat': core_schema.model_field(core_schema.int_schema(), serialization_alias='Meow'),\n                    'dog': core_schema.model_field(core_schema.int_schema(), serialization_alias='Woof'),\n                    'bird': core_schema.model_field(core_schema.int_schema()),\n                }\n            ),\n        )\n    )\n    value = BasicModel(cat=0, dog=1, bird=2)\n    assert s.to_python(value, by_alias=True) == IsStrictDict(Meow=0, Woof=1, bird=2)\n\n\ndef test_model_wrong_warn():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            type('MyModel', (), {}),\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        )\n    )\n    assert s.to_python(None) is None\n    assert s.to_python(None, mode='json') is None\n    assert s.to_json(None) == b'null'\n\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_python(123) == 123\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_python(123, mode='json') == 123\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_json(123) == b'123'\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `MyModel` - serialized value may not be as expected \\[input_value={'foo': 1, 'bar': b'more'}, input_type=dict\\]\",\n    ):\n        assert s.to_python({'foo': 1, 'bar': b'more'}) == {'foo': 1, 'bar': b'more'}\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `int` - serialized value may not be as expected \\[field_name='foo', input_value='lorem', input_type=str\\]\",\n    ):\n        assert s.to_python(BasicModel(foo='lorem')) == {'foo': 'lorem'}\n\n\ndef test_exclude_none():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.nullable_schema(core_schema.int_schema())),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                },\n                extra_behavior='ignore',  # this is the default\n            ),\n        )\n    )\n    assert s.to_python(BasicModel(foo=1, bar=b'more')) == {'foo': 1, 'bar': b'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more')) == {'foo': None, 'bar': b'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), exclude_none=True) == {'bar': b'more'}\n\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), mode='json') == {'foo': None, 'bar': 'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), mode='json', exclude_none=True) == {'bar': 'more'}\n\n    assert s.to_json(BasicModel(foo=1, bar=b'more')) == b'{\"foo\":1,\"bar\":\"more\"}'\n    assert s.to_json(BasicModel(foo=None, bar=b'more')) == b'{\"foo\":null,\"bar\":\"more\"}'\n    assert s.to_json(BasicModel(foo=None, bar=b'more'), exclude_none=True) == b'{\"bar\":\"more\"}'\n\n\nclass FieldsSetModel:\n    __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n\n    def __init__(self, **kwargs):\n        for key, value in kwargs.items():\n            setattr(self, key, value)\n\n\ndef test_exclude_unset():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            FieldsSetModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.int_schema()),\n                    'spam': core_schema.model_field(core_schema.int_schema()),\n                },\n                extra_behavior='ignore',  # this is the default\n            ),\n        )\n    )\n    m = FieldsSetModel(foo=1, bar=2, spam=3, __pydantic_fields_set__={'bar', 'spam'})\n    assert s.to_python(m) == {'foo': 1, 'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude_unset=True) == {'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude=None, exclude_unset=True) == {'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude={'bar'}, exclude_unset=True) == {'spam': 3}\n    assert s.to_python(m, exclude={'bar': ...}, exclude_unset=True) == {'spam': 3}\n    assert s.to_python(m, exclude={'bar': {}}, exclude_unset=True) == {'bar': 2, 'spam': 3}\n\n    assert s.to_json(m, exclude=None, exclude_unset=True) == b'{\"bar\":2,\"spam\":3}'\n    assert s.to_json(m, exclude={'bar'}, exclude_unset=True) == b'{\"spam\":3}'\n    assert s.to_json(m, exclude={'bar': ...}, exclude_unset=True) == b'{\"spam\":3}'\n    assert s.to_json(m, exclude={'bar': {}}, exclude_unset=True) == b'{\"bar\":2,\"spam\":3}'\n\n    m2 = FieldsSetModel(foo=1, bar=2, spam=3, __pydantic_fields_set__={'bar', 'spam', 'missing'})\n    assert s.to_python(m2) == {'foo': 1, 'bar': 2, 'spam': 3}\n    assert s.to_python(m2, exclude_unset=True) == {'bar': 2, 'spam': 3}\n\n\n@pytest.mark.parametrize(\n    'exclude,expected',\n    [\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'j': 1}, {'j': 2}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Normal nested __all__',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}}}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Merge sub dicts 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': ...}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'i': 1}, {'i': 2}]}, {'k': 2}]},\n            # {'subs': [{'k': 1                                 }, {'k': 2}]}\n            id='Merge sub sets 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'j'}}}, 0: {'subsubs': ...}}},\n            {'subs': [{'k': 1}, {'k': 2, 'subsubs': [{'i': 3}]}]},\n            id='Merge sub sets 3',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {0}}, 0: {'subsubs': {1}}}},\n            {'subs': [{'k': 1, 'subsubs': []}, {'k': 2, 'subsubs': []}]},\n            id='Merge sub sets 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {0: {'i'}}}, 0: {'subsubs': {1}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'j': 1}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Merge sub dict-set',\n        ),\n        pytest.param({'subs': {'__all__': {'subsubs'}, 0: {'k'}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 1'),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': ...}, 0: {'k'}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 2'\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs'}, 0: {'k': ...}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 3'\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}, 0: {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i': ...}, 0: {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}, 0: {'j': ...}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 3',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs'}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'i': 1}, {'i': 2}]}, {'k': 2}]},\n            id='Ignore __all__ for index with defined exclude 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'j'}}}, 0: ...}},\n            {'subs': [{'k': 2, 'subsubs': [{'i': 3}]}]},\n            id='Ignore __all__ for index with defined exclude 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': ..., 0: {'subsubs'}}},\n            {'subs': [{'k': 1}]},\n            id='Ignore __all__ for index with defined exclude 3',\n        ),\n    ],\n)\ndef test_advanced_exclude_nested_lists(exclude, expected):\n    \"\"\"\n    Taken from pydantic and modified to generate the schema directly.\n    \"\"\"\n    # class SubSubModel(BaseModel):\n    #     i: int\n    #     j: int\n\n    sub_sub_model_schema = core_schema.model_schema(\n        type('SubSubModel', (), {}),\n        core_schema.model_fields_schema(\n            dict(\n                i=core_schema.model_field(core_schema.int_schema()), j=core_schema.model_field(core_schema.int_schema())\n            )\n        ),\n    )\n\n    # class SubModel(BaseModel):\n    #     k: int\n    #     subsubs: list[SubSubModel]\n\n    sub_model_schema = core_schema.model_schema(\n        type('SubModel', (), {}),\n        core_schema.model_fields_schema(\n            dict(\n                k=core_schema.model_field(core_schema.int_schema()),\n                subsubs=core_schema.model_field(core_schema.list_schema(sub_sub_model_schema)),\n            )\n        ),\n    )\n\n    # class Model(BaseModel):\n    #     subs: list[SubModel]\n\n    model_schema = core_schema.model_schema(\n        BasicModel,\n        core_schema.model_fields_schema(dict(subs=core_schema.model_field(core_schema.list_schema(sub_model_schema)))),\n    )\n    v = SchemaValidator(model_schema)\n\n    data = v.validate_python(\n        dict(subs=[dict(k=1, subsubs=[dict(i=1, j=1), dict(i=2, j=2)]), dict(k=2, subsubs=[dict(i=3, j=3)])])\n    )\n\n    s = SchemaSerializer(model_schema)\n\n    assert s.to_python(data, exclude=exclude) == expected\n\n\ndef test_function_plain_field_serializer_to_python():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000\n            return f'{v:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000)) == {'x': '1_000'}\n\n\ndef test_field_serializer_cached_property():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n        y: int\n\n        @cached_property\n        def x_formatted(self) -> str:\n            return f'{self.x:_}'\n\n        # This is a @computed_field\n        @cached_property\n        def y_formatted(self) -> str:\n            return f'{self.y:_}'\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000 == v\n            return self.x_formatted\n\n        def ser_y(self, v: Any, _) -> str:\n            assert self.y == 2_000 == v\n            return self.y_formatted\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    ),\n                    'y': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_y, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    ),\n                },\n                computed_fields=[core_schema.computed_field('y_formatted', core_schema.str_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000, y=2000)) == {'x': '1_000', 'y': '2_000', 'y_formatted': '2_000'}\n    assert s.to_json(Model(x=1000, y=2000)) == b'{\"x\":\"1_000\",\"y\":\"2_000\",\"y_formatted\":\"2_000\"}'\n\n\ndef test_function_wrap_field_serializer_to_python():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, serializer: core_schema.SerializerFunctionWrapHandler, _) -> str:\n            x = serializer(v)\n            assert self.x == 1_000\n            return f'{x:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.wrap_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True, schema=core_schema.any_schema()\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000)) == {'x': '1_000'}\n\n\ndef test_function_plain_field_serializer_to_json():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000\n            return f'{v:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': '1_000'}\n\n\ndef test_function_plain_field_serializer_with_computed_field():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        @property\n        def computed_field_x(self) -> int:\n            return self.x + 200\n\n        def ser_func(self, v: Any, info: core_schema.FieldSerializationInfo) -> str:\n            return info.field_name + '_' + str(v * 2)\n\n    field_str_with_field_serializer = core_schema.str_schema(\n        serialization=core_schema.plain_serializer_function_ser_schema(\n            Model.ser_func,\n            is_field_serializer=True,\n            info_arg=True,\n            return_schema=core_schema.any_schema(),\n        )\n    )\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'x': core_schema.model_field(field_str_with_field_serializer)},\n                computed_fields=[\n                    core_schema.computed_field('computed_field_x', field_str_with_field_serializer),\n                ],\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': 'x_2000', 'computed_field_x': 'computed_field_x_2400'}\n    assert s.to_python(Model(x=2000)) == {'x': 'x_4000', 'computed_field_x': 'computed_field_x_4400'}\n\n\ndef test_function_wrap_field_serializer_to_json():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, serializer: core_schema.SerializerFunctionWrapHandler, _) -> str:\n            assert self.x == 1_000\n            x = serializer(v)\n            return f'{x:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.wrap_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True, schema=core_schema.any_schema()\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': '1_000'}\n\n\ndef test_property():\n    @dataclasses.dataclass\n    class Model:\n        def __init__(self, **kwargs):\n            for key, value in kwargs.items():\n                setattr(self, key, value)\n\n        @property\n        def area(self) -> bytes:\n            a = self.width * self.height\n            return b'%d' % a\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(width=3, height=4)) == {'width': 3, 'height': 4, 'area': b'12'}\n    assert s.to_python(Model(width=3, height=4), mode='json') == {'width': 3, 'height': 4, 'area': '12'}\n    assert s.to_json(Model(width=3, height=4)) == b'{\"width\":3,\"height\":4,\"area\":\"12\"}'\n\n    assert s.to_python(Model(width=3, height=4), round_trip=True) == {'width': 3, 'height': 4}\n    assert s.to_json(Model(width=3, height=4), round_trip=True) == b'{\"width\":3,\"height\":4}'\n\n    assert s.to_python(Model(width=3, height=4), exclude_computed_fields=True) == {'width': 3, 'height': 4}\n    assert s.to_json(Model(width=3, height=4), exclude_computed_fields=True) == b'{\"width\":3,\"height\":4}'\n\n\ndef test_property_alias():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n        @property\n        def volume(self) -> int:\n            return self.area * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), by_alias=True) == {'width': 3, 'height': 4, 'Area': 12, 'volume': 48}\n    assert s.to_python(Model(3, 4), mode='json', by_alias=True) == {'width': 3, 'height': 4, 'Area': 12, 'volume': 48}\n    assert s.to_json(Model(3, 4), by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12,\"volume\":48}'\n\n\ndef test_computed_field_without_fields() -> None:\n    \"\"\"https://github.com/pydantic/pydantic/issues/5551\"\"\"\n\n    # Original test introduced in https://github.com/pydantic/pydantic-core/pull/550\n\n    class A:\n        @property\n        def b(self) -> str:\n            return 'b'\n\n    schema = core_schema.model_schema(\n        cls=A,\n        config={},\n        schema=core_schema.model_fields_schema(\n            fields={},\n            computed_fields=[\n                core_schema.computed_field('b', return_schema=core_schema.any_schema()),\n            ],\n        ),\n    )\n\n    a = A()\n\n    serializer = SchemaSerializer(schema)\n\n    assert serializer.to_json(a) == b'{\"b\":\"b\"}'\n\n\ndef test_computed_field_exclude_none():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n        @property\n        def volume(self) -> None:\n            return None\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), exclude_none=False, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), exclude_none=True, by_alias=True) == {'width': 3, 'height': 4, 'Area': 12}\n    assert s.to_python(Model(3, 4), mode='json', exclude_none=False, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), mode='json', exclude_none=True, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n    }\n    assert (\n        s.to_json(Model(3, 4), exclude_none=False, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12,\"volume\":null}'\n    )\n    assert s.to_json(Model(3, 4), exclude_none=True, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12}'\n\n\ndef test_computed_field_exclude_none_different_order():\n    # verify that order of computed fields doesn't matter\n    # issue originally reported via: https://github.com/pydantic/pydantic/issues/8691\n\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def volume(self) -> None:\n            return None\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), by_alias=True, exclude_none=False) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), by_alias=True, exclude_none=True) == {'width': 3, 'height': 4, 'Area': 12}\n    assert s.to_python(Model(3, 4), by_alias=True, mode='json', exclude_none=False) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), mode='json', by_alias=True, exclude_none=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n    }\n    assert (\n        s.to_json(Model(3, 4), exclude_none=False, by_alias=True) == b'{\"width\":3,\"height\":4,\"volume\":null,\"Area\":12}'\n    )\n    assert s.to_json(Model(3, 4), exclude_none=True, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12}'\n\n\ndef test_cached_property_alias():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @cached_property\n        def area(self) -> int:\n            return self.width * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[core_schema.computed_field('area', core_schema.int_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4)) == {'width': 3, 'height': 4, 'area': 12}\n    assert s.to_python(Model(3, 4), mode='json') == {'width': 3, 'height': 4, 'area': 12}\n    assert s.to_json(Model(3, 4)) == b'{\"width\":3,\"height\":4,\"area\":12}'\n\n\ndef test_property_attribute_error():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'width': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    with pytest.raises(AttributeError, match=\"^'Model' object has no attribute 'area'$\"):\n        s.to_python(Model(3))\n    with pytest.raises(AttributeError, match=\"^'Model' object has no attribute 'area'$\"):\n        s.to_python(Model(3), mode='json')\n\n    e = \"^Error serializing to JSON: AttributeError: 'Model' object has no attribute 'area'$\"\n    with pytest.raises(PydanticSerializationError, match=e):\n        s.to_json(Model(3))\n\n\ndef test_property_other_error():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n\n        @property\n        def area(self) -> int:\n            raise ValueError('xxx')\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'width': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    with pytest.raises(ValueError, match='^xxx$'):\n        s.to_python(Model(3))\n\n    with pytest.raises(ValueError, match='^xxx$'):\n        s.to_python(Model(3), mode='json')\n\n    e = '^Error serializing to JSON: ValueError: xxx$'\n    with pytest.raises(PydanticSerializationError, match=e):\n        s.to_json(Model(3))\n\n\ndef test_property_include_exclude():\n    @dataclasses.dataclass\n    class Model:\n        a: int\n\n        @property\n        def b(self):\n            return [1, 2, b'3']\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'a': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('b', core_schema.list_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(1)) == {'a': 1, 'b': [1, 2, b'3']}\n    assert s.to_python(Model(1), exclude={'b'}) == {'a': 1}\n    assert s.to_python(Model(1), include={'a'}) == {'a': 1}\n    assert s.to_python(Model(1), exclude={'b': [0]}) == {'a': 1, 'b': [2, b'3']}\n\n    assert s.to_python(Model(1), mode='json') == {'a': 1, 'b': [1, 2, '3']}\n    assert s.to_python(Model(1), mode='json', exclude={'b'}) == {'a': 1}\n    assert s.to_python(Model(1), mode='json', include={'a'}) == {'a': 1}\n    assert s.to_python(Model(1), mode='json', exclude={'b': [0]}) == {'a': 1, 'b': [2, '3']}\n\n    assert s.to_json(Model(1)) == b'{\"a\":1,\"b\":[1,2,\"3\"]}'\n    assert s.to_json(Model(1), exclude={'b'}) == b'{\"a\":1}'\n    assert s.to_json(Model(1), include={'a'}) == b'{\"a\":1}'\n    assert s.to_json(Model(1), exclude={'b': [0]}) == b'{\"a\":1,\"b\":[2,\"3\"]}'\n\n\ndef test_property_setter():\n    class Square:\n        side: float\n\n        def __init__(self, **kwargs):\n            self.__dict__ = kwargs\n\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, area: float) -> None:\n            self.side = area**0.5\n\n        @area.deleter\n        def area(self) -> None:\n            self.side = 0.0\n\n        @cached_property\n        def random_n(self) -> int:\n            return randint(0, 1_000)\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Square,\n            core_schema.model_fields_schema(\n                {'side': core_schema.model_field(core_schema.float_schema())},\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.float_schema()),\n                    core_schema.computed_field('random_n', core_schema.int_schema(), alias='The random number'),\n                ],\n            ),\n        )\n    )\n\n    sq = Square(side=10.0)\n    the_random_n = sq.random_n\n    assert s.to_python(sq, by_alias=True) == {'side': 10.0, 'area': 100.0, 'The random number': the_random_n}\n    assert s.to_json(sq, by_alias=True) == b'{\"side\":10.0,\"area\":100.0,\"The random number\":%d}' % the_random_n\n    sq.area = 49.0\n    assert s.to_python(sq, by_alias=False) == {'side': 7, 'area': 49, 'random_n': the_random_n}\n    assert s.to_json(sq, by_alias=False) == b'{\"side\":7.0,\"area\":49.0,\"random_n\":%d}' % the_random_n\n    del sq.area\n    assert s.to_python(sq, by_alias=False) == {'side': 0, 'area': 0, 'random_n': the_random_n}\n    assert s.to_python(sq, exclude={'random_n'}) == {'side': 0, 'area': 0}\n\n\ndef test_computed_field_serialization_exclude_if():\n    class Square:\n        side: float\n\n        def __init__(self, **kwargs):\n            self.__dict__ = kwargs\n\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Square,\n            core_schema.model_fields_schema(\n                {'side': core_schema.model_field(core_schema.float_schema())},\n                computed_fields=[\n                    core_schema.computed_field(\n                        'area', core_schema.float_schema(), serialization_exclude_if=lambda a: a == 4.0\n                    ),\n                ],\n            ),\n        )\n    )\n\n    sq = Square(side=10.0)\n    assert s.to_python(sq) == {'side': 10.0, 'area': 100.0}\n    assert s.to_json(sq) == b'{\"side\":10.0,\"area\":100.0}'\n\n    # Excluded by serialization exclude if\n    sq = Square(side=2.0)\n    assert s.to_python(sq) == {'side': 2.0}\n    assert s.to_json(sq) == b'{\"side\":2.0}'\n\n\ndef test_extra():\n    class MyModel:\n        # this is not required, but it avoids `__pydantic_fields_set__` being included in `__dict__`\n        __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n        field_a: str\n        field_b: int\n\n    schema = core_schema.model_schema(\n        MyModel,\n        core_schema.model_fields_schema(\n            {\n                'field_a': core_schema.model_field(core_schema.bytes_schema()),\n                'field_b': core_schema.model_field(core_schema.int_schema()),\n            },\n            extra_behavior='allow',\n        ),\n        extra_behavior='allow',\n    )\n    v = SchemaValidator(schema)\n    m = v.validate_python({'field_a': b'test', 'field_b': 12, 'field_c': 'extra'})\n    assert isinstance(m, MyModel)\n    assert m.__dict__ == {'field_a': b'test', 'field_b': 12}\n    assert m.__pydantic_extra__ == {'field_c': 'extra'}\n    assert m.__pydantic_fields_set__ == {'field_a', 'field_b', 'field_c'}\n\n    s = SchemaSerializer(schema)\n    assert 'mode:ModelExtra' in plain_repr(s)\n    assert 'has_extra:true' in plain_repr(s)\n    assert s.to_python(m) == {'field_a': b'test', 'field_b': 12, 'field_c': 'extra'}\n    assert s.to_python(m, mode='json') == {'field_a': 'test', 'field_b': 12, 'field_c': 'extra'}\n    assert s.to_json(m) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":\"extra\"}'\n\n    # test filtering\n    m = v.validate_python({'field_a': b'test', 'field_b': 12, 'field_c': None, 'field_d': [1, 2, 3]})\n    assert isinstance(m, MyModel)\n    assert m.__dict__ == {'field_a': b'test', 'field_b': 12}\n    assert m.__pydantic_extra__ == {'field_c': None, 'field_d': [1, 2, 3]}\n    assert m.__pydantic_fields_set__ == {'field_a', 'field_b', 'field_c', 'field_d'}\n\n    assert s.to_python(m) == {'field_a': b'test', 'field_b': 12, 'field_c': None, 'field_d': [1, 2, 3]}\n    assert s.to_json(m) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":null,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude_none=True) == {'field_a': b'test', 'field_b': 12, 'field_d': [1, 2, 3]}\n    assert s.to_json(m, exclude_none=True) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude={'field_c'}) == {'field_a': b'test', 'field_b': 12, 'field_d': [1, 2, 3]}\n    assert s.to_json(m, exclude={'field_c'}) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude={'field_d': [0]}) == {\n        'field_a': b'test',\n        'field_b': 12,\n        'field_c': None,\n        'field_d': [2, 3],\n    }\n    assert s.to_json(m, exclude={'field_d': [0]}) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":null,\"field_d\":[2,3]}'\n\n\ndef test_extra_config():\n    class MyModel:\n        # this is not required, but it avoids `__pydantic_fields_set__` being included in `__dict__`\n        __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n        field_a: str\n        field_b: int\n\n    schema = core_schema.model_schema(\n        MyModel,\n        core_schema.model_fields_schema(\n            {\n                'field_a': core_schema.model_field(core_schema.bytes_schema()),\n                'field_b': core_schema.model_field(core_schema.int_schema()),\n            }\n        ),\n        config=core_schema.CoreConfig(extra_fields_behavior='allow'),\n    )\n    s = SchemaSerializer(schema)\n    assert 'mode:ModelExtra' in plain_repr(s)\n    assert 'has_extra:true' in plain_repr(s)\n\n\ndef test_extra_config_nested_model():\n    class OuterModel:\n        pass\n\n    class InnerModel:\n        pass\n\n    schema = core_schema.model_schema(\n        OuterModel,\n        core_schema.model_fields_schema(\n            {\n                'sub_model': core_schema.model_field(\n                    core_schema.model_schema(\n                        InnerModel,\n                        core_schema.model_fields_schema({'int': core_schema.model_field(core_schema.int_schema())}),\n                        config=core_schema.CoreConfig(extra_fields_behavior='allow'),\n                    )\n                )\n            }\n        ),\n        config={},\n    )\n    s = SchemaSerializer(schema)\n    # debug(s)\n    s_repr = plain_repr(s)\n    assert 'has_extra:true,root_model:false,name:\"InnerModel\"' in s_repr\n    assert 'has_extra:false,root_model:false,name:\"OuterModel\"' in s_repr\n\n\ndef test_extra_custom_serializer():\n    class Model:\n        __slots__ = ('__pydantic_extra__', '__dict__')\n        __pydantic_extra__: dict[str, Any]\n\n    schema = core_schema.model_schema(\n        Model,\n        core_schema.model_fields_schema(\n            {},\n            extra_behavior='allow',\n            extras_schema=core_schema.any_schema(\n                serialization=core_schema.plain_serializer_function_ser_schema(lambda v: v + ' bam!')\n            ),\n        ),\n        extra_behavior='allow',\n    )\n    s = SchemaSerializer(schema)\n\n    m = Model()\n    m.__pydantic_extra__ = {'extra': 'extra'}\n\n    assert s.to_python(m) == {'extra': 'extra bam!'}\n\n\ndef test_no_warn_on_exclude() -> None:\n    with warnings.catch_warnings():\n        warnings.simplefilter('error')\n\n        s = SchemaSerializer(\n            core_schema.model_schema(\n                BasicModel,\n                core_schema.model_fields_schema(\n                    {\n                        'a': core_schema.model_field(core_schema.int_schema()),\n                        'b': core_schema.model_field(core_schema.int_schema()),\n                    }\n                ),\n            )\n        )\n\n        value = BasicModel(a=0, b=1)\n        assert s.to_python(value, exclude={'b'}) == {'a': 0}\n        assert s.to_python(value, mode='json', exclude={'b'}) == {'a': 0}\n\n\ndef test_warn_on_missing_field() -> None:\n    class AModel(BasicModel): ...\n\n    class BModel(BasicModel): ...\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'root': core_schema.model_field(\n                        core_schema.tagged_union_schema(\n                            choices={\n                                'a': core_schema.model_schema(\n                                    AModel,\n                                    core_schema.model_fields_schema(\n                                        {\n                                            'type': core_schema.model_field(core_schema.literal_schema(['a'])),\n                                            'a': core_schema.model_field(core_schema.int_schema()),\n                                        }\n                                    ),\n                                ),\n                                'b': core_schema.model_schema(\n                                    BModel,\n                                    core_schema.model_fields_schema(\n                                        {\n                                            'type': core_schema.model_field(core_schema.literal_schema(['b'])),\n                                            'b': core_schema.model_field(core_schema.int_schema()),\n                                        }\n                                    ),\n                                ),\n                            },\n                            discriminator='type',\n                        )\n                    ),\n                }\n            ),\n        )\n    )\n\n    with pytest.warns(\n        UserWarning, match='Expected 2 fields but got 1: Expected `AModel` - serialized value may not be as expected .+'\n    ):\n        value = BasicModel(root=AModel(type='a'))\n        s.to_python(value)\n\n\n@pytest.mark.parametrize(\n    'config,runtime,expected',\n    [\n        (True, True, {'my_alias': 1}),\n        (True, False, {'my_field': 1}),\n        (True, None, {'my_alias': 1}),\n        (False, True, {'my_alias': 1}),\n        (False, False, {'my_field': 1}),\n        (False, None, {'my_field': 1}),\n        (None, True, {'my_alias': 1}),\n        (None, False, {'my_field': 1}),\n        (None, None, {'my_field': 1}),\n    ],\n)\ndef test_by_alias_and_name_config_interaction(config, runtime, expected) -> None:\n    \"\"\"This test reflects the priority that applies for config vs runtime serialization alias configuration.\n\n    If the runtime value (by_alias) is set, that value is used.\n    If the runtime value is unset, the config value (serialize_by_alias) is used.\n    If neither are set, the default, False, is used.\n    \"\"\"\n\n    class Model:\n        def __init__(self, my_field: int) -> None:\n            self.my_field = my_field\n\n    schema = core_schema.model_schema(\n        Model,\n        core_schema.model_fields_schema(\n            {\n                'my_field': core_schema.model_field(core_schema.int_schema(), serialization_alias='my_alias'),\n            }\n        ),\n        config=core_schema.CoreConfig(serialize_by_alias=config or False),\n    )\n    s = SchemaSerializer(schema)\n    assert s.to_python(Model(1), by_alias=runtime) == expected\n",
+  "anchor_line": null,
+  "after_code": "import dataclasses\nimport json\nimport platform\nimport warnings\nfrom functools import cached_property\nfrom random import randint\nfrom typing import Any, ClassVar\n\nimport pytest\nfrom dirty_equals import IsJson\n\nfrom pydantic_core import (\n    PydanticSerializationError,\n    SchemaSerializer,\n    SchemaValidator,\n    core_schema,\n)\n\nfrom ..conftest import plain_repr\n\non_pypy = platform.python_implementation() == 'PyPy'\n# pypy doesn't seem to maintain order of `__dict__`\nif on_pypy:\n    IsStrictDict = dict\nelse:\n    from dirty_equals import IsStrictDict\n\n\nclass BasicModel:\n    def __init__(self, **kwargs):\n        for key, value in kwargs.items():\n            setattr(self, key, value)\n\n\nclass BasicSubModel(BasicModel):\n    pass\n\n\ndef test_model():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        )\n    )\n    assert 'mode:SimpleDict' in plain_repr(s)\n    assert 'has_extra:false' in plain_repr(s)\n    assert s.to_python(BasicModel(foo=1, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicSubModel(foo=1, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1)) == IsStrictDict(bar=b'more', foo=1)\n    assert s.to_python(BasicModel(foo=1, c=3, bar=b'more')) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1, c=3), mode='json') == IsStrictDict(bar='more', foo=1)\n    assert s.to_python(BasicSubModel(bar=b'more', foo=1, c=3), mode='json') == IsStrictDict(bar='more', foo=1)\n\n    j = s.to_json(BasicModel(bar=b'more', foo=1, c=3))\n    if on_pypy:\n        assert json.loads(j) == {'bar': 'more', 'foo': 1}\n    else:\n        assert j == b'{\"bar\":\"more\",\"foo\":1}'\n\n    assert json.loads(s.to_json(BasicSubModel(bar=b'more', foo=1, c=3))) == {'bar': 'more', 'foo': 1}\n\n\n@dataclasses.dataclass\nclass DataClass:\n    class_var: ClassVar[int] = 1\n    foo: int\n    bar: str\n    spam: bytes\n    frog: dataclasses.InitVar[int]\n\n\ndef test_dataclass():\n    schema = core_schema.call_schema(\n        core_schema.arguments_schema(\n            [\n                core_schema.arguments_parameter('foo', core_schema.int_schema()),\n                core_schema.arguments_parameter('bar', core_schema.str_schema()),\n                core_schema.arguments_parameter('spam', core_schema.bytes_schema(), mode='keyword_only'),\n                core_schema.arguments_parameter('frog', core_schema.int_schema(), mode='keyword_only'),\n            ]\n        ),\n        DataClass,\n        serialization=core_schema.model_ser_schema(\n            DataClass,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.str_schema()),\n                    'spam': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        ),\n    )\n    # just check validation works as expected\n    v = SchemaValidator(schema)\n    dc = v.validate_python({'foo': 1, 'bar': 'bar-str', 'spam': 'bite', 'frog': 123})\n    assert dc == DataClass(foo=1, bar='bar-str', spam=b'bite', frog=123)\n    dc.class_var = 2\n    assert dataclasses.is_dataclass(dc)\n\n    s = SchemaSerializer(schema)\n\n    assert dataclasses.asdict(dc) == IsStrictDict(foo=1, bar='bar-str', spam=b'bite')\n    assert s.to_python(dc) == IsStrictDict(foo=1, bar='bar-str', spam=b'bite')\n\n    assert s.to_python(dc, mode='json') == {'foo': 1, 'bar': 'bar-str', 'spam': 'bite'}\n    assert json.loads(s.to_json(dc)) == {'foo': 1, 'bar': 'bar-str', 'spam': 'bite'}\n\n\ndef test_model_allow_extra():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                },\n                extra_behavior='allow',\n            ),\n            extra_behavior='allow',\n        )\n    )\n    assert s.to_python(BasicModel(foo=1, bar=b'more', __pydantic_extra__={})) == IsStrictDict(foo=1, bar=b'more')\n    assert s.to_python(BasicModel(bar=b'more', foo=1, __pydantic_extra__={})) == IsStrictDict(bar=b'more', foo=1)\n    assert s.to_python(BasicModel(foo=1, __pydantic_extra__=dict(c=3), bar=b'more')) == IsStrictDict(\n        foo=1, bar=b'more', c=3\n    )\n    assert s.to_python(BasicModel(bar=b'more', __pydantic_extra__=dict(c=3, foo=1)), mode='json') == IsStrictDict(\n        bar='more', c=3, foo=1\n    )\n\n    j = s.to_json(BasicModel(bar=b'more', foo=1, __pydantic_extra__=dict(c=3)))\n    if on_pypy:\n        assert j == IsJson({'bar': 'more', 'foo': 1, 'c': 3})\n    else:\n        assert j == b'{\"bar\":\"more\",\"foo\":1,\"c\":3}'\n\n\ndef test_model_recursive_in_extra():\n    # See https://github.com/pydantic/pydantic/issues/6571\n\n    class Model(BasicModel):\n        __slots__ = '__pydantic_extra__'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model, core_schema.model_fields_schema({}, extra_behavior='allow'), extra_behavior='allow'\n        )\n    )\n    Model.__pydantic_serializer__ = s\n\n    assert s.to_json(Model(__pydantic_extra__=dict(other=Model(__pydantic_extra__={})))) == b'{\"other\":{}}'\n\n\n@pytest.mark.parametrize(\n    'params',\n    [\n        dict(include=None, exclude=None, expected={'a': 0, 'b': 1, 'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include={'a': ..., 'b': ...}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include={'a': {1}, 'b': {1}}, exclude=None, expected={'a': 0, 'b': 1}),\n        dict(include=None, exclude={'a', 'b'}, expected={'c': 2, 'd': 3}),\n        dict(include=None, exclude={'a': ..., 'b': ...}, expected={'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude={'b', 'c'}, expected={'a': 0}),\n        dict(include=None, exclude={'d': {1}}, expected={'a': 0, 'b': 1, 'c': 2, 'd': 3}),\n        dict(include={'a', 'b'}, exclude={'d': {1}}, expected={'a': 0, 'b': 1}),\n        dict(include={'a', 'b'}, exclude={'b': {1}}, expected={'a': 0, 'b': 1}),\n        dict(include={'a', 'b'}, exclude={'b': ...}, expected={'a': 0}),\n        dict(include=None, exclude={'__all__'}, expected={}),\n    ],\n)\ndef test_include_exclude_args(params):\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'a': core_schema.model_field(core_schema.int_schema()),\n                    'b': core_schema.model_field(core_schema.int_schema()),\n                    'c': core_schema.model_field(core_schema.int_schema()),\n                    'd': core_schema.model_field(core_schema.int_schema()),\n                }\n            ),\n        )\n    )\n\n    # user IsStrictDict to check dict order\n    include, exclude, expected = params['include'], params['exclude'], IsStrictDict(params['expected'])\n    value = BasicModel(a=0, b=1, c=2, d=3)\n    assert s.to_python(value, include=include, exclude=exclude) == expected\n    assert s.to_python(value, mode='json', include=include, exclude=exclude) == expected\n    assert json.loads(s.to_json(value, include=include, exclude=exclude)) == expected\n\n\ndef test_exclude_if():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'a': core_schema.model_field(core_schema.int_schema(), serialization_exclude_if=lambda x: x > 1),\n                    'b': core_schema.model_field(\n                        core_schema.str_schema(), serialization_exclude_if=lambda x: 'foo' in x\n                    ),\n                    'c': core_schema.model_field(\n                        core_schema.str_schema(),\n                        serialization_exclude=True,\n                        serialization_exclude_if=lambda x: 'foo' in x,\n                    ),\n                }\n            ),\n        )\n    )\n    assert s.to_python(BasicModel(a=0, b='bar', c='bar')) == {'a': 0, 'b': 'bar'}\n    assert s.to_python(BasicModel(a=2, b='bar', c='bar')) == {'b': 'bar'}\n    assert s.to_python(BasicModel(a=0, b='foo', c='bar')) == {'a': 0}\n    assert s.to_python(BasicModel(a=2, b='foo', c='bar')) == {}\n\n    assert s.to_json(BasicModel(a=0, b='bar', c='bar')) == b'{\"a\":0,\"b\":\"bar\"}'\n    assert s.to_json(BasicModel(a=2, b='bar', c='bar')) == b'{\"b\":\"bar\"}'\n    assert s.to_json(BasicModel(a=0, b='foo', c='bar')) == b'{\"a\":0}'\n    assert s.to_json(BasicModel(a=2, b='foo', c='bar')) == b'{}'\n\n\ndef test_alias():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'cat': core_schema.model_field(core_schema.int_schema(), serialization_alias='Meow'),\n                    'dog': core_schema.model_field(core_schema.int_schema(), serialization_alias='Woof'),\n                    'bird': core_schema.model_field(core_schema.int_schema()),\n                }\n            ),\n        )\n    )\n    value = BasicModel(cat=0, dog=1, bird=2)\n    assert s.to_python(value, by_alias=True) == IsStrictDict(Meow=0, Woof=1, bird=2)\n\n\ndef test_model_wrong_warn():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            type('MyModel', (), {}),\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                }\n            ),\n        )\n    )\n    assert s.to_python(None) is None\n    assert s.to_python(None, mode='json') is None\n    assert s.to_json(None) == b'null'\n\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_python(123) == 123\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_python(123, mode='json') == 123\n    with pytest.warns(\n        UserWarning,\n        match=r'Expected `MyModel` - serialized value may not be as expected \\[input_value=123, input_type=int\\]',\n    ):\n        assert s.to_json(123) == b'123'\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `MyModel` - serialized value may not be as expected \\[input_value={'foo': 1, 'bar': b'more'}, input_type=dict\\]\",\n    ):\n        assert s.to_python({'foo': 1, 'bar': b'more'}) == {'foo': 1, 'bar': b'more'}\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `int` - serialized value may not be as expected \\[field_name='foo', input_value='lorem', input_type=str\\]\",\n    ):\n        assert s.to_python(BasicModel(foo='lorem')) == {'foo': 'lorem'}\n\n\ndef test_exclude_none():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.nullable_schema(core_schema.int_schema())),\n                    'bar': core_schema.model_field(core_schema.bytes_schema()),\n                },\n                extra_behavior='ignore',  # this is the default\n            ),\n        )\n    )\n    assert s.to_python(BasicModel(foo=1, bar=b'more')) == {'foo': 1, 'bar': b'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more')) == {'foo': None, 'bar': b'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), exclude_none=True) == {'bar': b'more'}\n\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), mode='json') == {'foo': None, 'bar': 'more'}\n    assert s.to_python(BasicModel(foo=None, bar=b'more'), mode='json', exclude_none=True) == {'bar': 'more'}\n\n    assert s.to_json(BasicModel(foo=1, bar=b'more')) == b'{\"foo\":1,\"bar\":\"more\"}'\n    assert s.to_json(BasicModel(foo=None, bar=b'more')) == b'{\"foo\":null,\"bar\":\"more\"}'\n    assert s.to_json(BasicModel(foo=None, bar=b'more'), exclude_none=True) == b'{\"bar\":\"more\"}'\n\n\nclass FieldsSetModel:\n    __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n\n    def __init__(self, **kwargs):\n        for key, value in kwargs.items():\n            setattr(self, key, value)\n\n\ndef test_exclude_unset():\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            FieldsSetModel,\n            core_schema.model_fields_schema(\n                {\n                    'foo': core_schema.model_field(core_schema.int_schema()),\n                    'bar': core_schema.model_field(core_schema.int_schema()),\n                    'spam': core_schema.model_field(core_schema.int_schema()),\n                },\n                extra_behavior='ignore',  # this is the default\n            ),\n        )\n    )\n    m = FieldsSetModel(foo=1, bar=2, spam=3, __pydantic_fields_set__={'bar', 'spam'})\n    assert s.to_python(m) == {'foo': 1, 'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude_unset=True) == {'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude=None, exclude_unset=True) == {'bar': 2, 'spam': 3}\n    assert s.to_python(m, exclude={'bar'}, exclude_unset=True) == {'spam': 3}\n    assert s.to_python(m, exclude={'bar': ...}, exclude_unset=True) == {'spam': 3}\n    assert s.to_python(m, exclude={'bar': {}}, exclude_unset=True) == {'bar': 2, 'spam': 3}\n\n    assert s.to_json(m, exclude=None, exclude_unset=True) == b'{\"bar\":2,\"spam\":3}'\n    assert s.to_json(m, exclude={'bar'}, exclude_unset=True) == b'{\"spam\":3}'\n    assert s.to_json(m, exclude={'bar': ...}, exclude_unset=True) == b'{\"spam\":3}'\n    assert s.to_json(m, exclude={'bar': {}}, exclude_unset=True) == b'{\"bar\":2,\"spam\":3}'\n\n    m2 = FieldsSetModel(foo=1, bar=2, spam=3, __pydantic_fields_set__={'bar', 'spam', 'missing'})\n    assert s.to_python(m2) == {'foo': 1, 'bar': 2, 'spam': 3}\n    assert s.to_python(m2, exclude_unset=True) == {'bar': 2, 'spam': 3}\n\n\n@pytest.mark.parametrize(\n    'exclude,expected',\n    [\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'j': 1}, {'j': 2}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Normal nested __all__',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}}}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Merge sub dicts 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': ...}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'i': 1}, {'i': 2}]}, {'k': 2}]},\n            # {'subs': [{'k': 1                                 }, {'k': 2}]}\n            id='Merge sub sets 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'j'}}}, 0: {'subsubs': ...}}},\n            {'subs': [{'k': 1}, {'k': 2, 'subsubs': [{'i': 3}]}]},\n            id='Merge sub sets 3',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {0}}, 0: {'subsubs': {1}}}},\n            {'subs': [{'k': 1, 'subsubs': []}, {'k': 2, 'subsubs': []}]},\n            id='Merge sub sets 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {0: {'i'}}}, 0: {'subsubs': {1}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'j': 1}]}, {'k': 2, 'subsubs': [{'j': 3}]}]},\n            id='Merge sub dict-set',\n        ),\n        pytest.param({'subs': {'__all__': {'subsubs'}, 0: {'k'}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 1'),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': ...}, 0: {'k'}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 2'\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs'}, 0: {'k': ...}}}, {'subs': [{}, {'k': 2}]}, id='Different keys 3'\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}, 0: {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i': ...}, 0: {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'i'}, 0: {'j': ...}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{}, {'j': 2}]}, {'k': 2, 'subsubs': [{}]}]},\n            id='Nested different keys 3',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs'}, 0: {'subsubs': {'__all__': {'j'}}}}},\n            {'subs': [{'k': 1, 'subsubs': [{'i': 1}, {'i': 2}]}, {'k': 2}]},\n            id='Ignore __all__ for index with defined exclude 1',\n        ),\n        pytest.param(\n            {'subs': {'__all__': {'subsubs': {'__all__': {'j'}}}, 0: ...}},\n            {'subs': [{'k': 2, 'subsubs': [{'i': 3}]}]},\n            id='Ignore __all__ for index with defined exclude 2',\n        ),\n        pytest.param(\n            {'subs': {'__all__': ..., 0: {'subsubs'}}},\n            {'subs': [{'k': 1}]},\n            id='Ignore __all__ for index with defined exclude 3',\n        ),\n    ],\n)\ndef test_advanced_exclude_nested_lists(exclude, expected):\n    \"\"\"\n    Taken from pydantic and modified to generate the schema directly.\n    \"\"\"\n    # class SubSubModel(BaseModel):\n    #     i: int\n    #     j: int\n\n    sub_sub_model_schema = core_schema.model_schema(\n        type('SubSubModel', (), {}),\n        core_schema.model_fields_schema(\n            dict(\n                i=core_schema.model_field(core_schema.int_schema()), j=core_schema.model_field(core_schema.int_schema())\n            )\n        ),\n    )\n\n    # class SubModel(BaseModel):\n    #     k: int\n    #     subsubs: list[SubSubModel]\n\n    sub_model_schema = core_schema.model_schema(\n        type('SubModel', (), {}),\n        core_schema.model_fields_schema(\n            dict(\n                k=core_schema.model_field(core_schema.int_schema()),\n                subsubs=core_schema.model_field(core_schema.list_schema(sub_sub_model_schema)),\n            )\n        ),\n    )\n\n    # class Model(BaseModel):\n    #     subs: list[SubModel]\n\n    model_schema = core_schema.model_schema(\n        BasicModel,\n        core_schema.model_fields_schema(dict(subs=core_schema.model_field(core_schema.list_schema(sub_model_schema)))),\n    )\n    v = SchemaValidator(model_schema)\n\n    data = v.validate_python(\n        dict(subs=[dict(k=1, subsubs=[dict(i=1, j=1), dict(i=2, j=2)]), dict(k=2, subsubs=[dict(i=3, j=3)])])\n    )\n\n    s = SchemaSerializer(model_schema)\n\n    assert s.to_python(data, exclude=exclude) == expected\n\n\ndef test_function_plain_field_serializer_to_python():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000\n            return f'{v:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000)) == {'x': '1_000'}\n\n\ndef test_field_serializer_cached_property():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n        y: int\n\n        @cached_property\n        def x_formatted(self) -> str:\n            return f'{self.x:_}'\n\n        # This is a @computed_field\n        @cached_property\n        def y_formatted(self) -> str:\n            return f'{self.y:_}'\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000 == v\n            return self.x_formatted\n\n        def ser_y(self, v: Any, _) -> str:\n            assert self.y == 2_000 == v\n            return self.y_formatted\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    ),\n                    'y': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_y, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    ),\n                },\n                computed_fields=[core_schema.computed_field('y_formatted', core_schema.str_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000, y=2000)) == {'x': '1_000', 'y': '2_000', 'y_formatted': '2_000'}\n    assert s.to_json(Model(x=1000, y=2000)) == b'{\"x\":\"1_000\",\"y\":\"2_000\",\"y_formatted\":\"2_000\"}'\n\n\ndef test_function_wrap_field_serializer_to_python():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, serializer: core_schema.SerializerFunctionWrapHandler, _) -> str:\n            x = serializer(v)\n            assert self.x == 1_000\n            return f'{x:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.wrap_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True, schema=core_schema.any_schema()\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert s.to_python(Model(x=1000)) == {'x': '1_000'}\n\n\ndef test_function_plain_field_serializer_to_json():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, _) -> str:\n            assert self.x == 1_000\n            return f'{v:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.plain_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': '1_000'}\n\n\ndef test_function_plain_field_serializer_with_computed_field():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        @property\n        def computed_field_x(self) -> int:\n            return self.x + 200\n\n        def ser_func(self, v: Any, info: core_schema.FieldSerializationInfo) -> str:\n            return info.field_name + '_' + str(v * 2)\n\n    field_str_with_field_serializer = core_schema.str_schema(\n        serialization=core_schema.plain_serializer_function_ser_schema(\n            Model.ser_func,\n            is_field_serializer=True,\n            info_arg=True,\n            return_schema=core_schema.any_schema(),\n        )\n    )\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'x': core_schema.model_field(field_str_with_field_serializer)},\n                computed_fields=[\n                    core_schema.computed_field('computed_field_x', field_str_with_field_serializer),\n                ],\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': 'x_2000', 'computed_field_x': 'computed_field_x_2400'}\n    assert s.to_python(Model(x=2000)) == {'x': 'x_4000', 'computed_field_x': 'computed_field_x_4400'}\n\n\ndef test_function_wrap_field_serializer_to_json():\n    @dataclasses.dataclass\n    class Model:\n        x: int\n\n        def ser_x(self, v: Any, serializer: core_schema.SerializerFunctionWrapHandler, _) -> str:\n            assert self.x == 1_000\n            x = serializer(v)\n            return f'{x:_}'\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'x': core_schema.model_field(\n                        core_schema.int_schema(\n                            serialization=core_schema.wrap_serializer_function_ser_schema(\n                                Model.ser_x, is_field_serializer=True, info_arg=True, schema=core_schema.any_schema()\n                            )\n                        )\n                    )\n                }\n            ),\n        )\n    )\n    assert json.loads(s.to_json(Model(x=1000))) == {'x': '1_000'}\n\n\ndef test_property():\n    @dataclasses.dataclass\n    class Model:\n        def __init__(self, **kwargs):\n            for key, value in kwargs.items():\n                setattr(self, key, value)\n\n        @property\n        def area(self) -> bytes:\n            a = self.width * self.height\n            return b'%d' % a\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(width=3, height=4)) == {'width': 3, 'height': 4, 'area': b'12'}\n    assert s.to_python(Model(width=3, height=4), mode='json') == {'width': 3, 'height': 4, 'area': '12'}\n    assert s.to_json(Model(width=3, height=4)) == b'{\"width\":3,\"height\":4,\"area\":\"12\"}'\n\n    assert s.to_python(Model(width=3, height=4), round_trip=True) == {'width': 3, 'height': 4}\n    assert s.to_json(Model(width=3, height=4), round_trip=True) == b'{\"width\":3,\"height\":4}'\n\n    assert s.to_python(Model(width=3, height=4), exclude_computed_fields=True) == {'width': 3, 'height': 4}\n    assert s.to_json(Model(width=3, height=4), exclude_computed_fields=True) == b'{\"width\":3,\"height\":4}'\n\n\ndef test_property_alias():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n        @property\n        def volume(self) -> int:\n            return self.area * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), by_alias=True) == {'width': 3, 'height': 4, 'Area': 12, 'volume': 48}\n    assert s.to_python(Model(3, 4), mode='json', by_alias=True) == {'width': 3, 'height': 4, 'Area': 12, 'volume': 48}\n    assert s.to_json(Model(3, 4), by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12,\"volume\":48}'\n\n\ndef test_computed_field_without_fields() -> None:\n    \"\"\"https://github.com/pydantic/pydantic/issues/5551\"\"\"\n\n    # Original test introduced in https://github.com/pydantic/pydantic-core/pull/550\n\n    class A:\n        @property\n        def b(self) -> str:\n            return 'b'\n\n    schema = core_schema.model_schema(\n        cls=A,\n        config={},\n        schema=core_schema.model_fields_schema(\n            fields={},\n            computed_fields=[\n                core_schema.computed_field('b', return_schema=core_schema.any_schema()),\n            ],\n        ),\n    )\n\n    a = A()\n\n    serializer = SchemaSerializer(schema)\n\n    assert serializer.to_json(a) == b'{\"b\":\"b\"}'\n\n\ndef test_computed_field_exclude_none():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n        @property\n        def volume(self) -> None:\n            return None\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), exclude_none=False, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), exclude_none=True, by_alias=True) == {'width': 3, 'height': 4, 'Area': 12}\n    assert s.to_python(Model(3, 4), mode='json', exclude_none=False, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), mode='json', exclude_none=True, by_alias=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n    }\n    assert (\n        s.to_json(Model(3, 4), exclude_none=False, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12,\"volume\":null}'\n    )\n    assert s.to_json(Model(3, 4), exclude_none=True, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12}'\n\n\ndef test_computed_field_exclude_none_different_order():\n    # verify that order of computed fields doesn't matter\n    # issue originally reported via: https://github.com/pydantic/pydantic/issues/8691\n\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @property\n        def volume(self) -> None:\n            return None\n\n        @property\n        def area(self) -> int:\n            return self.width * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[\n                    core_schema.computed_field('volume', core_schema.int_schema()),\n                    core_schema.computed_field('area', core_schema.int_schema(), alias='Area'),\n                ],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4), by_alias=True, exclude_none=False) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), by_alias=True, exclude_none=True) == {'width': 3, 'height': 4, 'Area': 12}\n    assert s.to_python(Model(3, 4), by_alias=True, mode='json', exclude_none=False) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n        'volume': None,\n    }\n    assert s.to_python(Model(3, 4), mode='json', by_alias=True, exclude_none=True) == {\n        'width': 3,\n        'height': 4,\n        'Area': 12,\n    }\n    assert (\n        s.to_json(Model(3, 4), exclude_none=False, by_alias=True) == b'{\"width\":3,\"height\":4,\"volume\":null,\"Area\":12}'\n    )\n    assert s.to_json(Model(3, 4), exclude_none=True, by_alias=True) == b'{\"width\":3,\"height\":4,\"Area\":12}'\n\n\ndef test_cached_property_alias():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n        height: int\n\n        @cached_property\n        def area(self) -> int:\n            return self.width * self.height\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {\n                    'width': core_schema.model_field(core_schema.int_schema()),\n                    'height': core_schema.model_field(core_schema.int_schema()),\n                },\n                computed_fields=[core_schema.computed_field('area', core_schema.int_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(3, 4)) == {'width': 3, 'height': 4, 'area': 12}\n    assert s.to_python(Model(3, 4), mode='json') == {'width': 3, 'height': 4, 'area': 12}\n    assert s.to_json(Model(3, 4)) == b'{\"width\":3,\"height\":4,\"area\":12}'\n\n\ndef test_property_attribute_error():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'width': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    with pytest.raises(AttributeError, match=\"^'Model' object has no attribute 'area'$\"):\n        s.to_python(Model(3))\n    with pytest.raises(AttributeError, match=\"^'Model' object has no attribute 'area'$\"):\n        s.to_python(Model(3), mode='json')\n\n    e = \"^Error serializing to JSON: AttributeError: 'Model' object has no attribute 'area'$\"\n    with pytest.raises(PydanticSerializationError, match=e):\n        s.to_json(Model(3))\n\n\ndef test_property_other_error():\n    @dataclasses.dataclass\n    class Model:\n        width: int\n\n        @property\n        def area(self) -> int:\n            raise ValueError('xxx')\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'width': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('area', core_schema.bytes_schema())],\n            ),\n        )\n    )\n    with pytest.raises(ValueError, match='^xxx$'):\n        s.to_python(Model(3))\n\n    with pytest.raises(ValueError, match='^xxx$'):\n        s.to_python(Model(3), mode='json')\n\n    e = '^Error serializing to JSON: ValueError: xxx$'\n    with pytest.raises(PydanticSerializationError, match=e):\n        s.to_json(Model(3))\n\n\ndef test_property_include_exclude():\n    @dataclasses.dataclass\n    class Model:\n        a: int\n\n        @property\n        def b(self):\n            return [1, 2, b'3']\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Model,\n            core_schema.model_fields_schema(\n                {'a': core_schema.model_field(core_schema.int_schema())},\n                computed_fields=[core_schema.computed_field('b', core_schema.list_schema())],\n            ),\n        )\n    )\n    assert s.to_python(Model(1)) == {'a': 1, 'b': [1, 2, b'3']}\n    assert s.to_python(Model(1), exclude={'b'}) == {'a': 1}\n    assert s.to_python(Model(1), include={'a'}) == {'a': 1}\n    assert s.to_python(Model(1), exclude={'b': [0]}) == {'a': 1, 'b': [2, b'3']}\n\n    assert s.to_python(Model(1), mode='json') == {'a': 1, 'b': [1, 2, '3']}\n    assert s.to_python(Model(1), mode='json', exclude={'b'}) == {'a': 1}\n    assert s.to_python(Model(1), mode='json', include={'a'}) == {'a': 1}\n    assert s.to_python(Model(1), mode='json', exclude={'b': [0]}) == {'a': 1, 'b': [2, '3']}\n\n    assert s.to_json(Model(1)) == b'{\"a\":1,\"b\":[1,2,\"3\"]}'\n    assert s.to_json(Model(1), exclude={'b'}) == b'{\"a\":1}'\n    assert s.to_json(Model(1), include={'a'}) == b'{\"a\":1}'\n    assert s.to_json(Model(1), exclude={'b': [0]}) == b'{\"a\":1,\"b\":[2,\"3\"]}'\n\n\ndef test_property_setter():\n    class Square:\n        side: float\n\n        def __init__(self, **kwargs):\n            self.__dict__ = kwargs\n\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, area: float) -> None:\n            self.side = area**0.5\n\n        @area.deleter\n        def area(self) -> None:\n            self.side = 0.0\n\n        @cached_property\n        def random_n(self) -> int:\n            return randint(0, 1_000)\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            Square,\n            core_schema.model_fields_schema(\n                {'side': core_schema.model_field(core_schema.float_schema())},\n                computed_fields=[\n                    core_schema.computed_field('area', core_schema.float_schema()),\n                    core_schema.computed_field('random_n', core_schema.int_schema(), alias='The random number'),\n                ],\n            ),\n        )\n    )\n\n    sq = Square(side=10.0)\n    the_random_n = sq.random_n\n    assert s.to_python(sq, by_alias=True) == {'side': 10.0, 'area': 100.0, 'The random number': the_random_n}\n    assert s.to_json(sq, by_alias=True) == b'{\"side\":10.0,\"area\":100.0,\"The random number\":%d}' % the_random_n\n    sq.area = 49.0\n    assert s.to_python(sq, by_alias=False) == {'side': 7, 'area': 49, 'random_n': the_random_n}\n    assert s.to_json(sq, by_alias=False) == b'{\"side\":7.0,\"area\":49.0,\"random_n\":%d}' % the_random_n\n    del sq.area\n    assert s.to_python(sq, by_alias=False) == {'side': 0, 'area': 0, 'random_n': the_random_n}\n    assert s.to_python(sq, exclude={'random_n'}) == {'side': 0, 'area': 0}\n\n\ndef test_extra():\n    class MyModel:\n        # this is not required, but it avoids `__pydantic_fields_set__` being included in `__dict__`\n        __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n        field_a: str\n        field_b: int\n\n    schema = core_schema.model_schema(\n        MyModel,\n        core_schema.model_fields_schema(\n            {\n                'field_a': core_schema.model_field(core_schema.bytes_schema()),\n                'field_b': core_schema.model_field(core_schema.int_schema()),\n            },\n            extra_behavior='allow',\n        ),\n        extra_behavior='allow',\n    )\n    v = SchemaValidator(schema)\n    m = v.validate_python({'field_a': b'test', 'field_b': 12, 'field_c': 'extra'})\n    assert isinstance(m, MyModel)\n    assert m.__dict__ == {'field_a': b'test', 'field_b': 12}\n    assert m.__pydantic_extra__ == {'field_c': 'extra'}\n    assert m.__pydantic_fields_set__ == {'field_a', 'field_b', 'field_c'}\n\n    s = SchemaSerializer(schema)\n    assert 'mode:ModelExtra' in plain_repr(s)\n    assert 'has_extra:true' in plain_repr(s)\n    assert s.to_python(m) == {'field_a': b'test', 'field_b': 12, 'field_c': 'extra'}\n    assert s.to_python(m, mode='json') == {'field_a': 'test', 'field_b': 12, 'field_c': 'extra'}\n    assert s.to_json(m) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":\"extra\"}'\n\n    # test filtering\n    m = v.validate_python({'field_a': b'test', 'field_b': 12, 'field_c': None, 'field_d': [1, 2, 3]})\n    assert isinstance(m, MyModel)\n    assert m.__dict__ == {'field_a': b'test', 'field_b': 12}\n    assert m.__pydantic_extra__ == {'field_c': None, 'field_d': [1, 2, 3]}\n    assert m.__pydantic_fields_set__ == {'field_a', 'field_b', 'field_c', 'field_d'}\n\n    assert s.to_python(m) == {'field_a': b'test', 'field_b': 12, 'field_c': None, 'field_d': [1, 2, 3]}\n    assert s.to_json(m) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":null,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude_none=True) == {'field_a': b'test', 'field_b': 12, 'field_d': [1, 2, 3]}\n    assert s.to_json(m, exclude_none=True) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude={'field_c'}) == {'field_a': b'test', 'field_b': 12, 'field_d': [1, 2, 3]}\n    assert s.to_json(m, exclude={'field_c'}) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_d\":[1,2,3]}'\n\n    assert s.to_python(m, exclude={'field_d': [0]}) == {\n        'field_a': b'test',\n        'field_b': 12,\n        'field_c': None,\n        'field_d': [2, 3],\n    }\n    assert s.to_json(m, exclude={'field_d': [0]}) == b'{\"field_a\":\"test\",\"field_b\":12,\"field_c\":null,\"field_d\":[2,3]}'\n\n\ndef test_extra_config():\n    class MyModel:\n        # this is not required, but it avoids `__pydantic_fields_set__` being included in `__dict__`\n        __slots__ = '__dict__', '__pydantic_fields_set__', '__pydantic_extra__', '__pydantic_private__'\n        field_a: str\n        field_b: int\n\n    schema = core_schema.model_schema(\n        MyModel,\n        core_schema.model_fields_schema(\n            {\n                'field_a': core_schema.model_field(core_schema.bytes_schema()),\n                'field_b': core_schema.model_field(core_schema.int_schema()),\n            }\n        ),\n        config=core_schema.CoreConfig(extra_fields_behavior='allow'),\n    )\n    s = SchemaSerializer(schema)\n    assert 'mode:ModelExtra' in plain_repr(s)\n    assert 'has_extra:true' in plain_repr(s)\n\n\ndef test_extra_config_nested_model():\n    class OuterModel:\n        pass\n\n    class InnerModel:\n        pass\n\n    schema = core_schema.model_schema(\n        OuterModel,\n        core_schema.model_fields_schema(\n            {\n                'sub_model': core_schema.model_field(\n                    core_schema.model_schema(\n                        InnerModel,\n                        core_schema.model_fields_schema({'int': core_schema.model_field(core_schema.int_schema())}),\n                        config=core_schema.CoreConfig(extra_fields_behavior='allow'),\n                    )\n                )\n            }\n        ),\n        config={},\n    )\n    s = SchemaSerializer(schema)\n    # debug(s)\n    s_repr = plain_repr(s)\n    assert 'has_extra:true,root_model:false,name:\"InnerModel\"' in s_repr\n    assert 'has_extra:false,root_model:false,name:\"OuterModel\"' in s_repr\n\n\ndef test_extra_custom_serializer():\n    class Model:\n        __slots__ = ('__pydantic_extra__', '__dict__')\n        __pydantic_extra__: dict[str, Any]\n\n    schema = core_schema.model_schema(\n        Model,\n        core_schema.model_fields_schema(\n            {},\n            extra_behavior='allow',\n            extras_schema=core_schema.any_schema(\n                serialization=core_schema.plain_serializer_function_ser_schema(lambda v: v + ' bam!')\n            ),\n        ),\n        extra_behavior='allow',\n    )\n    s = SchemaSerializer(schema)\n\n    m = Model()\n    m.__pydantic_extra__ = {'extra': 'extra'}\n\n    assert s.to_python(m) == {'extra': 'extra bam!'}\n\n\ndef test_no_warn_on_exclude() -> None:\n    with warnings.catch_warnings():\n        warnings.simplefilter('error')\n\n        s = SchemaSerializer(\n            core_schema.model_schema(\n                BasicModel,\n                core_schema.model_fields_schema(\n                    {\n                        'a': core_schema.model_field(core_schema.int_schema()),\n                        'b': core_schema.model_field(core_schema.int_schema()),\n                    }\n                ),\n            )\n        )\n\n        value = BasicModel(a=0, b=1)\n        assert s.to_python(value, exclude={'b'}) == {'a': 0}\n        assert s.to_python(value, mode='json', exclude={'b'}) == {'a': 0}\n\n\ndef test_warn_on_missing_field() -> None:\n    class AModel(BasicModel): ...\n\n    class BModel(BasicModel): ...\n\n    s = SchemaSerializer(\n        core_schema.model_schema(\n            BasicModel,\n            core_schema.model_fields_schema(\n                {\n                    'root': core_schema.model_field(\n                        core_schema.tagged_union_schema(\n                            choices={\n                                'a': core_schema.model_schema(\n                                    AModel,\n                                    core_schema.model_fields_schema(\n                                        {\n                                            'type': core_schema.model_field(core_schema.literal_schema(['a'])),\n                                            'a': core_schema.model_field(core_schema.int_schema()),\n                                        }\n                                    ),\n                                ),\n                                'b': core_schema.model_schema(\n                                    BModel,\n                                    core_schema.model_fields_schema(\n                                        {\n                                            'type': core_schema.model_field(core_schema.literal_schema(['b'])),\n                                            'b': core_schema.model_field(core_schema.int_schema()),\n                                        }\n                                    ),\n                                ),\n                            },\n                            discriminator='type',\n                        )\n                    ),\n                }\n            ),\n        )\n    )\n\n    with pytest.warns(\n        UserWarning, match='Expected 2 fields but got 1: Expected `AModel` - serialized value may not be as expected .+'\n    ):\n        value = BasicModel(root=AModel(type='a'))\n        s.to_python(value)\n\n\n@pytest.mark.parametrize(\n    'config,runtime,expected',\n    [\n        (True, True, {'my_alias': 1}),\n        (True, False, {'my_field': 1}),\n        (True, None, {'my_alias': 1}),\n        (False, True, {'my_alias': 1}),\n        (False, False, {'my_field': 1}),\n        (False, None, {'my_field': 1}),\n        (None, True, {'my_alias': 1}),\n        (None, False, {'my_field': 1}),\n        (None, None, {'my_field': 1}),\n    ],\n)\ndef test_by_alias_and_name_config_interaction(config, runtime, expected) -> None:\n    \"\"\"This test reflects the priority that applies for config vs runtime serialization alias configuration.\n\n    If the runtime value (by_alias) is set, that value is used.\n    If the runtime value is unset, the config value (serialize_by_alias) is used.\n    If neither are set, the default, False, is used.\n    \"\"\"\n\n    class Model:\n        def __init__(self, my_field: int) -> None:\n            self.my_field = my_field\n\n    schema = core_schema.model_schema(\n        Model,\n        core_schema.model_fields_schema(\n            {\n                'my_field': core_schema.model_field(core_schema.int_schema(), serialization_alias='my_alias'),\n            }\n        ),\n        config=core_schema.CoreConfig(serialize_by_alias=config or False),\n    )\n    s = SchemaSerializer(schema)\n    assert s.to_python(Model(1), by_alias=runtime) == expected\n",
+  "unified_diff": "--- a/pydantic-core/tests/serializers/test_model.py\n+++ b/pydantic-core/tests/serializers/test_model.py\n@@ -1045,41 +1045,6 @@\n     del sq.area\n     assert s.to_python(sq, by_alias=False) == {'side': 0, 'area': 0, 'random_n': the_random_n}\n     assert s.to_python(sq, exclude={'random_n'}) == {'side': 0, 'area': 0}\n-\n-\n-def test_computed_field_serialization_exclude_if():\n-    class Square:\n-        side: float\n-\n-        def __init__(self, **kwargs):\n-            self.__dict__ = kwargs\n-\n-        @property\n-        def area(self) -> float:\n-            return self.side**2\n-\n-    s = SchemaSerializer(\n-        core_schema.model_schema(\n-            Square,\n-            core_schema.model_fields_schema(\n-                {'side': core_schema.model_field(core_schema.float_schema())},\n-                computed_fields=[\n-                    core_schema.computed_field(\n-                        'area', core_schema.float_schema(), serialization_exclude_if=lambda a: a == 4.0\n-                    ),\n-                ],\n-            ),\n-        )\n-    )\n-\n-    sq = Square(side=10.0)\n-    assert s.to_python(sq) == {'side': 10.0, 'area': 100.0}\n-    assert s.to_json(sq) == b'{\"side\":10.0,\"area\":100.0}'\n-\n-    # Excluded by serialization exclude if\n-    sq = Square(side=2.0)\n-    assert s.to_python(sq) == {'side': 2.0}\n-    assert s.to_json(sq) == b'{\"side\":2.0}'\n \n \n def test_extra():\n",
+  "changed_files": [
+    {
+      "path": ".github/actions/core-build-pgo-wheel/action.yml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/upload-previews.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CITATION.cff",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "HISTORY.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "README.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/api/standard_library_types.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/dataclasses.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/experimental.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/fields.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "docs/concepts/json_schema.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/models.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/performance.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/serialization.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/type_adapter.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/types.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/concepts/validation_decorator.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/contributing.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/examples/dynamic_models.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/index.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/plugins/main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/plugins/people.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "docs/plugins/schema_mappings.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/Cargo.lock",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/Cargo.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/Makefile",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/benches/main.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/package.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/pyproject.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/python/pydantic_core/_pydantic_core.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/python/pydantic_core/core_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pydantic-core/src/argument_markers.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/errors/validation_exception.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/errors/value_exception.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/input/datetime.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/input/input_python.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/lookup_key.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/py_gc.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/computed_fields.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pydantic-core/src/serializers/errors.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/extra.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/fields.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/infer.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/mod.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/polymorphism_trampoline.rs",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/prebuilt.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/shared.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/complex.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/dataclass.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/function.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/model.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/typed_dict.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/serializers/type_serializers/url.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/tools.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/url.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/arguments.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/dataclass.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/enum_.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/function.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/generator.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/mod.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/model_fields.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/src/validators/typed_dict.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/emscripten_runner.js",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/serializers/test_complex.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/test.rs",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/test_errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_date.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_is_subclass.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_model.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_model_fields.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic-core/tests/validators/test_typed_dict.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/_internal/_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/_internal/_discriminated_union.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/_internal/_generate_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pydantic/_internal/_generics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/_internal/_validators.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/dataclasses.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/experimental/pipeline.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/fields.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "pydantic/functional_validators.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/json_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/mypy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/type_adapter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/v1/datetime_parse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/v1/fields.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/v1/main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/v1/version.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pydantic/version.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pyproject.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/mypy/modules/create_model_var.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/mypy/outputs/mypy-plugin_ini/create_model_var.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/mypy/test_mypy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_computed_fields.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "tests/test_discriminated_union.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_edge_cases.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_forward_ref.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_json_schema.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_main.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_networks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/test_types_typeddict.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/typechecking/pipeline_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/types/test_dataclass.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/types/test_fraction.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/types/test_model.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "uv.lock",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "tests/test_computed_fields.py": "import random\nimport sys\nfrom abc import ABC, abstractmethod\nfrom functools import cached_property, lru_cache, singledispatchmethod\nfrom typing import Annotated, Any, Callable, ClassVar, Generic, TypeVar\n\nimport pytest\nfrom pydantic_core import ValidationError, core_schema\nfrom typing_extensions import TypedDict\n\nfrom pydantic import (\n    BaseModel,\n    Field,\n    FieldSerializationInfo,\n    GetCoreSchemaHandler,\n    PrivateAttr,\n    TypeAdapter,\n    computed_field,\n    dataclasses,\n    field_serializer,\n    field_validator,\n)\nfrom pydantic.alias_generators import to_camel\nfrom pydantic.errors import PydanticUserError\n\n\ndef test_computed_fields_get():\n    class Rectangle(BaseModel):\n        width: int\n        length: int\n\n        @computed_field\n        def area(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return self.width * self.length\n\n        @computed_field(title='Pikarea', description='Another area')\n        @property\n        def area2(self) -> int:\n            return self.width * self.length\n\n        @property\n        def double_width(self) -> int:\n            return self.width * 2\n\n    rect = Rectangle(width=10, length=5)\n    assert set(Rectangle.model_fields) == {'width', 'length'}\n    assert set(Rectangle.model_computed_fields) == {'area', 'area2'}\n    assert rect.__dict__ == {'width': 10, 'length': 5}\n\n    assert Rectangle.model_computed_fields['area'].description == 'An awesome area'\n    assert Rectangle.model_computed_fields['area2'].title == 'Pikarea'\n    assert Rectangle.model_computed_fields['area2'].description == 'Another area'\n\n    assert rect.area == 50\n    assert rect.double_width == 20\n    assert rect.model_dump() == {'width': 10, 'length': 5, 'area': 50, 'area2': 50}\n    assert rect.model_dump_json() == '{\"width\":10,\"length\":5,\"area\":50,\"area2\":50}'\n\n    assert set(Rectangle.model_fields) == {'width', 'length'}\n    assert set(Rectangle.model_computed_fields) == {'area', 'area2'}\n\n    assert Rectangle.model_computed_fields['area'].description == 'An awesome area'\n    assert Rectangle.model_computed_fields['area2'].title == 'Pikarea'\n    assert Rectangle.model_computed_fields['area2'].description == 'Another area'\n\n\ndef test_computed_fields_json_schema():\n    class Rectangle(BaseModel):\n        width: int\n        length: int\n\n        @computed_field\n        def area(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return self.width * self.length\n\n        @computed_field(\n            title='Pikarea',\n            description='Another area',\n            examples=[100, 200],\n            json_schema_extra={'foo': 42},\n        )\n        @property\n        def area2(self) -> int:\n            return self.width * self.length\n\n        @property\n        def double_width(self) -> int:\n            return self.width * 2\n\n    assert Rectangle.model_json_schema(mode='serialization') == {\n        'title': 'Rectangle',\n        'type': 'object',\n        'properties': {\n            'width': {\n                'title': 'Width',\n                'type': 'integer',\n            },\n            'length': {\n                'title': 'Length',\n                'type': 'integer',\n            },\n            'area': {\n                'title': 'Area',\n                'description': 'An awesome area',\n                'type': 'integer',\n                'readOnly': True,\n            },\n            'area2': {\n                'title': 'Pikarea',\n                'description': 'Another area',\n                'examples': [100, 200],\n                'foo': 42,\n                'type': 'integer',\n                'readOnly': True,\n            },\n        },\n        'required': ['width', 'length', 'area', 'area2'],\n    }\n\n\ndef test_computed_fields_set():\n    class Square(BaseModel):\n        side: float\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @computed_field\n        @property\n        def area_string(self) -> str:\n            return f'{self.area} square units'\n\n        @field_serializer('area_string')\n        def serialize_area_string(self, area_string):\n            return area_string.upper()\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    s = Square(side=10)\n    assert s.model_dump() == {'side': 10.0, 'area': 100.0, 'area_string': '100.0 SQUARE UNITS'}\n    s.area = 64\n    assert s.model_dump() == {'side': 8.0, 'area': 64.0, 'area_string': '64.0 SQUARE UNITS'}\n    assert Square.model_computed_fields['area'].wrapped_property is Square.area\n\n\ndef test_computed_fields_del():\n    class User(BaseModel):\n        first: str\n        last: str\n\n        @computed_field\n        def fullname(self) -> str:\n            return f'{self.first} {self.last}'\n\n        @fullname.setter\n        def fullname(self, new_fullname: str) -> None:\n            self.first, self.last = new_fullname.split()\n\n        @fullname.deleter\n        def fullname(self):\n            self.first = ''\n            self.last = ''\n\n    user = User(first='John', last='Smith')\n    assert user.model_dump() == {'first': 'John', 'last': 'Smith', 'fullname': 'John Smith'}\n    user.fullname = 'Pika Chu'\n    assert user.model_dump() == {'first': 'Pika', 'last': 'Chu', 'fullname': 'Pika Chu'}\n    del user.fullname\n    assert user.model_dump() == {'first': '', 'last': '', 'fullname': ' '}\n\n\ndef test_cached_property():\n    class Model(BaseModel):\n        minimum: int = Field(alias='min')\n        maximum: int = Field(alias='max')\n\n        @computed_field(alias='the magic number')\n        @cached_property\n        def random_number(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return random.randint(self.minimum, self.maximum)\n\n        @cached_property\n        def cached_property_2(self) -> int:\n            return 42\n\n        @cached_property\n        def _cached_property_3(self) -> int:\n            return 43\n\n    rect = Model(min=10, max=10_000)\n    assert rect.__private_attributes__ == {}\n    assert rect.cached_property_2 == 42\n    assert rect._cached_property_3 == 43\n    first_n = rect.random_number\n    second_n = rect.random_number\n    assert first_n == second_n\n    assert rect.model_dump() == {'minimum': 10, 'maximum': 10_000, 'random_number': first_n}\n    assert rect.model_dump(by_alias=True) == {'min': 10, 'max': 10_000, 'the magic number': first_n}\n    assert rect.model_dump(by_alias=True, exclude={'random_number'}) == {'min': 10, 'max': 10000}\n\n    # `cached_property` is a non-data descriptor, assert that you can assign a value to it:\n    rect2 = Model(min=1, max=1)\n    rect2.cached_property_2 = 1\n    rect2._cached_property_3 = 2\n    assert rect2.cached_property_2 == 1\n    assert rect2._cached_property_3 == 2\n\n\ndef test_properties_and_computed_fields():\n    class Model(BaseModel):\n        x: str\n        _private_float: float = PrivateAttr(0)\n\n        @property\n        def public_int(self) -> int:\n            return int(self._private_float)\n\n        @public_int.setter\n        def public_int(self, v: float) -> None:\n            self._private_float = v\n\n        @computed_field\n        @property\n        def public_str(self) -> str:\n            return f'public {self.public_int}'\n\n    m = Model(x='pika')\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 0'}\n    m._private_float = 3.1\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 3'}\n    m.public_int = 2\n    assert m._private_float == 2.0\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 2'}\n\n\ndef test_computed_fields_repr():\n    class Model(BaseModel):\n        x: int\n\n        @computed_field(repr=False)\n        @property\n        def double(self) -> int:\n            return self.x * 2\n\n        @computed_field  # repr=True by default\n        @property\n        def triple(self) -> int:\n            return self.x * 3\n\n    assert repr(Model(x=2)) == 'Model(x=2, triple=6)'\n\n\ndef test_functools():\n    class Model(BaseModel, frozen=True):\n        x: int\n\n        @lru_cache\n        def x_pow(self, p):\n            return self.x**p\n\n        @singledispatchmethod\n        def neg(self, arg):\n            raise NotImplementedError('Cannot negate a')\n\n        @neg.register\n        def _(self, arg: int):\n            return -arg\n\n        @neg.register\n        def _(self, arg: bool):\n            return not arg\n\n    m = Model(x=2)\n    assert m.x_pow(1) == 2\n    assert m.x_pow(2) == 4\n    assert m.neg(1) == -1\n    assert m.neg(True) is False\n\n\ndef test_include_exclude():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return [self.x, self.x + 1]\n\n        @computed_field\n        def y_list(self) -> list[int]:\n            return [self.y, self.y + 1, self.y + 2]\n\n    m = Model(x=1, y=2)\n    assert m.model_dump() == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_list': [2, 3, 4]}\n    assert m.model_dump(include={'x'}) == {'x': 1}\n    assert m.model_dump(include={'x': None, 'x_list': {0}}) == {'x': 1, 'x_list': [1]}\n    assert m.model_dump(exclude={'x': ..., 'y_list': {2}}) == {'y': 2, 'x_list': [1, 2], 'y_list': [2, 3]}\n\n\ndef test_exclude_none():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def sum(self) -> int:\n            return self.x + self.y\n\n        @computed_field\n        def none(self) -> None:\n            return None\n\n    m = Model(x=1, y=2)\n    assert m.model_dump(exclude_none=False) == {'x': 1, 'y': 2, 'sum': 3, 'none': None}\n    assert m.model_dump(exclude_none=True) == {'x': 1, 'y': 2, 'sum': 3}\n    assert m.model_dump(mode='json', exclude_none=False) == {'x': 1, 'y': 2, 'sum': 3, 'none': None}\n    assert m.model_dump(mode='json', exclude_none=True) == {'x': 1, 'y': 2, 'sum': 3}\n\n\ndef test_expected_type():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return [self.x, self.x + 1]\n\n        @computed_field\n        def y_str(self) -> bytes:\n            s = f'y={self.y}'\n            return s.encode()\n\n    m = Model(x=1, y=2)\n    assert m.model_dump() == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_str': b'y=2'}\n    assert m.model_dump(mode='json') == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_str': 'y=2'}\n    assert m.model_dump_json() == '{\"x\":1,\"y\":2,\"x_list\":[1,2],\"y_str\":\"y=2\"}'\n\n\ndef test_expected_type_wrong():\n    class Model(BaseModel):\n        x: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return 'not a list'\n\n    m = Model(x=1)\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump()\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump(mode='json')\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump_json()\n\n\ndef test_inheritance():\n    class Base(BaseModel):\n        x: int\n\n        @computed_field\n        def double(self) -> int:\n            return self.x * 2\n\n    class Child(Base):\n        y: int\n\n        @computed_field\n        def triple(self) -> int:\n            return self.y * 3\n\n    c = Child(x=2, y=3)\n    assert c.double == 4\n    assert c.triple == 9\n    assert c.model_dump() == {'x': 2, 'y': 3, 'double': 4, 'triple': 9}\n\n\ndef test_dataclass():\n    @dataclasses.dataclass\n    class MyDataClass:\n        x: int\n\n        @computed_field\n        def double(self) -> int:\n            return self.x * 2\n\n    m = MyDataClass(x=2)\n    assert m.double == 4\n    assert TypeAdapter(MyDataClass).dump_python(m) == {'x': 2, 'double': 4}\n\n\ndef test_free_function():\n    @property\n    def double_func(self) -> int:\n        return self.x * 2\n\n    class MyModel(BaseModel):\n        x: int\n        double = computed_field(double_func)\n\n    m = MyModel(x=2)\n    assert set(MyModel.model_fields) == {'x'}\n    assert m.__private_attributes__ == {}\n    assert m.double == 4\n    assert repr(m) == 'MyModel(x=2, double=4)'\n    assert m.model_dump() == {'x': 2, 'double': 4}\n\n\ndef test_private_computed_field():\n    class MyModel(BaseModel):\n        x: int\n\n        @computed_field(repr=True)\n        def _double(self) -> int:\n            return self.x * 2\n\n    m = MyModel(x=2)\n    assert repr(m) == 'MyModel(x=2, _double=4)'\n    assert m.__private_attributes__ == {}\n    assert m._double == 4\n    assert m.model_dump() == {'x': 2, '_double': 4}\n\n\n@pytest.mark.skipif(\n    sys.version_info >= (3, 13),\n    reason='@computed_field @classmethod @property only works in 3.9-3.12',\n)\ndef test_classmethod():\n    class MyModel(BaseModel):\n        x: int\n        y: ClassVar[int] = 4\n\n        @computed_field\n        @classmethod\n        @property\n        def two_y(cls) -> int:\n            return cls.y * 2\n\n    m = MyModel(x=1)\n    assert m.two_y == 8\n    assert m.model_dump() == {'x': 1, 'two_y': 8}\n\n\ndef test_frozen():\n    class Square(BaseModel, frozen=True):\n        side: float\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    m = Square(side=4)\n    assert m.area == 16.0\n    assert m.model_dump() == {'side': 4.0, 'area': 16.0}\n\n    with pytest.raises(ValidationError) as exc_info:\n        m.area = 4\n    assert exc_info.value.errors(include_url=False) == [\n        {'type': 'frozen_instance', 'loc': ('area',), 'msg': 'Instance is frozen', 'input': 4}\n    ]\n\n\ndef test_validate_assignment():\n    class Square(BaseModel, validate_assignment=True):\n        side: float\n\n        @field_validator('side')\n        def small_side(cls, s):\n            if s < 2:\n                raise ValueError('must be >=2')\n            return float(round(s))\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    with pytest.raises(ValidationError, match=r'side\\s+Value error, must be >=2'):\n        Square(side=1)\n\n    m = Square(side=4.0)\n    assert m.area == 16.0\n    assert m.model_dump() == {'side': 4.0, 'area': 16.0}\n    m.area = 10.0\n    assert m.side == 3.0\n\n    with pytest.raises(ValidationError, match=r'side\\s+Value error, must be >=2'):\n        m.area = 3\n\n\ndef test_abstractmethod():\n    class AbstractSquare(BaseModel):\n        side: float\n\n        @computed_field\n        @property\n        @abstractmethod\n        def area(self) -> float:\n            raise NotImplementedError()\n\n    class Square(AbstractSquare):\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side + 1\n\n    m = Square(side=4.0)\n    assert m.model_dump() == {'side': 4.0, 'area': 5.0}\n\n\n@pytest.mark.skipif(sys.version_info < (3, 12), reason='error message is different on older versions')\n@pytest.mark.parametrize(\n    'bases',\n    [\n        (BaseModel, ABC),\n        (ABC, BaseModel),\n        (BaseModel,),\n    ],\n)\ndef test_abstractmethod_missing(bases: tuple[Any, ...]):\n    class AbstractSquare(*bases):\n        side: float\n\n        @computed_field\n        @property\n        @abstractmethod\n        def area(self) -> float:\n            raise NotImplementedError()\n\n    class Square(AbstractSquare):\n        pass\n\n    with pytest.raises(\n        TypeError, match=\"Can't instantiate abstract class Square without an implementation for abstract method 'area'\"\n    ):\n        Square(side=4.0)\n\n\nclass CustomType(str):\n    @classmethod\n    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:\n        schema = handler(str)\n        schema['serialization'] = core_schema.plain_serializer_function_ser_schema(lambda x: '123')\n        return schema\n\n\ndef test_computed_fields_infer_return_type():\n    class Model(BaseModel):\n        @computed_field\n        def cfield(self) -> CustomType:\n            return CustomType('abc')\n\n    assert Model().model_dump() == {'cfield': '123'}\n    assert Model().model_dump_json() == '{\"cfield\":\"123\"}'\n\n\ndef test_computed_fields_missing_return_type():\n    with pytest.raises(PydanticUserError, match='Computed field is missing return type annotation'):\n\n        class _Model(BaseModel):\n            @computed_field\n            def cfield(self):\n                raise NotImplementedError\n\n    class Model(BaseModel):\n        @computed_field(return_type=CustomType)\n        def cfield(self):\n            return CustomType('abc')\n\n    assert Model().model_dump() == {'cfield': '123'}\n    assert Model().model_dump_json() == '{\"cfield\":\"123\"}'\n\n\ndef test_alias_generator():\n    class MyModel(BaseModel):\n        my_standard_field: int\n\n        @computed_field  # *will* be overridden by alias generator\n        @property\n        def my_computed_field(self) -> int:\n            return self.my_standard_field + 1\n\n        @computed_field(alias='my_alias_none')  # will *not* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_none(self) -> int:\n            return self.my_standard_field + 2\n\n        @computed_field(alias='my_alias_1', alias_priority=1)  # *will* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_1(self) -> int:\n            return self.my_standard_field + 3\n\n        @computed_field(alias='my_alias_2', alias_priority=2)  # will *not* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_2(self) -> int:\n            return self.my_standard_field + 4\n\n    class MySubModel(MyModel):\n        model_config = dict(alias_generator=to_camel, validate_by_name=True)\n\n    model = MyModel(my_standard_field=1)\n    assert model.model_dump() == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_aliased_computed_field_none': 3,\n        'my_aliased_computed_field_1': 4,\n        'my_aliased_computed_field_2': 5,\n    }\n    assert model.model_dump(by_alias=True) == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_alias_none': 3,\n        'my_alias_1': 4,\n        'my_alias_2': 5,\n    }\n\n    submodel = MySubModel(my_standard_field=1)\n    assert submodel.model_dump() == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_aliased_computed_field_none': 3,\n        'my_aliased_computed_field_1': 4,\n        'my_aliased_computed_field_2': 5,\n    }\n    assert submodel.model_dump(by_alias=True) == {\n        'myStandardField': 1,\n        'myComputedField': 2,\n        'my_alias_none': 3,\n        'myAliasedComputedField1': 4,\n        'my_alias_2': 5,\n    }\n\n\ndef test_alias_generator_defer_build() -> None:\n    class Model(BaseModel):\n        model_config = {'alias_generator': to_camel, 'defer_build': True}\n\n        @computed_field\n        @property\n        def my_prop(self) -> int:\n            return 1\n\n    assert Model.__pydantic_decorators__.computed_fields['my_prop'].info.alias == 'myProp'\n\n\ndef make_base_model() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    class Model(BaseModel):\n        @computed_field\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\ndef make_dataclass() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    @dataclasses.dataclass\n    class Model:\n        @computed_field\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\ndef make_typed_dict() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    class Model(TypedDict):\n        @computed_field  # type: ignore\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field  # type: ignore\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\n@pytest.mark.parametrize(\n    'model_factory',\n    [\n        make_base_model,\n        pytest.param(\n            make_typed_dict,\n            marks=pytest.mark.xfail(\n                reason='computed fields do not work with TypedDict yet. See https://github.com/pydantic/pydantic-core/issues/657'\n            ),\n        ),\n        make_dataclass,\n    ],\n)\ndef test_multiple_references_to_schema(model_factory: Callable[[], Any]) -> None:\n    \"\"\"\n    https://github.com/pydantic/pydantic/issues/5980\n    \"\"\"\n\n    model = model_factory()\n\n    ta = TypeAdapter(model)\n\n    assert ta.dump_python(model()) == {'comp_1': {}, 'comp_2': {}}\n\n    assert ta.json_schema() == {'type': 'object', 'properties': {}, 'title': 'Model'}\n\n    assert ta.json_schema(mode='serialization') == {\n        '$defs': {'CompModel': {'properties': {}, 'title': 'CompModel', 'type': 'object'}},\n        'properties': {\n            'comp_1': {'$ref': '#/$defs/CompModel', 'readOnly': True},\n            'comp_2': {'$ref': '#/$defs/CompModel', 'readOnly': True},\n        },\n        'required': ['comp_1', 'comp_2'],\n        'title': 'Model',\n        'type': 'object',\n    }\n\n\ndef test_generic_computed_field():\n    T = TypeVar('T')\n\n    class A(BaseModel, Generic[T]):\n        x: T\n\n        @computed_field\n        @property\n        def double_x(self) -> T:\n            return self.x * 2\n\n    assert A[int](x=1).model_dump() == {'x': 1, 'double_x': 2}\n    assert A[str](x='abc').model_dump() == {'x': 'abc', 'double_x': 'abcabc'}\n\n    assert A.model_computed_fields['double_x'].return_type is T\n    assert A[int].model_computed_fields['double_x'].return_type is int\n    assert A[str].model_computed_fields['double_x'].return_type is str\n\n    class B(BaseModel, Generic[T]):\n        @computed_field\n        @property\n        def double_x(self) -> T:\n            return 'abc'  # this may not match the annotated return type, and will warn if not\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `int` - serialized value may not be as expected \\[field_name='double_x', input_value='abc', input_type=str\\]\",\n    ):\n        B[int]().model_dump()\n\n\ndef test_computed_field_override_raises():\n    class Model(BaseModel):\n        name: str = 'foo'\n\n    with pytest.raises(\n        TypeError, match=\"Field 'name' of class 'SubModel' overrides symbol of same name in a parent class\"\n    ):\n\n        class SubModel(Model):\n            @computed_field\n            @property\n            def name(self) -> str:\n                return 'bar'\n\n\n@pytest.mark.skip(reason='waiting on next pydantic-core version, right now, causes a recursion error')\ndef test_computed_field_excluded_from_model_dump_recursive() -> None:\n    # see https://github.com/pydantic/pydantic/issues/9015 for a more contextualized example\n    class Model(BaseModel):\n        bar: int\n\n        @computed_field\n        @property\n        def id(self) -> str:\n            str_obj = self.model_dump_json(exclude={'id'})\n            # you could imagine hashing str_obj, etc. but for simplicity, just wrap it in a descriptive string\n            return f'id: {str_obj}'\n\n    m = Model(bar=42)\n    assert m.model_dump() == {'bar': 42, 'id': 'id: {\"bar\":42}'}\n\n\ndef test_computed_field_with_field_serializer():\n    class MyModel(BaseModel):\n        other_field: int = 42\n\n        @computed_field\n        @property\n        def my_field(self) -> str:\n            return 'foo'\n\n        @field_serializer('*')\n        def my_field_serializer(self, value: Any, info: FieldSerializationInfo) -> Any:\n            return f'{info.field_name} = {value}'\n\n    assert MyModel().model_dump() == {'my_field': 'my_field = foo', 'other_field': 'other_field = 42'}\n\n\ndef test_computed_fields_exclude() -> None:\n    class Model(BaseModel):\n        @computed_field\n        def prop(self) -> int:\n            return 1\n\n    m = Model()\n    assert m.model_dump() == {'prop': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {}\n    assert m.model_dump(mode='json') == {'prop': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {}\n    assert m.model_dump_json() == '{\"prop\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{}'\n\n\ndef test_computed_fields_serialization_exclude_if() -> None:\n    class Model(BaseModel):\n        foo: int\n\n        @computed_field(exclude_if=lambda x: x == 1)\n        def bar(self) -> int:\n            return 1\n\n        @computed_field(exclude_if=lambda x: x == 2)\n        def baz(self) -> int:\n            return self.foo\n\n    m = Model(foo=1)\n    assert m.model_dump() == {'foo': 1, 'baz': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump(mode='json') == {'foo': 1, 'baz': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump_json() == '{\"foo\":1,\"baz\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{\"foo\":1}'\n\n\n@pytest.mark.xfail(reason='Not supported yet. See: https://github.com/pydantic/pydantic/pull/12748')\ndef test_computed_fields_serialization_exclude_if_from_annotated() -> None:\n    class Model(BaseModel):\n        foo: int\n\n        @computed_field\n        def prop(self) -> Annotated[int, Field(exclude_if=lambda x: x == 1)]:\n            return 1\n\n    m = Model(foo=1)\n    assert m.model_dump() == {'foo': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump(mode='json') == {'foo': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump_json() == '{\"foo\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{\"foo\":1}'\n"
+  },
+  "test_files_before": {
+    "tests/test_computed_fields.py": "import random\nimport sys\nfrom abc import ABC, abstractmethod\nfrom functools import cached_property, lru_cache, singledispatchmethod\nfrom typing import Annotated, Any, Callable, ClassVar, Generic, TypeVar\n\nimport pytest\nfrom pydantic_core import ValidationError, core_schema\nfrom typing_extensions import TypedDict\n\nfrom pydantic import (\n    BaseModel,\n    Field,\n    FieldSerializationInfo,\n    GetCoreSchemaHandler,\n    PrivateAttr,\n    TypeAdapter,\n    computed_field,\n    dataclasses,\n    field_serializer,\n    field_validator,\n)\nfrom pydantic.alias_generators import to_camel\nfrom pydantic.errors import PydanticUserError\n\n\ndef test_computed_fields_get():\n    class Rectangle(BaseModel):\n        width: int\n        length: int\n\n        @computed_field\n        def area(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return self.width * self.length\n\n        @computed_field(title='Pikarea', description='Another area')\n        @property\n        def area2(self) -> int:\n            return self.width * self.length\n\n        @property\n        def double_width(self) -> int:\n            return self.width * 2\n\n    rect = Rectangle(width=10, length=5)\n    assert set(Rectangle.model_fields) == {'width', 'length'}\n    assert set(Rectangle.model_computed_fields) == {'area', 'area2'}\n    assert rect.__dict__ == {'width': 10, 'length': 5}\n\n    assert Rectangle.model_computed_fields['area'].description == 'An awesome area'\n    assert Rectangle.model_computed_fields['area2'].title == 'Pikarea'\n    assert Rectangle.model_computed_fields['area2'].description == 'Another area'\n\n    assert rect.area == 50\n    assert rect.double_width == 20\n    assert rect.model_dump() == {'width': 10, 'length': 5, 'area': 50, 'area2': 50}\n    assert rect.model_dump_json() == '{\"width\":10,\"length\":5,\"area\":50,\"area2\":50}'\n\n    assert set(Rectangle.model_fields) == {'width', 'length'}\n    assert set(Rectangle.model_computed_fields) == {'area', 'area2'}\n\n    assert Rectangle.model_computed_fields['area'].description == 'An awesome area'\n    assert Rectangle.model_computed_fields['area2'].title == 'Pikarea'\n    assert Rectangle.model_computed_fields['area2'].description == 'Another area'\n\n\ndef test_computed_fields_json_schema():\n    class Rectangle(BaseModel):\n        width: int\n        length: int\n\n        @computed_field\n        def area(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return self.width * self.length\n\n        @computed_field(\n            title='Pikarea',\n            description='Another area',\n            examples=[100, 200],\n            json_schema_extra={'foo': 42},\n        )\n        @property\n        def area2(self) -> int:\n            return self.width * self.length\n\n        @property\n        def double_width(self) -> int:\n            return self.width * 2\n\n    assert Rectangle.model_json_schema(mode='serialization') == {\n        'title': 'Rectangle',\n        'type': 'object',\n        'properties': {\n            'width': {\n                'title': 'Width',\n                'type': 'integer',\n            },\n            'length': {\n                'title': 'Length',\n                'type': 'integer',\n            },\n            'area': {\n                'title': 'Area',\n                'description': 'An awesome area',\n                'type': 'integer',\n                'readOnly': True,\n            },\n            'area2': {\n                'title': 'Pikarea',\n                'description': 'Another area',\n                'examples': [100, 200],\n                'foo': 42,\n                'type': 'integer',\n                'readOnly': True,\n            },\n        },\n        'required': ['width', 'length', 'area', 'area2'],\n    }\n\n\ndef test_computed_fields_set():\n    class Square(BaseModel):\n        side: float\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @computed_field\n        @property\n        def area_string(self) -> str:\n            return f'{self.area} square units'\n\n        @field_serializer('area_string')\n        def serialize_area_string(self, area_string):\n            return area_string.upper()\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    s = Square(side=10)\n    assert s.model_dump() == {'side': 10.0, 'area': 100.0, 'area_string': '100.0 SQUARE UNITS'}\n    s.area = 64\n    assert s.model_dump() == {'side': 8.0, 'area': 64.0, 'area_string': '64.0 SQUARE UNITS'}\n    assert Square.model_computed_fields['area'].wrapped_property is Square.area\n\n\ndef test_computed_fields_del():\n    class User(BaseModel):\n        first: str\n        last: str\n\n        @computed_field\n        def fullname(self) -> str:\n            return f'{self.first} {self.last}'\n\n        @fullname.setter\n        def fullname(self, new_fullname: str) -> None:\n            self.first, self.last = new_fullname.split()\n\n        @fullname.deleter\n        def fullname(self):\n            self.first = ''\n            self.last = ''\n\n    user = User(first='John', last='Smith')\n    assert user.model_dump() == {'first': 'John', 'last': 'Smith', 'fullname': 'John Smith'}\n    user.fullname = 'Pika Chu'\n    assert user.model_dump() == {'first': 'Pika', 'last': 'Chu', 'fullname': 'Pika Chu'}\n    del user.fullname\n    assert user.model_dump() == {'first': '', 'last': '', 'fullname': ' '}\n\n\ndef test_cached_property():\n    class Model(BaseModel):\n        minimum: int = Field(alias='min')\n        maximum: int = Field(alias='max')\n\n        @computed_field(alias='the magic number')\n        @cached_property\n        def random_number(self) -> int:\n            \"\"\"An awesome area\"\"\"\n            return random.randint(self.minimum, self.maximum)\n\n        @cached_property\n        def cached_property_2(self) -> int:\n            return 42\n\n        @cached_property\n        def _cached_property_3(self) -> int:\n            return 43\n\n    rect = Model(min=10, max=10_000)\n    assert rect.__private_attributes__ == {}\n    assert rect.cached_property_2 == 42\n    assert rect._cached_property_3 == 43\n    first_n = rect.random_number\n    second_n = rect.random_number\n    assert first_n == second_n\n    assert rect.model_dump() == {'minimum': 10, 'maximum': 10_000, 'random_number': first_n}\n    assert rect.model_dump(by_alias=True) == {'min': 10, 'max': 10_000, 'the magic number': first_n}\n    assert rect.model_dump(by_alias=True, exclude={'random_number'}) == {'min': 10, 'max': 10000}\n\n    # `cached_property` is a non-data descriptor, assert that you can assign a value to it:\n    rect2 = Model(min=1, max=1)\n    rect2.cached_property_2 = 1\n    rect2._cached_property_3 = 2\n    assert rect2.cached_property_2 == 1\n    assert rect2._cached_property_3 == 2\n\n\ndef test_properties_and_computed_fields():\n    class Model(BaseModel):\n        x: str\n        _private_float: float = PrivateAttr(0)\n\n        @property\n        def public_int(self) -> int:\n            return int(self._private_float)\n\n        @public_int.setter\n        def public_int(self, v: float) -> None:\n            self._private_float = v\n\n        @computed_field\n        @property\n        def public_str(self) -> str:\n            return f'public {self.public_int}'\n\n    m = Model(x='pika')\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 0'}\n    m._private_float = 3.1\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 3'}\n    m.public_int = 2\n    assert m._private_float == 2.0\n    assert m.model_dump() == {'x': 'pika', 'public_str': 'public 2'}\n\n\ndef test_computed_fields_repr():\n    class Model(BaseModel):\n        x: int\n\n        @computed_field(repr=False)\n        @property\n        def double(self) -> int:\n            return self.x * 2\n\n        @computed_field  # repr=True by default\n        @property\n        def triple(self) -> int:\n            return self.x * 3\n\n    assert repr(Model(x=2)) == 'Model(x=2, triple=6)'\n\n\ndef test_functools():\n    class Model(BaseModel, frozen=True):\n        x: int\n\n        @lru_cache\n        def x_pow(self, p):\n            return self.x**p\n\n        @singledispatchmethod\n        def neg(self, arg):\n            raise NotImplementedError('Cannot negate a')\n\n        @neg.register\n        def _(self, arg: int):\n            return -arg\n\n        @neg.register\n        def _(self, arg: bool):\n            return not arg\n\n    m = Model(x=2)\n    assert m.x_pow(1) == 2\n    assert m.x_pow(2) == 4\n    assert m.neg(1) == -1\n    assert m.neg(True) is False\n\n\ndef test_include_exclude():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return [self.x, self.x + 1]\n\n        @computed_field\n        def y_list(self) -> list[int]:\n            return [self.y, self.y + 1, self.y + 2]\n\n    m = Model(x=1, y=2)\n    assert m.model_dump() == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_list': [2, 3, 4]}\n    assert m.model_dump(include={'x'}) == {'x': 1}\n    assert m.model_dump(include={'x': None, 'x_list': {0}}) == {'x': 1, 'x_list': [1]}\n    assert m.model_dump(exclude={'x': ..., 'y_list': {2}}) == {'y': 2, 'x_list': [1, 2], 'y_list': [2, 3]}\n\n\ndef test_exclude_none():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def sum(self) -> int:\n            return self.x + self.y\n\n        @computed_field\n        def none(self) -> None:\n            return None\n\n    m = Model(x=1, y=2)\n    assert m.model_dump(exclude_none=False) == {'x': 1, 'y': 2, 'sum': 3, 'none': None}\n    assert m.model_dump(exclude_none=True) == {'x': 1, 'y': 2, 'sum': 3}\n    assert m.model_dump(mode='json', exclude_none=False) == {'x': 1, 'y': 2, 'sum': 3, 'none': None}\n    assert m.model_dump(mode='json', exclude_none=True) == {'x': 1, 'y': 2, 'sum': 3}\n\n\ndef test_expected_type():\n    class Model(BaseModel):\n        x: int\n        y: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return [self.x, self.x + 1]\n\n        @computed_field\n        def y_str(self) -> bytes:\n            s = f'y={self.y}'\n            return s.encode()\n\n    m = Model(x=1, y=2)\n    assert m.model_dump() == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_str': b'y=2'}\n    assert m.model_dump(mode='json') == {'x': 1, 'y': 2, 'x_list': [1, 2], 'y_str': 'y=2'}\n    assert m.model_dump_json() == '{\"x\":1,\"y\":2,\"x_list\":[1,2],\"y_str\":\"y=2\"}'\n\n\ndef test_expected_type_wrong():\n    class Model(BaseModel):\n        x: int\n\n        @computed_field\n        def x_list(self) -> list[int]:\n            return 'not a list'\n\n    m = Model(x=1)\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump()\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump(mode='json')\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `list\\[int\\]` - serialized value may not be as expected \\[field_name='x_list', input_value='not a list', input_type=str\\]\",\n    ):\n        m.model_dump_json()\n\n\ndef test_inheritance():\n    class Base(BaseModel):\n        x: int\n\n        @computed_field\n        def double(self) -> int:\n            return self.x * 2\n\n    class Child(Base):\n        y: int\n\n        @computed_field\n        def triple(self) -> int:\n            return self.y * 3\n\n    c = Child(x=2, y=3)\n    assert c.double == 4\n    assert c.triple == 9\n    assert c.model_dump() == {'x': 2, 'y': 3, 'double': 4, 'triple': 9}\n\n\ndef test_dataclass():\n    @dataclasses.dataclass\n    class MyDataClass:\n        x: int\n\n        @computed_field\n        def double(self) -> int:\n            return self.x * 2\n\n    m = MyDataClass(x=2)\n    assert m.double == 4\n    assert TypeAdapter(MyDataClass).dump_python(m) == {'x': 2, 'double': 4}\n\n\ndef test_free_function():\n    @property\n    def double_func(self) -> int:\n        return self.x * 2\n\n    class MyModel(BaseModel):\n        x: int\n        double = computed_field(double_func)\n\n    m = MyModel(x=2)\n    assert set(MyModel.model_fields) == {'x'}\n    assert m.__private_attributes__ == {}\n    assert m.double == 4\n    assert repr(m) == 'MyModel(x=2, double=4)'\n    assert m.model_dump() == {'x': 2, 'double': 4}\n\n\ndef test_private_computed_field():\n    class MyModel(BaseModel):\n        x: int\n\n        @computed_field(repr=True)\n        def _double(self) -> int:\n            return self.x * 2\n\n    m = MyModel(x=2)\n    assert repr(m) == 'MyModel(x=2, _double=4)'\n    assert m.__private_attributes__ == {}\n    assert m._double == 4\n    assert m.model_dump() == {'x': 2, '_double': 4}\n\n\n@pytest.mark.skipif(\n    sys.version_info >= (3, 13),\n    reason='@computed_field @classmethod @property only works in 3.9-3.12',\n)\ndef test_classmethod():\n    class MyModel(BaseModel):\n        x: int\n        y: ClassVar[int] = 4\n\n        @computed_field\n        @classmethod\n        @property\n        def two_y(cls) -> int:\n            return cls.y * 2\n\n    m = MyModel(x=1)\n    assert m.two_y == 8\n    assert m.model_dump() == {'x': 1, 'two_y': 8}\n\n\ndef test_frozen():\n    class Square(BaseModel, frozen=True):\n        side: float\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    m = Square(side=4)\n    assert m.area == 16.0\n    assert m.model_dump() == {'side': 4.0, 'area': 16.0}\n\n    with pytest.raises(ValidationError) as exc_info:\n        m.area = 4\n    assert exc_info.value.errors(include_url=False) == [\n        {'type': 'frozen_instance', 'loc': ('area',), 'msg': 'Instance is frozen', 'input': 4}\n    ]\n\n\ndef test_validate_assignment():\n    class Square(BaseModel, validate_assignment=True):\n        side: float\n\n        @field_validator('side')\n        def small_side(cls, s):\n            if s < 2:\n                raise ValueError('must be >=2')\n            return float(round(s))\n\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side**2\n\n        @area.setter\n        def area(self, new_area: int):\n            self.side = new_area**0.5\n\n    with pytest.raises(ValidationError, match=r'side\\s+Value error, must be >=2'):\n        Square(side=1)\n\n    m = Square(side=4.0)\n    assert m.area == 16.0\n    assert m.model_dump() == {'side': 4.0, 'area': 16.0}\n    m.area = 10.0\n    assert m.side == 3.0\n\n    with pytest.raises(ValidationError, match=r'side\\s+Value error, must be >=2'):\n        m.area = 3\n\n\ndef test_abstractmethod():\n    class AbstractSquare(BaseModel):\n        side: float\n\n        @computed_field\n        @property\n        @abstractmethod\n        def area(self) -> float:\n            raise NotImplementedError()\n\n    class Square(AbstractSquare):\n        @computed_field\n        @property\n        def area(self) -> float:\n            return self.side + 1\n\n    m = Square(side=4.0)\n    assert m.model_dump() == {'side': 4.0, 'area': 5.0}\n\n\n@pytest.mark.skipif(sys.version_info < (3, 12), reason='error message is different on older versions')\n@pytest.mark.parametrize(\n    'bases',\n    [\n        (BaseModel, ABC),\n        (ABC, BaseModel),\n        (BaseModel,),\n    ],\n)\ndef test_abstractmethod_missing(bases: tuple[Any, ...]):\n    class AbstractSquare(*bases):\n        side: float\n\n        @computed_field\n        @property\n        @abstractmethod\n        def area(self) -> float:\n            raise NotImplementedError()\n\n    class Square(AbstractSquare):\n        pass\n\n    with pytest.raises(\n        TypeError, match=\"Can't instantiate abstract class Square without an implementation for abstract method 'area'\"\n    ):\n        Square(side=4.0)\n\n\nclass CustomType(str):\n    @classmethod\n    def __get_pydantic_core_schema__(cls, source: Any, handler: GetCoreSchemaHandler) -> core_schema.CoreSchema:\n        schema = handler(str)\n        schema['serialization'] = core_schema.plain_serializer_function_ser_schema(lambda x: '123')\n        return schema\n\n\ndef test_computed_fields_infer_return_type():\n    class Model(BaseModel):\n        @computed_field\n        def cfield(self) -> CustomType:\n            return CustomType('abc')\n\n    assert Model().model_dump() == {'cfield': '123'}\n    assert Model().model_dump_json() == '{\"cfield\":\"123\"}'\n\n\ndef test_computed_fields_missing_return_type():\n    with pytest.raises(PydanticUserError, match='Computed field is missing return type annotation'):\n\n        class _Model(BaseModel):\n            @computed_field\n            def cfield(self):\n                raise NotImplementedError\n\n    class Model(BaseModel):\n        @computed_field(return_type=CustomType)\n        def cfield(self):\n            return CustomType('abc')\n\n    assert Model().model_dump() == {'cfield': '123'}\n    assert Model().model_dump_json() == '{\"cfield\":\"123\"}'\n\n\ndef test_alias_generator():\n    class MyModel(BaseModel):\n        my_standard_field: int\n\n        @computed_field  # *will* be overridden by alias generator\n        @property\n        def my_computed_field(self) -> int:\n            return self.my_standard_field + 1\n\n        @computed_field(alias='my_alias_none')  # will *not* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_none(self) -> int:\n            return self.my_standard_field + 2\n\n        @computed_field(alias='my_alias_1', alias_priority=1)  # *will* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_1(self) -> int:\n            return self.my_standard_field + 3\n\n        @computed_field(alias='my_alias_2', alias_priority=2)  # will *not* be overridden by alias generator\n        @property\n        def my_aliased_computed_field_2(self) -> int:\n            return self.my_standard_field + 4\n\n    class MySubModel(MyModel):\n        model_config = dict(alias_generator=to_camel, validate_by_name=True)\n\n    model = MyModel(my_standard_field=1)\n    assert model.model_dump() == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_aliased_computed_field_none': 3,\n        'my_aliased_computed_field_1': 4,\n        'my_aliased_computed_field_2': 5,\n    }\n    assert model.model_dump(by_alias=True) == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_alias_none': 3,\n        'my_alias_1': 4,\n        'my_alias_2': 5,\n    }\n\n    submodel = MySubModel(my_standard_field=1)\n    assert submodel.model_dump() == {\n        'my_standard_field': 1,\n        'my_computed_field': 2,\n        'my_aliased_computed_field_none': 3,\n        'my_aliased_computed_field_1': 4,\n        'my_aliased_computed_field_2': 5,\n    }\n    assert submodel.model_dump(by_alias=True) == {\n        'myStandardField': 1,\n        'myComputedField': 2,\n        'my_alias_none': 3,\n        'myAliasedComputedField1': 4,\n        'my_alias_2': 5,\n    }\n\n\ndef test_alias_generator_defer_build() -> None:\n    class Model(BaseModel):\n        model_config = {'alias_generator': to_camel, 'defer_build': True}\n\n        @computed_field\n        @property\n        def my_prop(self) -> int:\n            return 1\n\n    assert Model.__pydantic_decorators__.computed_fields['my_prop'].info.alias == 'myProp'\n\n\ndef make_base_model() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    class Model(BaseModel):\n        @computed_field\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\ndef make_dataclass() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    @dataclasses.dataclass\n    class Model:\n        @computed_field\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\ndef make_typed_dict() -> Any:\n    class CompModel(BaseModel):\n        pass\n\n    class Model(TypedDict):\n        @computed_field  # type: ignore\n        @property\n        def comp_1(self) -> CompModel:\n            return CompModel()\n\n        @computed_field  # type: ignore\n        @property\n        def comp_2(self) -> CompModel:\n            return CompModel()\n\n    return Model\n\n\n@pytest.mark.parametrize(\n    'model_factory',\n    [\n        make_base_model,\n        pytest.param(\n            make_typed_dict,\n            marks=pytest.mark.xfail(\n                reason='computed fields do not work with TypedDict yet. See https://github.com/pydantic/pydantic-core/issues/657'\n            ),\n        ),\n        make_dataclass,\n    ],\n)\ndef test_multiple_references_to_schema(model_factory: Callable[[], Any]) -> None:\n    \"\"\"\n    https://github.com/pydantic/pydantic/issues/5980\n    \"\"\"\n\n    model = model_factory()\n\n    ta = TypeAdapter(model)\n\n    assert ta.dump_python(model()) == {'comp_1': {}, 'comp_2': {}}\n\n    assert ta.json_schema() == {'type': 'object', 'properties': {}, 'title': 'Model'}\n\n    assert ta.json_schema(mode='serialization') == {\n        '$defs': {'CompModel': {'properties': {}, 'title': 'CompModel', 'type': 'object'}},\n        'properties': {\n            'comp_1': {'$ref': '#/$defs/CompModel', 'readOnly': True},\n            'comp_2': {'$ref': '#/$defs/CompModel', 'readOnly': True},\n        },\n        'required': ['comp_1', 'comp_2'],\n        'title': 'Model',\n        'type': 'object',\n    }\n\n\ndef test_generic_computed_field():\n    T = TypeVar('T')\n\n    class A(BaseModel, Generic[T]):\n        x: T\n\n        @computed_field\n        @property\n        def double_x(self) -> T:\n            return self.x * 2\n\n    assert A[int](x=1).model_dump() == {'x': 1, 'double_x': 2}\n    assert A[str](x='abc').model_dump() == {'x': 'abc', 'double_x': 'abcabc'}\n\n    assert A.model_computed_fields['double_x'].return_type is T\n    assert A[int].model_computed_fields['double_x'].return_type is int\n    assert A[str].model_computed_fields['double_x'].return_type is str\n\n    class B(BaseModel, Generic[T]):\n        @computed_field\n        @property\n        def double_x(self) -> T:\n            return 'abc'  # this may not match the annotated return type, and will warn if not\n\n    with pytest.warns(\n        UserWarning,\n        match=r\"Expected `int` - serialized value may not be as expected \\[field_name='double_x', input_value='abc', input_type=str\\]\",\n    ):\n        B[int]().model_dump()\n\n\ndef test_computed_field_override_raises():\n    class Model(BaseModel):\n        name: str = 'foo'\n\n    with pytest.raises(\n        TypeError, match=\"Field 'name' of class 'SubModel' overrides symbol of same name in a parent class\"\n    ):\n\n        class SubModel(Model):\n            @computed_field\n            @property\n            def name(self) -> str:\n                return 'bar'\n\n\n@pytest.mark.skip(reason='waiting on next pydantic-core version, right now, causes a recursion error')\ndef test_computed_field_excluded_from_model_dump_recursive() -> None:\n    # see https://github.com/pydantic/pydantic/issues/9015 for a more contextualized example\n    class Model(BaseModel):\n        bar: int\n\n        @computed_field\n        @property\n        def id(self) -> str:\n            str_obj = self.model_dump_json(exclude={'id'})\n            # you could imagine hashing str_obj, etc. but for simplicity, just wrap it in a descriptive string\n            return f'id: {str_obj}'\n\n    m = Model(bar=42)\n    assert m.model_dump() == {'bar': 42, 'id': 'id: {\"bar\":42}'}\n\n\ndef test_computed_field_with_field_serializer():\n    class MyModel(BaseModel):\n        other_field: int = 42\n\n        @computed_field\n        @property\n        def my_field(self) -> str:\n            return 'foo'\n\n        @field_serializer('*')\n        def my_field_serializer(self, value: Any, info: FieldSerializationInfo) -> Any:\n            return f'{info.field_name} = {value}'\n\n    assert MyModel().model_dump() == {'my_field': 'my_field = foo', 'other_field': 'other_field = 42'}\n\n\ndef test_computed_fields_exclude() -> None:\n    class Model(BaseModel):\n        @computed_field\n        def prop(self) -> int:\n            return 1\n\n    m = Model()\n    assert m.model_dump() == {'prop': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {}\n    assert m.model_dump(mode='json') == {'prop': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {}\n    assert m.model_dump_json() == '{\"prop\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{}'\n\n\ndef test_computed_fields_serialization_exclude_if() -> None:\n    class Model(BaseModel):\n        foo: int\n\n        @computed_field(exclude_if=lambda x: x == 1)\n        def prop(self) -> int:\n            return 1\n\n    m = Model(foo=1)\n    assert m.model_dump() == {'foo': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump(mode='json') == {'foo': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump_json() == '{\"foo\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{\"foo\":1}'\n\n\ndef test_computed_fields_serialization_exclude_if_from_annotated() -> None:\n    class Model(BaseModel):\n        foo: int\n\n        @computed_field\n        def prop(self) -> Annotated[int, Field(exclude_if=lambda x: x == 1)]:\n            return 1\n\n    m = Model(foo=1)\n    assert m.model_dump() == {'foo': 1}\n    assert m.model_dump(exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump(mode='json') == {'foo': 1}\n    assert m.model_dump(mode='json', exclude_computed_fields=True) == {'foo': 1}\n    assert m.model_dump_json() == '{\"foo\":1}'\n    assert m.model_dump_json(exclude_computed_fields=True) == '{\"foo\":1}'\n\n\ndef test_computed_fields_serialization_exclude_if_from_annotated_repeated_field() -> None:\n    with pytest.raises(PydanticUserError, match='Annotated computed field must have at most one Field(...)'):\n\n        class Model(BaseModel):\n            foo: int\n\n            @computed_field\n            def prop(self) -> Annotated[int, Field(exclude_if=lambda x: x == 1), Field(exclude_if=lambda x: x == 0)]:\n                return 1\n\n\ndef test_computed_fields_serialization_exclude_if_multiple_definitions() -> None:\n    with pytest.raises(\n        PydanticUserError, match='exclude_if set in the computed_field decorator and in the annotated type'\n    ):\n\n        class Model(BaseModel):\n            foo: int\n\n            @computed_field(\n                exclude_if=Field(exclude_if=lambda x: x == 0),\n            )\n            def prop(self) -> Annotated[int, Field(exclude_if=lambda x: x == 1)]:\n                return 1\n"
+  },
+  "ingested_at": "2026-10-11T10:34:09.254207Z"
+}

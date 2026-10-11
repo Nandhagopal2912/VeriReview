@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Use the mock_config_entry fixture instead of building a MockConfigEntry in the test",
+        "description": "Use the mock_config_entry fixture instead of manually constructing a config entry in the test.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "tests/components/threema/test_notify.py:94-103: the test takes mock_config_entry and adds it to hass",
-    "confidence": "high",
+    "evidence": "tests/components/threema/test_notify.py:75-85",
+    "confidence": "medium",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

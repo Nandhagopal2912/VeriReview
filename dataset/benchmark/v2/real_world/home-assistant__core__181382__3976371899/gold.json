@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Move the token persistence logic out of the integration layer into the API library",
+        "description": "Move OAuth token persistence and refresh handling into the API library, exposing updated token data to the integration through a callback.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "cookidoo/coordinator.py: persist_auth_data decorator and _AuthDataHolder removed; the library's on_auth_data_update callback is used",
-    "confidence": "medium",
-    "notes": "Phrased as a question; the long thread ends with the author doing it upstream. Storage stays in HA by design (config entry), which the reviewer's point allows."
+    "evidence": "homeassistant/components/cookidoo/coordinator.py — the diff removes _AuthDataHolder, persist_auth_data, and save_auth_data, as well as the integration's token-persistence logic.",
+    "confidence": "high",
+    "notes": "The reviewer recommends moving token persistence into the API layer. The author subsequently confirms that upstream version 0.18.4 implements an on_auth_data_update callback and that the integration's previous persistence code has been removed."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -16,6 +16,7 @@ import base64
 import hashlib
 import random
 import re
+from collections import Counter
 from collections.abc import Iterable, Iterator
 from datetime import UTC, datetime
 from pathlib import Path
@@ -137,15 +138,23 @@ def collect(
     now: datetime | None = None,
     real_world: str = REAL_WORLD,
     exclude_pulls: frozenset[tuple[str, int]] = frozenset(),
+    max_per_pull: int | None = None,
 ) -> CollectReport:
     """``exclude_pulls``: (repository, PR) pairs already used by any benchmark version. A new
-    test case never shares a PR (and so its code) with an earlier, now-dev case."""
+    test case never shares a PR (and so its code) with an earlier, now-dev case.
+
+    ``max_per_pull``: at most this many cases from one pull request, counting those already
+    collected (v3: threads of one PR share code and reviewer, so many of them add little)."""
     pool = sorted(candidates, key=lambda c: (c.repository, c.pull_number, c.root_comment_id))
     random.Random(seed).shuffle(pool)  # noqa: S311 - sampling, not security
     root = dataset_root / real_world
     licenses: dict[str, str] = {}
     written: list[str] = []
     skipped: dict[str, str] = {}
+    per_pull = Counter(
+        (rw.provenance.repository, rw.provenance.pull_number)
+        for rw in (iter_real_world(root) if root.is_dir() else ())
+    )
     for c in pool:
         if len(written) >= n:
             break
@@ -155,6 +164,9 @@ def collect(
             continue
         if (c.repository, c.pull_number) in exclude_pulls:
             skipped[key] = "pull request already used by an earlier benchmark version"
+            continue
+        if max_per_pull is not None and per_pull[(c.repository, c.pull_number)] >= max_per_pull:
+            skipped[key] = f"pull request already has {max_per_pull} case(s)"
             continue
         repo = RepoRef(c.repository)
         try:
@@ -184,6 +196,7 @@ def collect(
         )
         write_real_world(root, pseudonymise(case, c.pr_author), provenance)
         written.append(key)
+        per_pull[(c.repository, c.pull_number)] += 1
     return CollectReport(written=written, skipped=skipped)
 
 

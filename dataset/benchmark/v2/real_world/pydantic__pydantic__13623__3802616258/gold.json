@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Map collections.abc.Mapping to frozendict for defaultdict default factories",
+        "description": "Support frozendict as the allowed default type for collections.abc.Mapping.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "pydantic/_internal/_validators.py:438: on Python >= 3.15, _defaultdict_allowed_default_types[collections.abc.Mapping] = frozendict",
-    "confidence": "medium",
-    "notes": "Question form; the author first deferred it to a later release but did it in this PR (only where frozendict exists, Python 3.15+)."
+    "evidence": "pydantic/_internal/_validators.py:436-437",
+    "confidence": "high",
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

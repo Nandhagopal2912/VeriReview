@@ -1,0 +1,68 @@
+{
+  "schema_version": "3",
+  "case_id": "encode/httpx#1898/729853496",
+  "repository": "encode/httpx",
+  "pull_number": 1898,
+  "pull_title": "doc: Update comments about file types in _types.py",
+  "base_sha": "fa03b489f0fcd0df53afa8f9c471e24949f09e3e",
+  "head_sha": "a5480366f363468de85d67d877f39103fc7d8559",
+  "thread": {
+    "root_comment_id": 729853496,
+    "path": "httpx/_types.py",
+    "line": null,
+    "original_line": 86,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -85,9 +85,9 @@\n FileTypes = Union[\n     # file (or text)",
+    "original_commit_sha": "2305c845d02d43aeff2c2f0aabd9b1d2a2bb3a12",
+    "commit_sha": "a5480366f363468de85d67d877f39103fc7d8559",
+    "comments": [
+      {
+        "id": 729853496,
+        "author": "reviewer",
+        "body": "```suggestion\r\n    # file (or bytes)\r\n```",
+        "created_at": "2021-10-15T14:07:38Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "reviewer",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "2305c845d02d43aeff2c2f0aabd9b1d2a2bb3a12",
+    "end_commit_sha": "a5480366f363468de85d67d877f39103fc7d8559",
+    "subsequent_commits": [
+      {
+        "sha": "a5480366f363468de85d67d877f39103fc7d8559",
+        "message": "Update httpx/_types.py",
+        "authored_at": "2021-10-15T14:07:43Z",
+        "committed_at": "2021-10-15T14:07:43Z",
+        "author_login": "reviewer"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown"
+    ]
+  },
+  "file_path": "httpx/_types.py",
+  "before_code": "\"\"\"\nType definitions for type checking purposes.\n\"\"\"\n\nimport ssl\nfrom http.cookiejar import CookieJar\nfrom typing import (\n    IO,\n    TYPE_CHECKING,\n    AsyncIterable,\n    AsyncIterator,\n    Callable,\n    Dict,\n    Iterable,\n    Iterator,\n    List,\n    Mapping,\n    Optional,\n    Sequence,\n    Tuple,\n    Union,\n)\n\nif TYPE_CHECKING:  # pragma: no cover\n    from ._auth import Auth  # noqa: F401\n    from ._config import Proxy, Timeout  # noqa: F401\n    from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401\n\n\nPrimitiveData = Optional[Union[str, int, float, bool]]\n\nRawURL = Tuple[bytes, bytes, Optional[int], bytes]\n\nURLTypes = Union[\"URL\", str]\n\nQueryParamTypes = Union[\n    \"QueryParams\",\n    Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],\n    List[Tuple[str, PrimitiveData]],\n    Tuple[Tuple[str, PrimitiveData], ...],\n    str,\n    bytes,\n    None,\n]\n\nHeaderTypes = Union[\n    \"Headers\",\n    Dict[str, str],\n    Dict[bytes, bytes],\n    Sequence[Tuple[str, str]],\n    Sequence[Tuple[bytes, bytes]],\n]\n\nCookieTypes = Union[\"Cookies\", CookieJar, Dict[str, str], List[Tuple[str, str]]]\n\nCertTypes = Union[\n    # certfile\n    str,\n    # (certfile, keyfile)\n    Tuple[str, Optional[str]],\n    # (certfile, keyfile, password)\n    Tuple[str, Optional[str], Optional[str]],\n]\nVerifyTypes = Union[str, bool, ssl.SSLContext]\nTimeoutTypes = Union[\n    Optional[float],\n    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],\n    \"Timeout\",\n]\nProxiesTypes = Union[URLTypes, \"Proxy\", Dict[URLTypes, Union[None, URLTypes, \"Proxy\"]]]\n\nAuthTypes = Union[\n    Tuple[Union[str, bytes], Union[str, bytes]],\n    Callable[[\"Request\"], \"Request\"],\n    \"Auth\",\n    None,\n]\n\nRequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]\nResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]\n\nRequestData = dict\n\nFileContent = Union[IO[bytes], bytes]\nFileTypes = Union[\n    # file (or text)\n    FileContent,\n    # (filename, file (or bytes))\n    Tuple[Optional[str], FileContent],\n    # (filename, file (or bytes), content_type)\n    Tuple[Optional[str], FileContent, Optional[str]],\n]\nRequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]\n\n\nclass SyncByteStream:\n    def __iter__(self) -> Iterator[bytes]:\n        raise NotImplementedError(\n            \"The '__iter__' method must be implemented.\"\n        )  # pragma: nocover\n        yield b\"\"  # pragma: nocover\n\n    def close(self) -> None:\n        \"\"\"\n        Subclasses can override this method to release any network resources\n        after a request/response cycle is complete.\n\n        Streaming cases should use a `try...finally` block to ensure that\n        the stream `close()` method is always called.\n\n        Example:\n\n            status_code, headers, stream, extensions = transport.handle_request(...)\n            try:\n                ...\n            finally:\n                stream.close()\n        \"\"\"\n\n    def read(self) -> bytes:\n        \"\"\"\n        Simple cases can use `.read()` as a convience method for consuming\n        the entire stream and then closing it.\n\n        Example:\n\n            status_code, headers, stream, extensions = transport.handle_request(...)\n            body = stream.read()\n        \"\"\"\n        try:\n            return b\"\".join([part for part in self])\n        finally:\n            self.close()\n\n\nclass AsyncByteStream:\n    async def __aiter__(self) -> AsyncIterator[bytes]:\n        raise NotImplementedError(\n            \"The '__aiter__' method must be implemented.\"\n        )  # pragma: nocover\n        yield b\"\"  # pragma: nocover\n\n    async def aclose(self) -> None:\n        pass\n\n    async def aread(self) -> bytes:\n        try:\n            return b\"\".join([part async for part in self])\n        finally:\n            await self.aclose()\n",
+  "anchor_line": 86,
+  "after_code": "\"\"\"\nType definitions for type checking purposes.\n\"\"\"\n\nimport ssl\nfrom http.cookiejar import CookieJar\nfrom typing import (\n    IO,\n    TYPE_CHECKING,\n    AsyncIterable,\n    AsyncIterator,\n    Callable,\n    Dict,\n    Iterable,\n    Iterator,\n    List,\n    Mapping,\n    Optional,\n    Sequence,\n    Tuple,\n    Union,\n)\n\nif TYPE_CHECKING:  # pragma: no cover\n    from ._auth import Auth  # noqa: F401\n    from ._config import Proxy, Timeout  # noqa: F401\n    from ._models import URL, Cookies, Headers, QueryParams, Request  # noqa: F401\n\n\nPrimitiveData = Optional[Union[str, int, float, bool]]\n\nRawURL = Tuple[bytes, bytes, Optional[int], bytes]\n\nURLTypes = Union[\"URL\", str]\n\nQueryParamTypes = Union[\n    \"QueryParams\",\n    Mapping[str, Union[PrimitiveData, Sequence[PrimitiveData]]],\n    List[Tuple[str, PrimitiveData]],\n    Tuple[Tuple[str, PrimitiveData], ...],\n    str,\n    bytes,\n    None,\n]\n\nHeaderTypes = Union[\n    \"Headers\",\n    Dict[str, str],\n    Dict[bytes, bytes],\n    Sequence[Tuple[str, str]],\n    Sequence[Tuple[bytes, bytes]],\n]\n\nCookieTypes = Union[\"Cookies\", CookieJar, Dict[str, str], List[Tuple[str, str]]]\n\nCertTypes = Union[\n    # certfile\n    str,\n    # (certfile, keyfile)\n    Tuple[str, Optional[str]],\n    # (certfile, keyfile, password)\n    Tuple[str, Optional[str], Optional[str]],\n]\nVerifyTypes = Union[str, bool, ssl.SSLContext]\nTimeoutTypes = Union[\n    Optional[float],\n    Tuple[Optional[float], Optional[float], Optional[float], Optional[float]],\n    \"Timeout\",\n]\nProxiesTypes = Union[URLTypes, \"Proxy\", Dict[URLTypes, Union[None, URLTypes, \"Proxy\"]]]\n\nAuthTypes = Union[\n    Tuple[Union[str, bytes], Union[str, bytes]],\n    Callable[[\"Request\"], \"Request\"],\n    \"Auth\",\n    None,\n]\n\nRequestContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]\nResponseContent = Union[str, bytes, Iterable[bytes], AsyncIterable[bytes]]\n\nRequestData = dict\n\nFileContent = Union[IO[bytes], bytes]\nFileTypes = Union[\n    # file (or bytes)\n    FileContent,\n    # (filename, file (or bytes))\n    Tuple[Optional[str], FileContent],\n    # (filename, file (or bytes), content_type)\n    Tuple[Optional[str], FileContent, Optional[str]],\n]\nRequestFiles = Union[Mapping[str, FileTypes], Sequence[Tuple[str, FileTypes]]]\n\n\nclass SyncByteStream:\n    def __iter__(self) -> Iterator[bytes]:\n        raise NotImplementedError(\n            \"The '__iter__' method must be implemented.\"\n        )  # pragma: nocover\n        yield b\"\"  # pragma: nocover\n\n    def close(self) -> None:\n        \"\"\"\n        Subclasses can override this method to release any network resources\n        after a request/response cycle is complete.\n\n        Streaming cases should use a `try...finally` block to ensure that\n        the stream `close()` method is always called.\n\n        Example:\n\n            status_code, headers, stream, extensions = transport.handle_request(...)\n            try:\n                ...\n            finally:\n                stream.close()\n        \"\"\"\n\n    def read(self) -> bytes:\n        \"\"\"\n        Simple cases can use `.read()` as a convience method for consuming\n        the entire stream and then closing it.\n\n        Example:\n\n            status_code, headers, stream, extensions = transport.handle_request(...)\n            body = stream.read()\n        \"\"\"\n        try:\n            return b\"\".join([part for part in self])\n        finally:\n            self.close()\n\n\nclass AsyncByteStream:\n    async def __aiter__(self) -> AsyncIterator[bytes]:\n        raise NotImplementedError(\n            \"The '__aiter__' method must be implemented.\"\n        )  # pragma: nocover\n        yield b\"\"  # pragma: nocover\n\n    async def aclose(self) -> None:\n        pass\n\n    async def aread(self) -> bytes:\n        try:\n            return b\"\".join([part async for part in self])\n        finally:\n            await self.aclose()\n",
+  "unified_diff": "--- a/httpx/_types.py\n+++ b/httpx/_types.py\n@@ -83,7 +83,7 @@\n \n FileContent = Union[IO[bytes], bytes]\n FileTypes = Union[\n-    # file (or text)\n+    # file (or bytes)\n     FileContent,\n     # (filename, file (or bytes))\n     Tuple[Optional[str], FileContent],\n",
+  "changed_files": [
+    {
+      "path": "httpx/_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-10-11T10:36:53.281538Z"
+}

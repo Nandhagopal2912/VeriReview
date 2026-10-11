@@ -20,6 +20,24 @@ Order of events, recorded as they happened:
    mostly `other`); recorded, not padded.
 4. Rule changes are developed on dev data only (v1 test cases included).
 5. v2 test evaluated once, with the Phase 10 protocol.
+6. **2026-10-11**: the `real_world` labels changed, after the test was used (step 5). One human
+   annotator (Jordan) labelled all 60 cases blind, from the page made by
+   `annotation-sheet --batch rw-v2 --relabel-model` (the model labels are not shown), export in
+   `dataset/annotations/jordan/rw-v2.json`. `build-gold … --single-source human` replaced the
+   provisional Claude labels: 52 included (was 57), 8 excluded (was 3). Only the 60 `gold.json`
+   files changed; the cases did not (pinned separately:
+   `9dd0d8bd2f25589743501fcc9274040c8cbe0fa9721bb0295d4b32bd4660bc87`). `real_world_test_hash`
+   went from `34133f45…46dd6` to
+   `7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1`.
+   - This is one annotator: not adjudicated, and no human–human agreement can be measured.
+   - Claude against Jordan (`verireview agreement`): the same verdict on 43 of 49 cases both
+     included (kappa 0.599); inclusion differs on 11 of 60.
+   - The recorded run (`experiments/phase10_1_test.json`) was **not** run again. Its stored
+     predictions were re-scored (`verireview rescore-report`,
+     `experiments/phase10_2_v2_rescored_human_labels.json`). Three cases that only the human
+     labels include have no stored prediction and are not scored.
+   - No rule was changed for or after this relabelling. The split stays a used test split: it
+     becomes dev data only once a v3 test set is frozen.
 
 Caveat: the cases were written by the same author as the rules, after the v1 error analysis. The
 recipe (categories, verdict mix, difficult-case types) was kept identical to v1 to limit targeting,

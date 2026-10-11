@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Import URL from .._urls next to the other relative imports (suggestion) instead of `from httpx import URL`",
+        "description": "Move the URL import from httpx to .._urls, as suggested by the reviewer.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "httpx/_transports/default.py:51: from .._urls import URL; the `from httpx import URL` line is removed",
+    "evidence": "httpx/_transports/default.py:51-52",
     "confidence": "high",
-    "notes": ""
+    "notes": "The reviewers suggests to remove from httpx import URL and adds from .._urls import URL.\nThe diff also contains unrelated changes, so attribution to this review comment is not fully certain."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

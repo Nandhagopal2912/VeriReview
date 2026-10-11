@@ -1,23 +1,17 @@
 {
   "label": {
     "case_id": "pytest-dev__pytest__14127__2714516856",
-    "include": true,
-    "requirements": [
-      {
-        "category": "other",
-        "description": "Document the RegisteredMarker fields with #: comments above each member instead of :param: in the docstring (suggestion)",
-        "status": "satisfied"
-      }
-    ],
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "src/_pytest/config/__init__.py:1048-1056: docstring shortened; #: comments above name, signature, description",
-    "confidence": "high",
-    "notes": "Marked 'minor', but done as suggested."
+    "evidence": "",
+    "confidence": "medium",
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

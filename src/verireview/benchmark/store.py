@@ -92,8 +92,29 @@ V2 = BenchmarkVersion(
     real_world="benchmark/v2/real_world",
     manifest="benchmark/v2/manifest.json",
 )
-VERSIONS = {v.name: v for v in (V1, V2)}
-CURRENT_VERSION = "v2"
+# v3 (Phase 10.2): the v2 test split becomes dev data, but only once v3's own test split is
+# frozen (its manifest exists); ``eval-benchmark`` refuses v3 before that. Until then v2 stays the
+# current version and a used, locked test split.
+V3 = BenchmarkVersion(
+    "v3",
+    (
+        CaseSet("dev-fixtures", "fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("dev-heldout", "heldout_fixtures", Source.CONTROLLED, Split.DEV),
+        CaseSet("v1-controlled", "benchmark/controlled", Source.CONTROLLED, Split.DEV),
+        CaseSet("v1-adversarial", "benchmark/adversarial", Source.ADVERSARIAL, Split.DEV),
+        CaseSet("v1-real-world", "benchmark/real_world", Source.REAL_WORLD, Split.DEV),
+        CaseSet("v2-controlled", "benchmark/v2/controlled", Source.CONTROLLED, Split.DEV),
+        CaseSet("v2-adversarial", "benchmark/v2/adversarial", Source.ADVERSARIAL, Split.DEV),
+        CaseSet("v2-real-world", "benchmark/v2/real_world", Source.REAL_WORLD, Split.DEV),
+        CaseSet("controlled", "benchmark/v3/controlled", Source.CONTROLLED, Split.TEST),
+        CaseSet("adversarial", "benchmark/v3/adversarial", Source.ADVERSARIAL, Split.TEST),
+        CaseSet("real-world", "benchmark/v3/real_world", Source.REAL_WORLD, None),
+    ),
+    real_world="benchmark/v3/real_world",
+    manifest="benchmark/v3/manifest.json",
+)
+VERSIONS = {v.name: v for v in (V1, V2, V3)}
+CURRENT_VERSION = "v2"  # v3 takes over when its test split is frozen
 CASE_SETS = V1.case_sets  # v1 layout, kept for existing callers
 REAL_WORLD = V1.real_world
 LICENSES = "benchmark/LICENSES"
@@ -120,9 +141,10 @@ LabelSource = Literal["human", "model"]
 class GoldLabel(BaseModel):
     """The label of one real-world case that evaluation uses.
 
-    ``human``: two annotators, disagreements adjudicated. ``model``: provisional, one model
-    annotator (Claude), used until humans label the case; results on it are reported separately,
-    and a human label always replaces it.
+    ``human``: two annotators with disagreements adjudicated, or one human annotator
+    (``annotators`` has one name: not adjudicated, no inter-annotator agreement; say so when
+    reporting). ``model``: provisional, one model annotator (Claude), used until humans label the
+    case; results on it are reported separately, and a human label always replaces it.
     """
 
     model_config = ConfigDict(extra="forbid")

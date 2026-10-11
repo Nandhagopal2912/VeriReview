@@ -1,11 +1,12 @@
 """Benchmark v2 (Phase 10.1). Its controlled and adversarial test sets were written and pinned
 here BEFORE any rule change of Phase 10.1, so the rule work cannot be fitted to them."""
 
+import hashlib
 from pathlib import Path
 
 import pytest
 
-from verireview.benchmark import Split, iter_benchmark
+from verireview.benchmark import Split, iter_benchmark, iter_real_world
 from verireview.benchmark.manifest import Manifest, verify
 from verireview.contracts import RequirementCategory, Verdict
 from verireview.dataset import Fixture, iter_fixtures
@@ -18,9 +19,14 @@ FROZEN_V2 = {
     "adversarial": "54f269dba37ac97d415bad8017bdee27c5fa91121c8adfa528b5daec95da5471",
 }
 CASES = [f for name in FROZEN_V2 for f in iter_fixtures(V2 / name)]
-# Real-world v2 test cases: fresh PRs (none used in v1), labelled blind by Claude and frozen in
-# benchmark/v2/manifest.json before any rule change of Phase 10.1.
-REAL_WORLD_V2_SHA256 = "34133f451723607e597faa8b89f128a89d95219006bf5275eac344872f846dd6"
+# Real-world v2 test cases: fresh PRs (none used in v1), frozen in benchmark/v2/manifest.json
+# before any rule change of Phase 10.1. The hash covers the cases and their gold labels.
+# 2026-10-11 (FREEZE_LOG entry 6): the provisional Claude labels were replaced by one human
+# annotator's labels; only the gold.json files changed. Until then the hash was
+# 34133f451723607e597faa8b89f128a89d95219006bf5275eac344872f846dd6.
+REAL_WORLD_V2_SHA256 = "7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1"
+# The cases themselves (case.json + provenance.json, no labels): unchanged since the freeze.
+REAL_WORLD_V2_CASES_SHA256 = "9dd0d8bd2f25589743501fcc9274040c8cbe0fa9721bb0295d4b32bd4660bc87"
 
 
 @pytest.mark.parametrize("name", sorted(FROZEN_V2))
@@ -36,6 +42,26 @@ def test_frozen_v2_manifest_still_matches_the_dataset() -> None:
     assert len(manifest.real_world_test) == 60
     assert manifest.real_world_test_hash == REAL_WORLD_V2_SHA256
     assert verify(DATASET, manifest) == []
+
+
+def test_v2_real_world_cases_are_unchanged_by_the_relabelling() -> None:
+    manifest = Manifest.model_validate_json((V2 / "manifest.json").read_text(encoding="utf-8"))
+    digest = hashlib.sha256()
+    for case_id in sorted(manifest.real_world_test):
+        for name in ("case.json", "provenance.json"):
+            digest.update(f"{case_id}/{name}\0".encode())
+            content = (V2 / "real_world" / case_id / name).read_bytes()
+            digest.update(content.replace(b"\r\n", b"\n"))
+
+    assert digest.hexdigest() == REAL_WORLD_V2_CASES_SHA256
+
+
+def test_v2_real_world_gold_is_human_from_one_annotator() -> None:
+    golds = [rw.gold for rw in iter_real_world(V2 / "real_world")]
+
+    assert len(golds) == 60 and all(g is not None for g in golds)
+    assert {g.label_source for g in golds if g} == {"human"}
+    assert {len(g.annotators) for g in golds if g} == {1}  # not adjudicated: say so in reports
 
 
 def test_v2_real_world_cases_come_from_pull_requests_unused_in_v1() -> None:

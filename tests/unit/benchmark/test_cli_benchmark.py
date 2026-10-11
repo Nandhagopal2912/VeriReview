@@ -244,3 +244,28 @@ def test_relabel_model_puts_model_labelled_cases_on_the_sheet_blind(
     assert main_v1(["build-gold", str(a), str(b), "--dataset", str(root)]) == 0
     capsys.readouterr()
     assert "(0 case(s)" in write_sheet("--relabel-model")  # human gold is never relabelled
+
+
+def test_cases_option_puts_exactly_the_listed_cases_on_the_sheet_blind(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A second annotator gets chosen cases even if they already have human gold."""
+    root = mine_and_collect(tmp_path)
+    a = export(tmp_path / "a.json", "ann-a", "satisfied")
+    assert main_v1(["build-gold", str(a), "--single-source", "human", "--dataset", str(root)]) == 0
+    sheet, ids = tmp_path / "sheet.html", tmp_path / "ids.txt"
+    args = ["annotation-sheet", "--batch", "rw", "--dataset", str(root), "--out", str(sheet)]
+    capsys.readouterr()
+
+    assert main_v1(args) == 0
+    assert "(0 case(s)" in capsys.readouterr().out  # already labelled by a human
+
+    ids.write_text(KEY + "\n", encoding="utf-8")
+    assert main_v1([*args, "--cases", str(ids)]) == 0
+    assert "(1 case(s)" in capsys.readouterr().out
+    html = sheet.read_text(encoding="utf-8")
+    assert KEY in html and "ann-a" not in html and "label_source" not in html
+
+    ids.write_text("no__such__1__2\n", encoding="utf-8")
+    assert main_v1([*args, "--cases", str(ids)]) == 1
+    assert "not in" in capsys.readouterr().err

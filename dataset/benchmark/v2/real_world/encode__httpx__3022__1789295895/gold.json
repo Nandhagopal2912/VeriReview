@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Pass trust_env to SSLContext in HTTPTransport.__init__ (suggestion)",
+        "description": "Use SSLContext(trust_env=trust_env) as the fallback when ssl_context is not provided.",
         "status": "not_satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "NOT_SATISFIED",
-    "evidence": "httpx/_transports/default.py:140: still SSLContext() (SSLContext no longer takes trust_env)",
-    "confidence": "low",
-    "notes": "Superseded by removing trust_env from SSLContext (same PR). Not done as written; human check advised."
+    "evidence": "nothing added",
+    "confidence": "high",
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

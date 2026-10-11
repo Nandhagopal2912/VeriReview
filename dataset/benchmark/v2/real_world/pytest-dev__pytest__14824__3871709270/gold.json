@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Remove the `e.__cause__ is not None` assert, or give it a debugging message",
+        "category": "error_handling",
+        "description": "Add a descriptive message to the assertion checking that the plugin import error has an exception cause.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/config/__init__.py:188: assert e.__cause__ is not None, f\"{e!r} must be raised `from` the original error\"",
+    "evidence": "src/_pytest/config/__init__.py:188",
     "confidence": "high",
-    "notes": "The reviewer allowed either option; the second was taken."
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

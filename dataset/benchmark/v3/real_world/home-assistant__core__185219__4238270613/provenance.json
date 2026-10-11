@@ -1,0 +1,11 @@
+{
+  "repository": "home-assistant/core",
+  "pull_number": 185219,
+  "root_comment_id": 4238270613,
+  "url": "https://github.com/home-assistant/core/pull/185219#discussion_r4238270613",
+  "license_spdx": "Apache-2.0",
+  "mined_at": "2026-10-11T10:26:43.099548Z",
+  "split": "test",
+  "pseudonymised": true,
+  "collector_version": "phase9-collector-1"
+}

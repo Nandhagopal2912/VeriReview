@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "naming",
-        "description": "Rename CONFIG_SUFFIXES to a clearer name such as CONFIG_LOADERS_SUFFIX_FALLBACK",
+        "category": "validation",
+        "description": "Rename CONFIG_SUFFIXES to a clearer name, such as CONFIG_LOADERS_BY_SUFFIX.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/config/findpaths.py: the constant is now CONFIG_LOADERS_BY_SUFFIX (next to CONFIG_LOADERS_BY_NAME)",
+    "evidence": "src/_pytest/config/__init__.py:217",
     "confidence": "high",
-    "notes": "'or similar' allows a different name."
+    "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

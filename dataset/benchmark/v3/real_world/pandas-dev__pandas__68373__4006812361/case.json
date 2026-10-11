@@ -1,0 +1,2169 @@
+{
+  "schema_version": "3",
+  "case_id": "pandas-dev/pandas#68373/4006812361",
+  "repository": "pandas-dev/pandas",
+  "pull_number": 68373,
+  "pull_title": "CI: Don't auto-close PRs that lack issue assignment",
+  "base_sha": "8f118075cf1110a3c924c83d5c7c9f168da35285",
+  "head_sha": "e1ce08028ec850b25364f84557856d08c86c963a",
+  "thread": {
+    "root_comment_id": 4006812361,
+    "path": "scripts/issue_assignment/messages.py",
+    "line": null,
+    "original_line": 121,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -67,18 +92,37 @@ def issue_unassigned_inactive(assignees: list[str]) -> str:\n     )\n \n \n-def pr_marked_stale() -> str:\n+def pr_marked_stale(gate_issue: int | None = None) -> str:\n+    \"\"\"Stale warning; ``gate_issue`` is the linked issue when the PR is gated.\n+\n+    A gated PR (``Needs Issue Assignment``) is stale because it can't be\n+    reviewed, so the fix is claiming the issue — re-requesting review does\n+    nothing for it.\n+    \"\"\"\n+    if gate_issue is None:\n+        next_step = (\n+            \"If you've already addressed the feedback, **re-request a review** \"\n+            \"(the ↻ next to the reviewer) to move it back into the review \"\n+            \"queue. \"\n+        )\n+    else:\n+        next_step = (\n+            f\"This pull request is labeled `Needs Issue Assignment` and won't \"\n+            f\"be reviewed until #{gate_issue} is assigned to you: comment \"\n+            f\"`/take` on #{gate_issue} to claim it, and the label clears via \"\n+            f\"the daily job. \"\n+        )\n     return (\n         f\"This pull request has had no activity from its author for \"\n         f\"**{PR_STALE_DAYS} days**, so I've marked it **stale**. If you're still \"\n         f\"on it, just push a commit, reply to a review comment, or leave a \"\n         f\"comment — here or on the linked issue — and the label clears itself. \"\n-        f\"If you've already addressed the \"\n-        f\"feedback, **re-request a review** (the ↻ next to the reviewer) to move \"\n-        f\"it back into the review queue. Otherwise it'll be closed in \"\n-        f\"**{PR_CLOSE_DAYS} days** to keep the queue manageable — you can always \"\n-        f\"reopen it later to continue. See the [contributing guide]({DOCS_URL}) \"\n-        f\"for how the pull request lifecycle works.\\n\\n\"\n+        f\"{next_step}\"\n+        f\"Otherwise it'll be closed in \"",
+    "original_commit_sha": "7bcf52ddde229bbba0e74b479803e991d57b53f2",
+    "commit_sha": "7bcf52ddde229bbba0e74b479803e991d57b53f2",
+    "comments": [
+      {
+        "id": 4006812361,
+        "author": "reviewer",
+        "body": "```suggestion\n        f\"Otherwise it will be closed in \"\n```\n\n(If find that a bit more readable)",
+        "created_at": "2026-09-14T15:32:59Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "7bcf52ddde229bbba0e74b479803e991d57b53f2",
+    "end_commit_sha": "e1ce08028ec850b25364f84557856d08c86c963a",
+    "subsequent_commits": [
+      {
+        "sha": "501c59d3e91613d2a01c2786e867762cd4c94b6a",
+        "message": "Update scripts/issue_assignment/messages.py\n\nCo-authored-by: Joris Van den Bossche <<email>>",
+        "authored_at": "2026-09-14T18:27:21Z",
+        "committed_at": "2026-09-14T18:27:21Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "e1ce08028ec850b25364f84557856d08c86c963a",
+        "message": "Merge branch 'main' into ci_dont_auto_close_prs",
+        "authored_at": "2026-09-23T20:33:50Z",
+        "committed_at": "2026-09-23T20:33:50Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "scripts/issue_assignment/messages.py",
+  "before_code": "\"\"\"Contributor-facing comment text for the Python automation jobs.\n\nSingle source of truth for the messages posted by the gate, unassign, and PR\nstale jobs. The ``/take`` and ``/untake`` replies live inline in\n``.github/workflows/comment-commands.yml``.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import TYPE_CHECKING\n\nfrom scripts.issue_assignment.core import (\n    PR_CLOSE_DAYS,\n    PR_STALE_DAYS,\n    STALE_ASSIGNEE_DAYS,\n)\n\nif TYPE_CHECKING:\n    from scripts.issue_assignment.core import GateDecision\n\n# Point to the dev docs so that changes are reflected immediately.\nDOCS_URL = (\n    \"https://pandas.pydata.org/docs/dev/development/contributing.html\"\n    \"#issue-assignment-and-the-pull-request-lifecycle\"\n)\n\n\ndef _gate_review_note(issue: int) -> str:\n    return (\n        f\"This pull request is unlikely to be reviewed until #{issue} is assigned \"\n        f\"to you.\"\n    )\n\n\ndef _gate_close_note(issue: int) -> str:\n    return (\n        f\"I've closed this pull request for now — **none of your work is \"\n        f\"lost**. Once #{issue} is assigned to you, ask a maintainer to reopen \"\n        f\"it.\"\n    )\n\n\ndef gate_flagged(author: str, decision: GateDecision, closing: bool = False) -> str:\n    \"\"\"The gate comment for an ``invalid_assignment`` decision.\"\"\"\n    issue = decision[\"issue\"]\n    if decision[\"variant\"] == \"unassigned\":\n        return gate_unassigned(author, issue)\n    return gate_assigned_other(author, issue, decision[\"assignee\"], closing)\n\n\ndef gate_unassigned(author: str, issue: int) -> str:\n    return (\n        f\"Thanks for the pull request, @{author}! It's linked to #{issue}, but \"\n        f\"that issue isn't assigned to you yet. To make sure two people don't \"\n        f\"unknowingly work on the same thing, we ask contributors to claim an \"\n        f\"issue first. You can comment `/take` on #{issue} to claim it, but be \"\n        f\"aware that certain issues cannot be taken if they are labeled e.g. \"\n        f\"`Needs Triage` — see the [contributing guide]({DOCS_URL}) for more \"\n        f\"details.\\n\\n{_gate_review_note(issue)}\"\n    )\n\n\ndef gate_assigned_other(\n    author: str, issue: int, assignee: str, closing: bool = False\n) -> str:\n    note = _gate_close_note(issue) if closing else _gate_review_note(issue)\n    return (\n        f\"Thanks for the pull request, @{author}! It's linked to #{issue}, which \"\n        f\"is currently assigned to @{assignee}, who's already working on it. We \"\n        f\"keep one contributor per issue to avoid duplicated effort. If \"\n        f\"@{assignee} has had no activity for **{STALE_ASSIGNEE_DAYS} days**, the \"\n        f\"issue is released automatically and you'll then be able to claim it \"\n        f\"with `/take` on #{issue} — for now, please coordinate with them on the \"\n        f\"issue. See the [contributing guide]({DOCS_URL}) for details.\\n\\n\"\n        f\"{note}\"\n    )\n\n\ndef _mention_list(assignees: list[str]) -> str:\n    return \", \".join(f\"@{a}\" for a in assignees)\n\n\ndef issue_unassigned_inactive(assignees: list[str]) -> str:\n    mentions = _mention_list(assignees)\n    return (\n        f\"This issue has been automatically unassigned from {mentions} because \"\n        f\"there's been no linked pull request or activity for \"\n        f\"**{STALE_ASSIGNEE_DAYS} days**. No worries at all if other things came \"\n        f\"up! {mentions} — you're welcome to comment `/take` to pick it back up \"\n        f\"anytime, and it's now open for anyone else to claim too. See the \"\n        f\"[contributing guide]({DOCS_URL}) for how this works.\"\n    )\n\n\ndef pr_marked_stale(gate_issue: int | None = None) -> str:\n    \"\"\"Stale warning; ``gate_issue`` is the linked issue when the PR is gated.\n\n    A gated PR (``Needs Issue Assignment``) is stale because it can't be\n    reviewed, so the fix is claiming the issue — re-requesting review does\n    nothing for it.\n    \"\"\"\n    if gate_issue is None:\n        next_step = (\n            \"If you've already addressed the feedback, **re-request a review** \"\n            \"(the ↻ next to the reviewer) to move it back into the review \"\n            \"queue. \"\n        )\n    else:\n        next_step = (\n            f\"This pull request is labeled `Needs Issue Assignment` and won't \"\n            f\"be reviewed until #{gate_issue} is assigned to you: comment \"\n            f\"`/take` on #{gate_issue} to claim it, and the label clears via \"\n            f\"the daily job. \"\n        )\n    return (\n        f\"This pull request has had no activity from its author for \"\n        f\"**{PR_STALE_DAYS} days**, so I've marked it **stale**. If you're still \"\n        f\"on it, just push a commit, reply to a review comment, or leave a \"\n        f\"comment — here or on the linked issue — and the label clears itself. \"\n        f\"{next_step}\"\n        f\"Otherwise it'll be closed in \"\n        f\"**{PR_CLOSE_DAYS} days** to keep the queue manageable. Your branch \"\n        f\"still remains, and you can ask a maintainer to reopen this PR to \"\n        f\"continue. See the [contributing guide]({DOCS_URL}) for how the pull \"\n        f\"request lifecycle works.\\n\\n\"\n        f\"_Note: labels update via a once-a-day job, so `Stale` may take up to a \"\n        f\"day to clear._\"\n    )\n\n\ndef pr_closed_stale() -> str:\n    return (\n        f\"Closing this pull request after **{PR_CLOSE_DAYS} days** stale with no \"\n        f\"activity from its author. Thank you for the work you put into it! \"\n        f\"**Nothing is lost** — your branch still remains, and you can ask a \"\n        f\"maintainer to reopen this PR whenever you're ready to continue. If the \"\n        f\"linked issue has since been claimed by someone else, just leave a \"\n        f\"comment there to coordinate. See the [contributing guide]({DOCS_URL}).\"\n    )\n\n\ndef issue_freed_stale_pr() -> str:\n    return (\n        \"The pull request linked to this issue was closed after going stale, so \"\n        \"I've unassigned it — this issue is available again. Anyone interested \"\n        f\"can comment `/take` to claim it. See the [contributing guide]\"\n        f\"({DOCS_URL}) for details.\"\n    )\n",
+  "anchor_line": 121,
+  "after_code": "\"\"\"Contributor-facing comment text for the Python automation jobs.\n\nSingle source of truth for the messages posted by the gate, unassign, and PR\nstale jobs. The ``/take`` and ``/untake`` replies live inline in\n``.github/workflows/comment-commands.yml``.\n\"\"\"\n\nfrom __future__ import annotations\n\nfrom typing import TYPE_CHECKING\n\nfrom scripts.issue_assignment.core import (\n    PR_CLOSE_DAYS,\n    PR_STALE_DAYS,\n    STALE_ASSIGNEE_DAYS,\n)\n\nif TYPE_CHECKING:\n    from scripts.issue_assignment.core import GateDecision\n\n# Point to the dev docs so that changes are reflected immediately.\nDOCS_URL = (\n    \"https://pandas.pydata.org/docs/dev/development/contributing.html\"\n    \"#issue-assignment-and-the-pull-request-lifecycle\"\n)\n\n\ndef _gate_review_note(issue: int) -> str:\n    return (\n        f\"This pull request is unlikely to be reviewed until #{issue} is assigned \"\n        f\"to you.\"\n    )\n\n\ndef _gate_close_note(issue: int) -> str:\n    return (\n        f\"I've closed this pull request for now — **none of your work is \"\n        f\"lost**. Once #{issue} is assigned to you, ask a maintainer to reopen \"\n        f\"it.\"\n    )\n\n\ndef gate_flagged(author: str, decision: GateDecision, closing: bool = False) -> str:\n    \"\"\"The gate comment for an ``invalid_assignment`` decision.\"\"\"\n    issue = decision[\"issue\"]\n    if decision[\"variant\"] == \"unassigned\":\n        return gate_unassigned(author, issue)\n    return gate_assigned_other(author, issue, decision[\"assignee\"], closing)\n\n\ndef gate_unassigned(author: str, issue: int) -> str:\n    return (\n        f\"Thanks for the pull request, @{author}! It's linked to #{issue}, but \"\n        f\"that issue isn't assigned to you yet. To make sure two people don't \"\n        f\"unknowingly work on the same thing, we ask contributors to claim an \"\n        f\"issue first. You can comment `/take` on #{issue} to claim it, but be \"\n        f\"aware that certain issues cannot be taken if they are labeled e.g. \"\n        f\"`Needs Triage` — see the [contributing guide]({DOCS_URL}) for more \"\n        f\"details.\\n\\n{_gate_review_note(issue)}\"\n    )\n\n\ndef gate_assigned_other(\n    author: str, issue: int, assignee: str, closing: bool = False\n) -> str:\n    note = _gate_close_note(issue) if closing else _gate_review_note(issue)\n    return (\n        f\"Thanks for the pull request, @{author}! It's linked to #{issue}, which \"\n        f\"is currently assigned to @{assignee}, who's already working on it. We \"\n        f\"keep one contributor per issue to avoid duplicated effort. If \"\n        f\"@{assignee} has had no activity for **{STALE_ASSIGNEE_DAYS} days**, the \"\n        f\"issue is released automatically and you'll then be able to claim it \"\n        f\"with `/take` on #{issue} — for now, please coordinate with them on the \"\n        f\"issue. See the [contributing guide]({DOCS_URL}) for details.\\n\\n\"\n        f\"{note}\"\n    )\n\n\ndef _mention_list(assignees: list[str]) -> str:\n    return \", \".join(f\"@{a}\" for a in assignees)\n\n\ndef issue_unassigned_inactive(assignees: list[str]) -> str:\n    mentions = _mention_list(assignees)\n    return (\n        f\"This issue has been automatically unassigned from {mentions} because \"\n        f\"there's been no linked pull request or activity for \"\n        f\"**{STALE_ASSIGNEE_DAYS} days**. No worries at all if other things came \"\n        f\"up! {mentions} — you're welcome to comment `/take` to pick it back up \"\n        f\"anytime, and it's now open for anyone else to claim too. See the \"\n        f\"[contributing guide]({DOCS_URL}) for how this works.\"\n    )\n\n\ndef pr_marked_stale(gate_issue: int | None = None) -> str:\n    \"\"\"Stale warning; ``gate_issue`` is the linked issue when the PR is gated.\n\n    A gated PR (``Needs Issue Assignment``) is stale because it can't be\n    reviewed, so the fix is claiming the issue — re-requesting review does\n    nothing for it.\n    \"\"\"\n    if gate_issue is None:\n        next_step = (\n            \"If you've already addressed the feedback, **re-request a review** \"\n            \"(the ↻ next to the reviewer) to move it back into the review \"\n            \"queue. \"\n        )\n    else:\n        next_step = (\n            f\"This pull request is labeled `Needs Issue Assignment` and won't \"\n            f\"be reviewed until #{gate_issue} is assigned to you: comment \"\n            f\"`/take` on #{gate_issue} to claim it, and the label clears via \"\n            f\"the daily job. \"\n        )\n    return (\n        f\"This pull request has had no activity from its author for \"\n        f\"**{PR_STALE_DAYS} days**, so I've marked it **stale**. If you're still \"\n        f\"on it, just push a commit, reply to a review comment, or leave a \"\n        f\"comment — here or on the linked issue — and the label clears itself. \"\n        f\"{next_step}\"\n        f\"Otherwise it will be closed in \"\n        f\"**{PR_CLOSE_DAYS} days** to keep the queue manageable. Your branch \"\n        f\"still remains, and you can ask a maintainer to reopen this PR to \"\n        f\"continue. See the [contributing guide]({DOCS_URL}) for how the pull \"\n        f\"request lifecycle works.\\n\\n\"\n        f\"_Note: labels update via a once-a-day job, so `Stale` may take up to a \"\n        f\"day to clear._\"\n    )\n\n\ndef pr_closed_stale() -> str:\n    return (\n        f\"Closing this pull request after **{PR_CLOSE_DAYS} days** stale with no \"\n        f\"activity from its author. Thank you for the work you put into it! \"\n        f\"**Nothing is lost** — your branch still remains, and you can ask a \"\n        f\"maintainer to reopen this PR whenever you're ready to continue. If the \"\n        f\"linked issue has since been claimed by someone else, just leave a \"\n        f\"comment there to coordinate. See the [contributing guide]({DOCS_URL}).\"\n    )\n\n\ndef issue_freed_stale_pr() -> str:\n    return (\n        \"The pull request linked to this issue was closed after going stale, so \"\n        \"I've unassigned it — this issue is available again. Anyone interested \"\n        f\"can comment `/take` to claim it. See the [contributing guide]\"\n        f\"({DOCS_URL}) for details.\"\n    )\n",
+  "unified_diff": "--- a/scripts/issue_assignment/messages.py\n+++ b/scripts/issue_assignment/messages.py\n@@ -118,7 +118,7 @@\n         f\"on it, just push a commit, reply to a review comment, or leave a \"\n         f\"comment — here or on the linked issue — and the label clears itself. \"\n         f\"{next_step}\"\n-        f\"Otherwise it'll be closed in \"\n+        f\"Otherwise it will be closed in \"\n         f\"**{PR_CLOSE_DAYS} days** to keep the queue manageable. Your branch \"\n         f\"still remains, and you can ask a maintainer to reopen this PR to \"\n         f\"continue. See the [contributing guide]({DOCS_URL}) for how the pull \"\n",
+  "changed_files": [
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/comment-commands.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/security.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/unit-tests.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/wheels.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "asv_bench/benchmarks/strftime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "ci/suppressions/ubsan.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/conf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/community.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/development/contributing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "doc/source/development/contributing_codebase.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/frame.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/reference/general_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/dsintro.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/indexing.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/io.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/text.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/user_defined_functions.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/user_guide/visualization.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.5.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.0.6.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/source/whatsnew/v3.1.0.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "meson.options",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_config/localization.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/internals.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/lib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/parsers.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/sas.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/simd/meson.build",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/sparse.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/parser/tokenizer.cpp",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/src/vendored/ujson/lib/ultrajsondec.c",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/testing.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslib.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/conversion.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pxd",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/dtypes.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/np_datetime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/offsets.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/period.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/strptime.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyi",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timedeltas.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/timezones.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/tslibs/tzconversion.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_libs/window/aggregations.pyx",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/_testing/asserters.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/api/typing/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/algorithms.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arraylike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/_ranges.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/accessors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/arrow/extension_types.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/boolean.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/masked.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/numpy_.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/sparse/array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/string_.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/arrays/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/col.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/check.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/expr.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/expressions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/computation/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/config_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/cast.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/dtypes/dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/frame.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/generic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/generic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/groupby.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/groupby/ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexers/objects.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/accessors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/category.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/datetimelike.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/multi.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexes/range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/blocks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/internals/managers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/describe.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/filter.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/methods/select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/missing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/nanops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/array_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/ops/invalid.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/resample.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/concat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/encoding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/melt.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/merge.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/reshape/tile.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/series.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/sorting.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/numeric.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/tools/timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/ewm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/expanding.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/core/window/rolling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/errors/cow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/_util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/clipboards.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/excel/_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/excel/_odfreader.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/excel/_odswriter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/style.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/style_render.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/formats/templates/typst.tpl",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/html.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/json/_json.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parquet.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/arrow_parser_wrapper.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/python_parser.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/parsers/readers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/pytables.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/sas/sas7bdat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/io/sql.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/converter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/plotting/_matplotlib/core.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/api/test_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_frame_apply_relabeling.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/apply/test_series_apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_datetime64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_object.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arithmetic/test_timedelta64.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/boolean/test_logical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/categorical/test_replace.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/integer/test_function.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/interval/test_interval_pyarrow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_accessor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_arithmetics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_array.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_combine_concat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_dtype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/sparse/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/string_/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/test_datetimes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/test_timedeltas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/arrays/timedeltas/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/base/test_misc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/computation/test_compat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/computation/test_eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/config/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/config/test_localization.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/index/test_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_chained_assignment_deprecation.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/copy_view/test_replace.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/dtypes/cast/test_downcast.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/dtypes/cast/test_find_common_type.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/dtypes/test_common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/getitem.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/methods.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/plotting.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/base/reduce.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/json/test_json.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/list/test_list.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_arrow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_datetime.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_interval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_numpy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_period.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_sparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/test_string.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/extension/uuid/test_uuid.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/indexing/test_mask.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/indexing/test_setitem.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_astype.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_combine_first.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_describe.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_duplicated.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_filter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_first_valid_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_select.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_select_dtypes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_set_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_shift.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/methods/test_to_numpy.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_arithmetic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_arrow_interface.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_logical_ops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_query_eval.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_stack_unstack.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/frame/test_ufunc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/generic/test_duplicate_labels.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/aggregate/test_aggregate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_apply.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_raises.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/groupby/test_sparse.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/base_class/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/base_class/test_reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_date_range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_join.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/datetimes/test_partial_slicing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_get_set.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_reshape.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/multi/test_setops.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/ranges/test_range.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/test_old_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/timedeltas/methods/test_shift.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexes/timedeltas/test_constructors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/multiindex/test_indexing_slow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/multiindex/test_loc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/multiindex/test_multiindex.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_iloc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_indexing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/indexing/test_loc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/internals/test_internals.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/excel/test_odf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/excel/test_odswriter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/excel/test_writers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/formats/style/test_to_typst.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/formats/test_to_csv.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/json/test_pandas.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_chunksize.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_common_basic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_data_list.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_float.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/common/test_read_errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/dtypes/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/dtypes/test_dtypes_basic.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_c_parser_only.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_converters.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_dialect.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_parallel_read.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_python_parser_only.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_read_fwf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_skiprows.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/parser/test_unsupported.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_append.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_categorical.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_errors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_round_trip.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/pytables/test_timezones.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/sas/test_sas7bdat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_clipboard.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_feather.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_html.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_parquet.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_pickle.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_spss.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/io/test_sql.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/frame/test_frame.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_converter.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/plotting/test_misc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reductions/test_reductions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/resample/test_datetime_index.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/resample/test_timedelta.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "pandas/tests/reshape/concat/test_append.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-10-11T10:27:51.256156Z"
+}

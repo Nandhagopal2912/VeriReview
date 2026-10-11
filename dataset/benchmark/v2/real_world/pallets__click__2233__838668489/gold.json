@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "naming",
-        "description": "Rename the command overload parameter __name to __func, as in core.py (suggestion)",
+        "description": "Change the group overload parameter to __func: t.Callable[..., t.Any] to be consistent with the changes in core.py.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/click/decorators.py:129: __func: t.Callable[..., t.Any]",
-    "confidence": "medium",
-    "notes": "Rewritten history; the change is visible in the window diff."
+    "evidence": "src/click/decorators.py:126",
+    "confidence": "high",
+    "notes": "The requested __func parameter and Callable type are present in the after-code, consistent with core.py."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

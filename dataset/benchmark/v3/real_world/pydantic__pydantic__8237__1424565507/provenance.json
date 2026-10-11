@@ -1,0 +1,11 @@
+{
+  "repository": "pydantic/pydantic",
+  "pull_number": 8237,
+  "root_comment_id": 1424565507,
+  "url": "https://github.com/pydantic/pydantic/pull/8237#discussion_r1424565507",
+  "license_spdx": "MIT",
+  "mined_at": "2026-10-11T10:33:38.212315Z",
+  "split": "test",
+  "pseudonymised": true,
+  "collector_version": "phase9-collector-1"
+}

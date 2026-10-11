@@ -5,24 +5,24 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "In the categorical test, replace the xfail on test_plot_on_y_axis with pytest.raises(...)",
+        "description": "In the categorical test_plot_on_y_axis, replace the xfail with with pytest.raises(TypeError, ...).",
         "status": "satisfied"
       },
       {
         "category": "testing",
-        "description": "Do the same for the other dtypes whose plot test is xfailed for an expected error",
-        "status": "satisfied"
+        "description": "Apply the same xfail → pytest.raises change to the other dtypes' plot tests that expect the same error.",
+        "status": "uncertain"
       }
     ],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "test_categorical.py:183-187: with pytest.raises(TypeError, match='no numeric data to plot'); at the PR head json, interval, numpy-object, period and string overrides also use pytest.raises (sibling case ...3759896069)",
+    "verdict": "UNCERTAIN",
+    "evidence": "pandas/tests/extension/test_categorical.py:183-187 (after code): xfail removed, replaced by pytest.raises(TypeError, match=\"no numeric data to plot\"); other dtypes' files not in the diff",
     "confidence": "medium",
-    "notes": "The second requirement is only visible through the other test files at the same PR head. The remaining datetime xfail is for a different, genuine failure (AssertionError on the x axis)."
+    "notes": "Reviewer said the categorical plot test shouldn't be an xfail and should assert the TypeError with pytest.raises, and the same for some other dtypes. Categorical: xfail removed and replaced by pytest.raises (183-187), also switching the fixture to plot_data. The other dtypes' test files are not in this window, so the second part can't be verified."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Only set up subentries of the expected type, using entry.get_subentries_of_type",
-        "status": "satisfied"
+        "description": "Use entry.get_subentries_of_type() to retrieve only subentries of the expected type.",
+        "status": "not_satisfied"
       }
     ],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "homeassistant/components/threema/notify.py:24: for subentry in entry.get_subentries_of_type(SUBENTRY_TYPE_RECIPIENT)",
+    "verdict": "NOT_SATISFIED",
+    "evidence": "custom_components/threema/notify.py:23-24",
     "confidence": "high",
-    "notes": "The author's reply proposed a manual filter first; the final code uses the requested helper."
+    "notes": "The reviewer suggests using entry.get_subentries_of_type() instead of iterating through all subentries. The author acknowledges the suggestion and agrees to switch when the method becomes available, but the displayed code still uses entry.subentries.items() with manual type filtering."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

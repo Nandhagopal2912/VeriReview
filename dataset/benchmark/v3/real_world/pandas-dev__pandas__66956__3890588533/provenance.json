@@ -1,0 +1,11 @@
+{
+  "repository": "pandas-dev/pandas",
+  "pull_number": 66956,
+  "root_comment_id": 3890588533,
+  "url": "https://github.com/pandas-dev/pandas/pull/66956#discussion_r3890588533",
+  "license_spdx": "BSD-3-Clause",
+  "mined_at": "2026-10-11T10:28:17.037416Z",
+  "split": "test",
+  "pseudonymised": true,
+  "collector_version": "phase9-collector-1"
+}

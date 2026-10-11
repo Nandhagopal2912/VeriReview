@@ -1,0 +1,1404 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#99832/1320560834",
+  "repository": "home-assistant/core",
+  "pull_number": 99832,
+  "pull_title": "Airthings BLE unique id migration",
+  "base_sha": "8beace265b44afa3475dffe2e29406969d83aacd",
+  "head_sha": "36e82212e11685df352e311f2730f64b4be46969",
+  "thread": {
+    "root_comment_id": 1320560834,
+    "path": "homeassistant/components/airthings_ble/sensor.py",
+    "line": null,
+    "original_line": 167,
+    "start_line": null,
+    "original_start_line": 143,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -107,9 +115,65 @@\n }\n \n \n+def migrate(hass: HomeAssistant, address: str, sensor_name: str):\n+    \"\"\"Migrate entities to new unique ids (with BLE Address).\"\"\"\n+\n+    ent_reg = entity_async_get(hass)\n+\n+    device_registry = device_async_get(hass)\n+    entity_registry = entity_async_get(hass)\n+\n+    device = device_registry.async_get_device(identifiers={(DOMAIN, address)})\n+\n+    if not device:\n+        return\n+\n+    entities = async_entries_for_device(\n+        entity_registry,\n+        device_id=device.id,\n+        include_disabled_entities=True,\n+    )\n+\n+    filtered_entities = (\n+        entity for entity in entities if entity.unique_id.endswith(sensor_name)\n+    )\n+\n+    unique_ids: dict[str, str] = {}\n+\n+    for entity in filtered_entities:\n+        if entity.unique_id.startswith(address):\n+            unique_ids[\"v3\"] = entity.entity_id\n+        elif \"(\" in entity.unique_id:\n+            unique_ids[\"v2\"] = entity.entity_id\n+        else:\n+            unique_ids[\"v1\"] = entity.entity_id\n+\n+    def _migrate_unique_id(entity_id: str, new_unique_id: str):\n+        ent_reg.async_update_entity(entity_id=entity_id, new_unique_id=new_unique_id)\n+        _LOGGER.info(\"Migrated entity '%s' to unique id '%s'\", entity_id, new_unique_id)\n+\n+    if unique_ids.get(\"v3\"):\n+        # Already has the newest unique id format\n+        return\n+\n+    new_unique_id = f\"{address}_{sensor_name}\"\n+\n+    # Try to migrate the pre 2023.9.0 unique id first\n+    if entity_id := unique_ids.get(\"v1\"):\n+        _migrate_unique_id(\n+            entity_id=entity_id,\n+            new_unique_id=new_unique_id,\n+        )\n+",
+    "original_commit_sha": "261f92310243eb4510123b17ec658e9d12cffd4b",
+    "commit_sha": "36e82212e11685df352e311f2730f64b4be46969",
+    "comments": [
+      {
+        "id": 1320560834,
+        "author": "reviewer",
+        "body": "Since there is so much branching here, can you add a test for migrating the ID from both formats?",
+        "created_at": "2023-09-09T13:04:37Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "reviewer",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "261f92310243eb4510123b17ec658e9d12cffd4b",
+    "end_commit_sha": "36e82212e11685df352e311f2730f64b4be46969",
+    "subsequent_commits": [
+      {
+        "sha": "0ad5f0985b0a3ecc9a7f67f1ae5e49a239198518",
+        "message": "Address PR feedback",
+        "authored_at": "2023-09-09T13:27:23Z",
+        "committed_at": "2023-09-09T13:27:23Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "0ca4c5c559f39fa26eda03dddf3657c90835cfc7",
+        "message": "Add tests",
+        "authored_at": "2023-09-11T01:55:21Z",
+        "committed_at": "2023-09-11T01:55:21Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "32a8c06a4d3117e7b26b7590ef556403b445965f",
+        "message": "Improve tests and test data",
+        "authored_at": "2023-09-11T03:40:27Z",
+        "committed_at": "2023-09-11T03:40:27Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "93f0b0d9125cb52241367f1661c085d615e3bcad",
+        "message": "Merge branch 'dev' into airthings-ble-unique-id-migration",
+        "authored_at": "2023-09-11T03:41:38Z",
+        "committed_at": "2023-09-11T03:41:38Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "a54bfd79440d9acee84d10bd73f615cac6a65208",
+        "message": "Refactor test",
+        "authored_at": "2023-09-11T14:11:51Z",
+        "committed_at": "2023-09-11T14:11:51Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b8abd51dd9421756fd0ad259d3a88af0ddd21168",
+        "message": "Update logger level\n\nCo-authored-by: J. Nick Koston <<email>>",
+        "authored_at": "2023-09-11T14:25:43Z",
+        "committed_at": "2023-09-11T14:25:43Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "0122df29cdd1a9fe32e50e5b7daa586451a3ef2c",
+        "message": "Adjust PR comments",
+        "authored_at": "2023-09-11T18:51:44Z",
+        "committed_at": "2023-09-11T18:51:44Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "9930be3b8ce06b26243c0979df96106761dbe13e",
+        "message": "Address more PR comments",
+        "authored_at": "2023-09-11T19:24:53Z",
+        "committed_at": "2023-09-11T19:24:53Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d77a3977625992e4810d12300582aaa28d8cef0e",
+        "message": "Address PR comments and adjust tests",
+        "authored_at": "2023-09-12T09:11:58Z",
+        "committed_at": "2023-09-12T09:11:58Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "36e82212e11685df352e311f2730f64b4be46969",
+        "message": "Fix PR comment",
+        "authored_at": "2023-09-12T10:13:36Z",
+        "committed_at": "2023-09-12T10:13:36Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "homeassistant/components/airthings_ble/sensor.py",
+  "before_code": "\"\"\"Support for airthings ble sensors.\"\"\"\nfrom __future__ import annotations\n\nimport logging\n\nfrom airthings_ble import AirthingsDevice\n\nfrom homeassistant.components.sensor import (\n    SensorDeviceClass,\n    SensorEntity,\n    SensorEntityDescription,\n    SensorStateClass,\n)\nfrom homeassistant.config_entries import ConfigEntry\nfrom homeassistant.const import (\n    CONCENTRATION_PARTS_PER_BILLION,\n    CONCENTRATION_PARTS_PER_MILLION,\n    LIGHT_LUX,\n    PERCENTAGE,\n    EntityCategory,\n    UnitOfPressure,\n    UnitOfTemperature,\n)\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.helpers.device_registry import (\n    CONNECTION_BLUETOOTH,\n    DeviceInfo,\n    async_get as device_async_get,\n)\nfrom homeassistant.helpers.entity_platform import AddEntitiesCallback\nfrom homeassistant.helpers.entity_registry import (\n    async_entries_for_device,\n    async_get as entity_async_get,\n)\nfrom homeassistant.helpers.typing import StateType\nfrom homeassistant.helpers.update_coordinator import (\n    CoordinatorEntity,\n    DataUpdateCoordinator,\n)\nfrom homeassistant.util.unit_system import METRIC_SYSTEM\n\nfrom .const import DOMAIN, VOLUME_BECQUEREL, VOLUME_PICOCURIE\n\n_LOGGER = logging.getLogger(__name__)\n\nSENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {\n    \"radon_1day_avg\": SensorEntityDescription(\n        key=\"radon_1day_avg\",\n        translation_key=\"radon_1day_avg\",\n        native_unit_of_measurement=VOLUME_BECQUEREL,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_longterm_avg\": SensorEntityDescription(\n        key=\"radon_longterm_avg\",\n        translation_key=\"radon_longterm_avg\",\n        native_unit_of_measurement=VOLUME_BECQUEREL,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_1day_level\": SensorEntityDescription(\n        key=\"radon_1day_level\",\n        translation_key=\"radon_1day_level\",\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_longterm_level\": SensorEntityDescription(\n        key=\"radon_longterm_level\",\n        translation_key=\"radon_longterm_level\",\n        icon=\"mdi:radioactive\",\n    ),\n    \"temperature\": SensorEntityDescription(\n        key=\"temperature\",\n        device_class=SensorDeviceClass.TEMPERATURE,\n        native_unit_of_measurement=UnitOfTemperature.CELSIUS,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"humidity\": SensorEntityDescription(\n        key=\"humidity\",\n        device_class=SensorDeviceClass.HUMIDITY,\n        native_unit_of_measurement=PERCENTAGE,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"pressure\": SensorEntityDescription(\n        key=\"pressure\",\n        device_class=SensorDeviceClass.PRESSURE,\n        native_unit_of_measurement=UnitOfPressure.MBAR,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"battery\": SensorEntityDescription(\n        key=\"battery\",\n        device_class=SensorDeviceClass.BATTERY,\n        native_unit_of_measurement=PERCENTAGE,\n        state_class=SensorStateClass.MEASUREMENT,\n        entity_category=EntityCategory.DIAGNOSTIC,\n    ),\n    \"co2\": SensorEntityDescription(\n        key=\"co2\",\n        device_class=SensorDeviceClass.CO2,\n        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"voc\": SensorEntityDescription(\n        key=\"voc\",\n        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,\n        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:cloud\",\n    ),\n    \"illuminance\": SensorEntityDescription(\n        key=\"illuminance\",\n        device_class=SensorDeviceClass.ILLUMINANCE,\n        native_unit_of_measurement=LIGHT_LUX,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n}\n\n\ndef migrate(hass: HomeAssistant, address: str, sensor_name: str):\n    \"\"\"Migrate entities to new unique ids (with BLE Address).\"\"\"\n\n    ent_reg = entity_async_get(hass)\n\n    device_registry = device_async_get(hass)\n    entity_registry = entity_async_get(hass)\n\n    device = device_registry.async_get_device(identifiers={(DOMAIN, address)})\n\n    if not device:\n        return\n\n    entities = async_entries_for_device(\n        entity_registry,\n        device_id=device.id,\n        include_disabled_entities=True,\n    )\n\n    filtered_entities = (\n        entity for entity in entities if entity.unique_id.endswith(sensor_name)\n    )\n\n    unique_ids: dict[str, str] = {}\n\n    for entity in filtered_entities:\n        if entity.unique_id.startswith(address):\n            unique_ids[\"v3\"] = entity.entity_id\n        elif \"(\" in entity.unique_id:\n            unique_ids[\"v2\"] = entity.entity_id\n        else:\n            unique_ids[\"v1\"] = entity.entity_id\n\n    def _migrate_unique_id(entity_id: str, new_unique_id: str):\n        ent_reg.async_update_entity(entity_id=entity_id, new_unique_id=new_unique_id)\n        _LOGGER.info(\"Migrated entity '%s' to unique id '%s'\", entity_id, new_unique_id)\n\n    if unique_ids.get(\"v3\"):\n        # Already has the newest unique id format\n        return\n\n    new_unique_id = f\"{address}_{sensor_name}\"\n\n    # Try to migrate the pre 2023.9.0 unique id first\n    if entity_id := unique_ids.get(\"v1\"):\n        _migrate_unique_id(\n            entity_id=entity_id,\n            new_unique_id=new_unique_id,\n        )\n\n    # If pre 2023.9.0 unique id is not found, try to migrate the unique id\n    # introduced in 2023.9.0\n    elif entity_id := unique_ids.get(\"v2\"):\n        _migrate_unique_id(entity_id=entity_id, new_unique_id=new_unique_id)\n\n\nasync def async_setup_entry(\n    hass: HomeAssistant,\n    entry: ConfigEntry,\n    async_add_entities: AddEntitiesCallback,\n) -> None:\n    \"\"\"Set up the Airthings BLE sensors.\"\"\"\n    is_metric = hass.config.units is METRIC_SYSTEM\n\n    coordinator: DataUpdateCoordinator[AirthingsDevice] = hass.data[DOMAIN][\n        entry.entry_id\n    ]\n\n    # we need to change some units\n    sensors_mapping = SENSORS_MAPPING_TEMPLATE.copy()\n    if not is_metric:\n        for val in sensors_mapping.values():\n            if val.native_unit_of_measurement is not VOLUME_BECQUEREL:\n                continue\n            val.native_unit_of_measurement = VOLUME_PICOCURIE\n\n    entities = []\n    _LOGGER.debug(\"got sensors: %s\", coordinator.data.sensors)\n    for sensor_type, sensor_value in coordinator.data.sensors.items():\n        if sensor_type not in sensors_mapping:\n            _LOGGER.debug(\n                \"Unknown sensor type detected: %s, %s\",\n                sensor_type,\n                sensor_value,\n            )\n            continue\n        migrate(hass, coordinator.data.address, sensor_type)\n        entities.append(\n            AirthingsSensor(coordinator, coordinator.data, sensors_mapping[sensor_type])\n        )\n\n    async_add_entities(entities)\n\n\nclass AirthingsSensor(\n    CoordinatorEntity[DataUpdateCoordinator[AirthingsDevice]], SensorEntity\n):\n    \"\"\"Airthings BLE sensors for the device.\"\"\"\n\n    _attr_has_entity_name = True\n\n    def __init__(\n        self,\n        coordinator: DataUpdateCoordinator[AirthingsDevice],\n        airthings_device: AirthingsDevice,\n        entity_description: SensorEntityDescription,\n    ) -> None:\n        \"\"\"Populate the airthings entity with relevant data.\"\"\"\n        super().__init__(coordinator)\n        self.entity_description = entity_description\n\n        name = airthings_device.name\n        if identifier := airthings_device.identifier:\n            name += f\" ({identifier})\"\n\n        self._attr_unique_id = f\"{airthings_device.address}_{entity_description.key}\"\n        self._attr_device_info = DeviceInfo(\n            connections={\n                (\n                    CONNECTION_BLUETOOTH,\n                    airthings_device.address,\n                ),\n            },\n            identifiers={\n                (\n                    DOMAIN,\n                    airthings_device.address,\n                )\n            },\n            name=name,\n            manufacturer=airthings_device.manufacturer,\n            hw_version=airthings_device.hw_version,\n            sw_version=airthings_device.sw_version,\n            model=airthings_device.model,\n        )\n\n    @property\n    def native_value(self) -> StateType:\n        \"\"\"Return the value reported by the sensor.\"\"\"\n        return self.coordinator.data.sensors[self.entity_description.key]\n",
+  "anchor_line": 167,
+  "after_code": "\"\"\"Support for airthings ble sensors.\"\"\"\nfrom __future__ import annotations\n\nimport logging\n\nfrom airthings_ble import AirthingsDevice\n\nfrom homeassistant.components.sensor import (\n    SensorDeviceClass,\n    SensorEntity,\n    SensorEntityDescription,\n    SensorStateClass,\n)\nfrom homeassistant.config_entries import ConfigEntry\nfrom homeassistant.const import (\n    CONCENTRATION_PARTS_PER_BILLION,\n    CONCENTRATION_PARTS_PER_MILLION,\n    LIGHT_LUX,\n    PERCENTAGE,\n    EntityCategory,\n    Platform,\n    UnitOfPressure,\n    UnitOfTemperature,\n)\nfrom homeassistant.core import HomeAssistant, callback\nfrom homeassistant.helpers.device_registry import (\n    CONNECTION_BLUETOOTH,\n    DeviceInfo,\n    async_get as device_async_get,\n)\nfrom homeassistant.helpers.entity_platform import AddEntitiesCallback\nfrom homeassistant.helpers.entity_registry import (\n    RegistryEntry,\n    async_entries_for_device,\n    async_get as entity_async_get,\n)\nfrom homeassistant.helpers.typing import StateType\nfrom homeassistant.helpers.update_coordinator import (\n    CoordinatorEntity,\n    DataUpdateCoordinator,\n)\nfrom homeassistant.util.unit_system import METRIC_SYSTEM\n\nfrom .const import DOMAIN, VOLUME_BECQUEREL, VOLUME_PICOCURIE\n\n_LOGGER = logging.getLogger(__name__)\n\nSENSORS_MAPPING_TEMPLATE: dict[str, SensorEntityDescription] = {\n    \"radon_1day_avg\": SensorEntityDescription(\n        key=\"radon_1day_avg\",\n        translation_key=\"radon_1day_avg\",\n        native_unit_of_measurement=VOLUME_BECQUEREL,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_longterm_avg\": SensorEntityDescription(\n        key=\"radon_longterm_avg\",\n        translation_key=\"radon_longterm_avg\",\n        native_unit_of_measurement=VOLUME_BECQUEREL,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_1day_level\": SensorEntityDescription(\n        key=\"radon_1day_level\",\n        translation_key=\"radon_1day_level\",\n        icon=\"mdi:radioactive\",\n    ),\n    \"radon_longterm_level\": SensorEntityDescription(\n        key=\"radon_longterm_level\",\n        translation_key=\"radon_longterm_level\",\n        icon=\"mdi:radioactive\",\n    ),\n    \"temperature\": SensorEntityDescription(\n        key=\"temperature\",\n        device_class=SensorDeviceClass.TEMPERATURE,\n        native_unit_of_measurement=UnitOfTemperature.CELSIUS,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"humidity\": SensorEntityDescription(\n        key=\"humidity\",\n        device_class=SensorDeviceClass.HUMIDITY,\n        native_unit_of_measurement=PERCENTAGE,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"pressure\": SensorEntityDescription(\n        key=\"pressure\",\n        device_class=SensorDeviceClass.PRESSURE,\n        native_unit_of_measurement=UnitOfPressure.MBAR,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"battery\": SensorEntityDescription(\n        key=\"battery\",\n        device_class=SensorDeviceClass.BATTERY,\n        native_unit_of_measurement=PERCENTAGE,\n        state_class=SensorStateClass.MEASUREMENT,\n        entity_category=EntityCategory.DIAGNOSTIC,\n    ),\n    \"co2\": SensorEntityDescription(\n        key=\"co2\",\n        device_class=SensorDeviceClass.CO2,\n        native_unit_of_measurement=CONCENTRATION_PARTS_PER_MILLION,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n    \"voc\": SensorEntityDescription(\n        key=\"voc\",\n        device_class=SensorDeviceClass.VOLATILE_ORGANIC_COMPOUNDS_PARTS,\n        native_unit_of_measurement=CONCENTRATION_PARTS_PER_BILLION,\n        state_class=SensorStateClass.MEASUREMENT,\n        icon=\"mdi:cloud\",\n    ),\n    \"illuminance\": SensorEntityDescription(\n        key=\"illuminance\",\n        device_class=SensorDeviceClass.ILLUMINANCE,\n        native_unit_of_measurement=LIGHT_LUX,\n        state_class=SensorStateClass.MEASUREMENT,\n    ),\n}\n\n\n@callback\ndef async_migrate(hass: HomeAssistant, address: str, sensor_name: str) -> None:\n    \"\"\"Migrate entities to new unique ids (with BLE Address).\"\"\"\n    ent_reg = entity_async_get(hass)\n    unique_id_trailer = f\"_{sensor_name}\"\n    new_unique_id = f\"{address}{unique_id_trailer}\"\n    if ent_reg.async_get_entity_id(DOMAIN, Platform.SENSOR, new_unique_id):\n        # New unique id already exists\n        return\n    dev_reg = device_async_get(hass)\n    if not (\n        device := dev_reg.async_get_device(\n            connections={(CONNECTION_BLUETOOTH, address)}\n        )\n    ):\n        return\n    entities = async_entries_for_device(\n        ent_reg,\n        device_id=device.id,\n        include_disabled_entities=True,\n    )\n    matching_reg_entry: RegistryEntry | None = None\n    for entry in entities:\n        if entry.unique_id.endswith(unique_id_trailer) and (\n            not matching_reg_entry or \"(\" not in entry.unique_id\n        ):\n            matching_reg_entry = entry\n    if not matching_reg_entry:\n        return\n    entity_id = matching_reg_entry.entity_id\n    ent_reg.async_update_entity(entity_id=entity_id, new_unique_id=new_unique_id)\n    _LOGGER.debug(\"Migrated entity '%s' to unique id '%s'\", entity_id, new_unique_id)\n\n\nasync def async_setup_entry(\n    hass: HomeAssistant,\n    entry: ConfigEntry,\n    async_add_entities: AddEntitiesCallback,\n) -> None:\n    \"\"\"Set up the Airthings BLE sensors.\"\"\"\n    is_metric = hass.config.units is METRIC_SYSTEM\n\n    coordinator: DataUpdateCoordinator[AirthingsDevice] = hass.data[DOMAIN][\n        entry.entry_id\n    ]\n\n    # we need to change some units\n    sensors_mapping = SENSORS_MAPPING_TEMPLATE.copy()\n    if not is_metric:\n        for val in sensors_mapping.values():\n            if val.native_unit_of_measurement is not VOLUME_BECQUEREL:\n                continue\n            val.native_unit_of_measurement = VOLUME_PICOCURIE\n\n    entities = []\n    _LOGGER.debug(\"got sensors: %s\", coordinator.data.sensors)\n    for sensor_type, sensor_value in coordinator.data.sensors.items():\n        if sensor_type not in sensors_mapping:\n            _LOGGER.debug(\n                \"Unknown sensor type detected: %s, %s\",\n                sensor_type,\n                sensor_value,\n            )\n            continue\n        async_migrate(hass, coordinator.data.address, sensor_type)\n        entities.append(\n            AirthingsSensor(coordinator, coordinator.data, sensors_mapping[sensor_type])\n        )\n\n    async_add_entities(entities)\n\n\nclass AirthingsSensor(\n    CoordinatorEntity[DataUpdateCoordinator[AirthingsDevice]], SensorEntity\n):\n    \"\"\"Airthings BLE sensors for the device.\"\"\"\n\n    _attr_has_entity_name = True\n\n    def __init__(\n        self,\n        coordinator: DataUpdateCoordinator[AirthingsDevice],\n        airthings_device: AirthingsDevice,\n        entity_description: SensorEntityDescription,\n    ) -> None:\n        \"\"\"Populate the airthings entity with relevant data.\"\"\"\n        super().__init__(coordinator)\n        self.entity_description = entity_description\n\n        name = airthings_device.name\n        if identifier := airthings_device.identifier:\n            name += f\" ({identifier})\"\n\n        self._attr_unique_id = f\"{airthings_device.address}_{entity_description.key}\"\n        self._attr_device_info = DeviceInfo(\n            connections={\n                (\n                    CONNECTION_BLUETOOTH,\n                    airthings_device.address,\n                )\n            },\n            name=name,\n            manufacturer=airthings_device.manufacturer,\n            hw_version=airthings_device.hw_version,\n            sw_version=airthings_device.sw_version,\n            model=airthings_device.model,\n        )\n\n    @property\n    def native_value(self) -> StateType:\n        \"\"\"Return the value reported by the sensor.\"\"\"\n        return self.coordinator.data.sensors[self.entity_description.key]\n",
+  "unified_diff": "--- a/homeassistant/components/airthings_ble/sensor.py\n+++ b/homeassistant/components/airthings_ble/sensor.py\n@@ -18,10 +18,11 @@\n     LIGHT_LUX,\n     PERCENTAGE,\n     EntityCategory,\n+    Platform,\n     UnitOfPressure,\n     UnitOfTemperature,\n )\n-from homeassistant.core import HomeAssistant\n+from homeassistant.core import HomeAssistant, callback\n from homeassistant.helpers.device_registry import (\n     CONNECTION_BLUETOOTH,\n     DeviceInfo,\n@@ -29,6 +30,7 @@\n )\n from homeassistant.helpers.entity_platform import AddEntitiesCallback\n from homeassistant.helpers.entity_registry import (\n+    RegistryEntry,\n     async_entries_for_device,\n     async_get as entity_async_get,\n )\n@@ -115,60 +117,38 @@\n }\n \n \n-def migrate(hass: HomeAssistant, address: str, sensor_name: str):\n+@callback\n+def async_migrate(hass: HomeAssistant, address: str, sensor_name: str) -> None:\n     \"\"\"Migrate entities to new unique ids (with BLE Address).\"\"\"\n-\n     ent_reg = entity_async_get(hass)\n-\n-    device_registry = device_async_get(hass)\n-    entity_registry = entity_async_get(hass)\n-\n-    device = device_registry.async_get_device(identifiers={(DOMAIN, address)})\n-\n-    if not device:\n+    unique_id_trailer = f\"_{sensor_name}\"\n+    new_unique_id = f\"{address}{unique_id_trailer}\"\n+    if ent_reg.async_get_entity_id(DOMAIN, Platform.SENSOR, new_unique_id):\n+        # New unique id already exists\n         return\n-\n+    dev_reg = device_async_get(hass)\n+    if not (\n+        device := dev_reg.async_get_device(\n+            connections={(CONNECTION_BLUETOOTH, address)}\n+        )\n+    ):\n+        return\n     entities = async_entries_for_device(\n-        entity_registry,\n+        ent_reg,\n         device_id=device.id,\n         include_disabled_entities=True,\n     )\n-\n-    filtered_entities = (\n-        entity for entity in entities if entity.unique_id.endswith(sensor_name)\n-    )\n-\n-    unique_ids: dict[str, str] = {}\n-\n-    for entity in filtered_entities:\n-        if entity.unique_id.startswith(address):\n-            unique_ids[\"v3\"] = entity.entity_id\n-        elif \"(\" in entity.unique_id:\n-            unique_ids[\"v2\"] = entity.entity_id\n-        else:\n-            unique_ids[\"v1\"] = entity.entity_id\n-\n-    def _migrate_unique_id(entity_id: str, new_unique_id: str):\n-        ent_reg.async_update_entity(entity_id=entity_id, new_unique_id=new_unique_id)\n-        _LOGGER.info(\"Migrated entity '%s' to unique id '%s'\", entity_id, new_unique_id)\n-\n-    if unique_ids.get(\"v3\"):\n-        # Already has the newest unique id format\n+    matching_reg_entry: RegistryEntry | None = None\n+    for entry in entities:\n+        if entry.unique_id.endswith(unique_id_trailer) and (\n+            not matching_reg_entry or \"(\" not in entry.unique_id\n+        ):\n+            matching_reg_entry = entry\n+    if not matching_reg_entry:\n         return\n-\n-    new_unique_id = f\"{address}_{sensor_name}\"\n-\n-    # Try to migrate the pre 2023.9.0 unique id first\n-    if entity_id := unique_ids.get(\"v1\"):\n-        _migrate_unique_id(\n-            entity_id=entity_id,\n-            new_unique_id=new_unique_id,\n-        )\n-\n-    # If pre 2023.9.0 unique id is not found, try to migrate the unique id\n-    # introduced in 2023.9.0\n-    elif entity_id := unique_ids.get(\"v2\"):\n-        _migrate_unique_id(entity_id=entity_id, new_unique_id=new_unique_id)\n+    entity_id = matching_reg_entry.entity_id\n+    ent_reg.async_update_entity(entity_id=entity_id, new_unique_id=new_unique_id)\n+    _LOGGER.debug(\"Migrated entity '%s' to unique id '%s'\", entity_id, new_unique_id)\n \n \n async def async_setup_entry(\n@@ -201,7 +181,7 @@\n                 sensor_value,\n             )\n             continue\n-        migrate(hass, coordinator.data.address, sensor_type)\n+        async_migrate(hass, coordinator.data.address, sensor_type)\n         entities.append(\n             AirthingsSensor(coordinator, coordinator.data, sensors_mapping[sensor_type])\n         )\n@@ -236,12 +216,6 @@\n                 (\n                     CONNECTION_BLUETOOTH,\n                     airthings_device.address,\n-                ),\n-            },\n-            identifiers={\n-                (\n-                    DOMAIN,\n-                    airthings_device.address,\n                 )\n             },\n             name=name,\n",
+  "changed_files": [
+    {
+      "path": ".coveragerc",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airthings_ble/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/airtouch4/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airzone/water_heater.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/api/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bthome/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dhcp/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/discovergy/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/discovergy/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/doods/image_processing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/electric_kiwi/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/electric_kiwi/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/envisalink/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/bluetooth/device.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flux_led/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_cameras.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit_controller/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/honeywell/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/honeywell/diagnostics.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/minecraft_server/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/minecraft_server/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/minecraft_server/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/minecraft_server/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/modbus/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/modbus/modbus.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/modbus/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mqtt/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/mqtt/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/openuv/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/plugwise/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/plugwise/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/plugwise/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/recorder/core.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/renson/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/renson/number.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/renson/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/roborock/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ruckus_unleashed/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/data.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/switch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/screenlogic/util.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/sensibo/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ssdp/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/system_bridge/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/system_bridge/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/system_bridge/notify.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_camera/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_ferry/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_train/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/trafikverket_weatherstation/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/utility_meter/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/versasense/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vicare/water_heater.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/vodafone_station/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waqi/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/waze_travel_time/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/websocket_api/messages.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/withings/binary_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/withings/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/withings/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/withings/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ws66i/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yalexs_ble/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/yolink/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/zeroconf/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/zwave_js/discovery.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/config_entries.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/core.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/generated/config_flows.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/generated/integrations.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/helpers/translation.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/package_constraints.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "mypy.ini",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements_all.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements_test_all.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "requirements_test_pre_commit.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/airthings_ble/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "tests/components/airthings_ble/test_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "tests/components/airzone/test_water_heater.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electric_kiwi/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electric_kiwi/fixtures/get_hop.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electric_kiwi/fixtures/hop_intervals.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electric_kiwi/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/electric_kiwi/test_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/homekit/test_type_cameras.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/honeywell/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/honeywell/snapshots/test_diagnostics.ambr",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/honeywell/test_climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/honeywell/test_diagnostics.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/adam_jip/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/adam_multiple_devices_per_zone/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/anna_heatpump_heating/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/m_adam_cooling/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/m_adam_heating/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/m_anna_heatpump_cooling/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/m_anna_heatpump_idle/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/p1v4_442_triple/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/p1v4_442_triple/notifications.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/fixtures/stretch_v31/all_data.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/snapshots/test_diagnostics.ambr",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/test_diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/plugwise/test_number.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/roborock/test_binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/roborock/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/ruckus_unleashed/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/conftest.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/fixtures/data_full_chem.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/fixtures/data_min_entity_cleanup.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/fixtures/data_min_migration.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/snapshots/test_diagnostics.ambr",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/test_data.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/test_diagnostics.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/screenlogic/test_init.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/ssdp/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/trafikverket_camera/test_binary_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/trafikverket_camera/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/trafikverket_camera/test_recorder.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/trafikverket_camera/test_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/utility_meter/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/conftest.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/fixtures/air_quality_sensor.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/fixtures/search_result.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/test_config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/waqi/test_sensor.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/withings/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/withings/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/withings/snapshots/test_sensor.ambr",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/withings/test_config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/withings/test_sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/zeroconf/test_init.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/zwave_js/conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/zwave_js/fixtures/logic_group_zdb5100_state.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tests/components/zwave_js/test_light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "tests/components/airthings_ble/__init__.py": "\"\"\"Tests for the Airthings BLE integration.\"\"\"\nfrom __future__ import annotations\n\nfrom unittest.mock import patch\n\nfrom airthings_ble import AirthingsBluetoothDeviceData, AirthingsDevice\n\nfrom homeassistant.components.airthings_ble.const import DOMAIN\nfrom homeassistant.components.bluetooth.models import BluetoothServiceInfoBleak\nfrom homeassistant.helpers.device_registry import CONNECTION_BLUETOOTH\n\nfrom tests.common import MockConfigEntry, MockEntity\nfrom tests.components.bluetooth import generate_advertisement_data, generate_ble_device\n\n\ndef patch_async_setup_entry(return_value=True):\n    \"\"\"Patch async setup entry to return True.\"\"\"\n    return patch(\n        \"homeassistant.components.airthings_ble.async_setup_entry\",\n        return_value=return_value,\n    )\n\n\ndef patch_async_ble_device_from_address(return_value: BluetoothServiceInfoBleak | None):\n    \"\"\"Patch async ble device from address to return a given value.\"\"\"\n    return patch(\n        \"homeassistant.components.bluetooth.async_ble_device_from_address\",\n        return_value=return_value,\n    )\n\n\ndef patch_airthings_ble(return_value=AirthingsDevice, side_effect=None):\n    \"\"\"Patch airthings-ble device fetcher with given values and effects.\"\"\"\n    return patch.object(\n        AirthingsBluetoothDeviceData,\n        \"update_device\",\n        return_value=return_value,\n        side_effect=side_effect,\n    )\n\n\ndef patch_airthings_device_update():\n    \"\"\"Patch airthings-ble device.\"\"\"\n    return patch(\n        \"homeassistant.components.airthings_ble.AirthingsBluetoothDeviceData.update_device\",\n        return_value=WAVE_DEVICE_INFO,\n    )\n\n\nWAVE_SERVICE_INFO = BluetoothServiceInfoBleak(\n    name=\"cc-cc-cc-cc-cc-cc\",\n    address=\"cc:cc:cc:cc:cc:cc\",\n    device=generate_ble_device(\n        address=\"cc:cc:cc:cc:cc:cc\",\n        name=\"Airthings Wave+\",\n    ),\n    rssi=-61,\n    manufacturer_data={820: b\"\\xe4/\\xa5\\xae\\t\\x00\"},\n    service_data={\n        # Sensor data\n        \"b42e2a68-ade7-11e4-89d3-123b93f75cba\": bytearray(\n            b\"\\x01\\x02\\x03\\x04\\x00\\x05\\x00\\x06\\x00\\x07\\x00\\x08\\x00\\x09\\x00\\x0A\"\n        ),\n        # Manufacturer\n        \"00002a29-0000-1000-8000-00805f9b34fb\": bytearray(b\"Airthings AS\"),\n        # Model\n        \"00002a24-0000-1000-8000-00805f9b34fb\": bytearray(b\"2930\"),\n        # Identifier\n        \"00002a25-0000-1000-8000-00805f9b34fb\": bytearray(b\"123456\"),\n        # SW Version\n        \"00002a26-0000-1000-8000-00805f9b34fb\": bytearray(b\"G-BLE-1.5.3-master+0\"),\n        # HW Version\n        \"00002a27-0000-1000-8000-00805f9b34fb\": bytearray(b\"REV A\"),\n        # Command\n        \"b42e2d06-ade7-11e4-89d3-123b93f75cba\": bytearray(b\"\\x00\"),\n    },\n    service_uuids=[\n        \"b42e1c08-ade7-11e4-89d3-123b93f75cba\",\n        \"b42e2a68-ade7-11e4-89d3-123b93f75cba\",\n        \"00002a29-0000-1000-8000-00805f9b34fb\",\n        \"00002a24-0000-1000-8000-00805f9b34fb\",\n        \"00002a25-0000-1000-8000-00805f9b34fb\",\n        \"00002a26-0000-1000-8000-00805f9b34fb\",\n        \"00002a27-0000-1000-8000-00805f9b34fb\",\n        \"b42e2d06-ade7-11e4-89d3-123b93f75cba\",\n    ],\n    source=\"local\",\n    advertisement=generate_advertisement_data(\n        manufacturer_data={820: b\"\\xe4/\\xa5\\xae\\t\\x00\"},\n        service_uuids=[\"b42e1c08-ade7-11e4-89d3-123b93f75cba\"],\n    ),\n    connectable=True,\n    time=0,\n)\n\nUNKNOWN_SERVICE_INFO = BluetoothServiceInfoBleak(\n    name=\"unknown\",\n    address=\"00:cc:cc:cc:cc:cc\",\n    rssi=-61,\n    manufacturer_data={},\n    service_data={},\n    service_uuids=[],\n    source=\"local\",\n    device=generate_ble_device(\n        \"cc:cc:cc:cc:cc:cc\",\n        \"unknown\",\n    ),\n    advertisement=generate_advertisement_data(\n        manufacturer_data={},\n        service_uuids=[],\n    ),\n    connectable=True,\n    time=0,\n)\n\nWAVE_DEVICE_INFO = AirthingsDevice(\n    manufacturer=\"Airthings AS\",\n    hw_version=\"REV A\",\n    sw_version=\"G-BLE-1.5.3-master+0\",\n    model=\"Wave Plus\",\n    model_raw=\"2930\",\n    name=\"Airthings Wave+\",\n    identifier=\"123456\",\n    sensors={\n        \"illuminance\": 25,\n        \"battery\": 85,\n        \"humidity\": 60.0,\n        \"radon_1day_avg\": 30,\n        \"radon_longterm_avg\": 30,\n        \"temperature\": 21.0,\n        \"co2\": 500.0,\n        \"voc\": 155.0,\n        \"radon_1day_level\": \"very low\",\n        \"radon_longterm_level\": \"very low\",\n        \"pressure\": 1020,\n    },\n    address=\"cc:cc:cc:cc:cc:cc\",\n)\n\nTEMPERATURE_V1 = MockEntity(\n    unique_id=\"Airthings Wave Plus 123456_temperature\",\n    name=\"Airthings Wave Plus 123456 Temperature\",\n)\n\nHUMIDITY_V2 = MockEntity(\n    unique_id=\"Airthings Wave Plus (123456)_humidity\",\n    name=\"Airthings Wave Plus (123456) Humidity\",\n)\n\nCO2_V1 = MockEntity(\n    unique_id=\"Airthings Wave Plus 123456_co2\",\n    name=\"Airthings Wave Plus 123456 CO2\",\n)\n\nCO2_V2 = MockEntity(\n    unique_id=\"Airthings Wave Plus (123456)_co2\",\n    name=\"Airthings Wave Plus (123456) CO2\",\n)\n\nVOC_V1 = MockEntity(\n    unique_id=\"Airthings Wave Plus 123456_voc\",\n    name=\"Airthings Wave Plus 123456 CO2\",\n)\n\nVOC_V2 = MockEntity(\n    unique_id=\"Airthings Wave Plus (123456)_voc\",\n    name=\"Airthings Wave Plus (123456) VOC\",\n)\n\nVOC_V3 = MockEntity(\n    unique_id=\"cc:cc:cc:cc:cc:cc_voc\",\n    name=\"Airthings Wave Plus (123456) VOC\",\n)\n\n\ndef create_entry(hass):\n    \"\"\"Create a config entry.\"\"\"\n    entry = MockConfigEntry(\n        domain=DOMAIN,\n        unique_id=WAVE_SERVICE_INFO.address,\n        title=\"Airthings Wave Plus (123456)\",\n    )\n    entry.add_to_hass(hass)\n    return entry\n\n\ndef create_device(hass, entry):\n    \"\"\"Create a device for the given entry.\"\"\"\n    device_registry = hass.helpers.device_registry.async_get(hass)\n    device = device_registry.async_get_or_create(\n        config_entry_id=entry.entry_id,\n        connections={(CONNECTION_BLUETOOTH, WAVE_SERVICE_INFO.address)},\n        manufacturer=\"Airthings AS\",\n        name=\"Airthings Wave Plus (123456)\",\n        model=\"Wave Plus\",\n    )\n    return device\n",
+    "tests/components/airthings_ble/test_sensor.py": "\"\"\"Test the Airthings Wave sensor.\"\"\"\nimport logging\n\nfrom homeassistant.components.airthings_ble.const import DOMAIN\nfrom homeassistant.core import HomeAssistant\n\nfrom tests.components.airthings_ble import (\n    CO2_V1,\n    CO2_V2,\n    HUMIDITY_V2,\n    TEMPERATURE_V1,\n    VOC_V1,\n    VOC_V2,\n    VOC_V3,\n    WAVE_DEVICE_INFO,\n    WAVE_SERVICE_INFO,\n    create_device,\n    create_entry,\n    patch_airthings_device_update,\n)\nfrom tests.components.bluetooth import inject_bluetooth_service_info\n\n_LOGGER = logging.getLogger(__name__)\n\n\nasync def test_migration_from_v1_to_v3_unique_id(hass: HomeAssistant):\n    \"\"\"Verify that we can migrate from v1 (pre 2023.9.0) to the latest unique id format.\"\"\"\n    entry = create_entry(hass)\n    device = create_device(hass, entry)\n\n    assert entry is not None\n    assert device is not None\n\n    entity_registry = hass.helpers.entity_registry.async_get(hass)\n\n    sensor = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=TEMPERATURE_V1.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    await hass.async_block_till_done()\n    assert len(hass.states.async_all()) == 0\n\n    inject_bluetooth_service_info(\n        hass,\n        WAVE_SERVICE_INFO,\n    )\n\n    await hass.async_block_till_done()\n\n    with patch_airthings_device_update():\n        await hass.config_entries.async_setup(entry.entry_id)\n        await hass.async_block_till_done()\n\n    assert len(hass.states.async_all()) > 0\n\n    assert (\n        entity_registry.async_get(sensor.entity_id).unique_id\n        == WAVE_DEVICE_INFO.address + \"_temperature\"\n    )\n\n\nasync def test_migration_from_v2_to_v3_unique_id(hass: HomeAssistant):\n    \"\"\"Verify that we can migrate from v2 (introduced in 2023.9.0) to the latest unique id format.\"\"\"\n    entry = create_entry(hass)\n    device = create_device(hass, entry)\n\n    assert entry is not None\n    assert device is not None\n\n    entity_registry = hass.helpers.entity_registry.async_get(hass)\n\n    await hass.async_block_till_done()\n\n    sensor = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=HUMIDITY_V2.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    await hass.async_block_till_done()\n    assert len(hass.states.async_all()) == 0\n\n    inject_bluetooth_service_info(\n        hass,\n        WAVE_SERVICE_INFO,\n    )\n\n    await hass.async_block_till_done()\n\n    with patch_airthings_device_update():\n        await hass.config_entries.async_setup(entry.entry_id)\n        await hass.async_block_till_done()\n\n    assert len(hass.states.async_all()) > 0\n\n    assert (\n        entity_registry.async_get(sensor.entity_id).unique_id\n        == WAVE_DEVICE_INFO.address + \"_humidity\"\n    )\n\n\nasync def test_migration_from_v1_and_v2_to_v3_unique_id(hass: HomeAssistant):\n    \"\"\"Test if migration works when we have both v1 (pre 2023.9.0) and v2 (introduced in 2023.9.0) unique ids.\"\"\"\n    entry = create_entry(hass)\n    device = create_device(hass, entry)\n\n    assert entry is not None\n    assert device is not None\n\n    entity_registry = hass.helpers.entity_registry.async_get(hass)\n\n    await hass.async_block_till_done()\n\n    v2 = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=CO2_V2.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    v1 = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=CO2_V1.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    await hass.async_block_till_done()\n    assert len(hass.states.async_all()) == 0\n\n    inject_bluetooth_service_info(\n        hass,\n        WAVE_SERVICE_INFO,\n    )\n\n    await hass.async_block_till_done()\n\n    with patch_airthings_device_update():\n        await hass.config_entries.async_setup(entry.entry_id)\n        await hass.async_block_till_done()\n\n    assert len(hass.states.async_all()) > 0\n\n    assert (\n        entity_registry.async_get(v1.entity_id).unique_id\n        == WAVE_DEVICE_INFO.address + \"_co2\"\n    )\n    assert entity_registry.async_get(v2.entity_id).unique_id == v2.unique_id\n\n\nasync def test_migration_with_all_unique_ids(hass: HomeAssistant):\n    \"\"\"Test if migration works when we have all unique ids.\"\"\"\n    entry = create_entry(hass)\n    device = create_device(hass, entry)\n\n    assert entry is not None\n    assert device is not None\n\n    entity_registry = hass.helpers.entity_registry.async_get(hass)\n\n    await hass.async_block_till_done()\n\n    v1 = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=VOC_V1.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    v2 = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=VOC_V2.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    v3 = entity_registry.async_get_or_create(\n        domain=DOMAIN,\n        platform=\"sensor\",\n        unique_id=VOC_V3.unique_id,\n        config_entry=entry,\n        device_id=device.id,\n    )\n\n    await hass.async_block_till_done()\n    assert len(hass.states.async_all()) == 0\n\n    inject_bluetooth_service_info(\n        hass,\n        WAVE_SERVICE_INFO,\n    )\n\n    await hass.async_block_till_done()\n\n    with patch_airthings_device_update():\n        await hass.config_entries.async_setup(entry.entry_id)\n        await hass.async_block_till_done()\n\n    assert len(hass.states.async_all()) > 0\n\n    assert entity_registry.async_get(v1.entity_id).unique_id == v1.unique_id\n    assert entity_registry.async_get(v2.entity_id).unique_id == v2.unique_id\n    assert entity_registry.async_get(v3.entity_id).unique_id == v3.unique_id\n"
+  },
+  "test_files_before": {
+    "tests/components/airthings_ble/__init__.py": "\"\"\"Tests for the Airthings BLE integration.\"\"\"\nfrom __future__ import annotations\n\nfrom unittest.mock import patch\n\nfrom airthings_ble import AirthingsBluetoothDeviceData, AirthingsDevice\n\nfrom homeassistant.components.bluetooth.models import BluetoothServiceInfoBleak\n\nfrom tests.components.bluetooth import generate_advertisement_data, generate_ble_device\n\n\ndef patch_async_setup_entry(return_value=True):\n    \"\"\"Patch async setup entry to return True.\"\"\"\n    return patch(\n        \"homeassistant.components.airthings_ble.async_setup_entry\",\n        return_value=return_value,\n    )\n\n\ndef patch_async_ble_device_from_address(return_value: BluetoothServiceInfoBleak | None):\n    \"\"\"Patch async ble device from address to return a given value.\"\"\"\n    return patch(\n        \"homeassistant.components.bluetooth.async_ble_device_from_address\",\n        return_value=return_value,\n    )\n\n\ndef patch_airthings_ble(return_value=AirthingsDevice, side_effect=None):\n    \"\"\"Patch airthings-ble device fetcher with given values and effects.\"\"\"\n    return patch.object(\n        AirthingsBluetoothDeviceData,\n        \"update_device\",\n        return_value=return_value,\n        side_effect=side_effect,\n    )\n\n\nWAVE_SERVICE_INFO = BluetoothServiceInfoBleak(\n    name=\"cc-cc-cc-cc-cc-cc\",\n    address=\"cc:cc:cc:cc:cc:cc\",\n    rssi=-61,\n    manufacturer_data={820: b\"\\xe4/\\xa5\\xae\\t\\x00\"},\n    service_data={},\n    service_uuids=[\"b42e1c08-ade7-11e4-89d3-123b93f75cba\"],\n    source=\"local\",\n    device=generate_ble_device(\n        \"cc:cc:cc:cc:cc:cc\",\n        \"cc-cc-cc-cc-cc-cc\",\n    ),\n    advertisement=generate_advertisement_data(\n        manufacturer_data={820: b\"\\xe4/\\xa5\\xae\\t\\x00\"},\n        service_uuids=[\"b42e1c08-ade7-11e4-89d3-123b93f75cba\"],\n    ),\n    connectable=True,\n    time=0,\n)\n\nUNKNOWN_SERVICE_INFO = BluetoothServiceInfoBleak(\n    name=\"unknown\",\n    address=\"00:cc:cc:cc:cc:cc\",\n    rssi=-61,\n    manufacturer_data={},\n    service_data={},\n    service_uuids=[],\n    source=\"local\",\n    device=generate_ble_device(\n        \"cc:cc:cc:cc:cc:cc\",\n        \"unknown\",\n    ),\n    advertisement=generate_advertisement_data(\n        manufacturer_data={},\n        service_uuids=[],\n    ),\n    connectable=True,\n    time=0,\n)\n\nWAVE_DEVICE_INFO = AirthingsDevice(\n    manufacturer=\"Airthings AS\",\n    hw_version=\"REV A\",\n    sw_version=\"G-BLE-1.5.3-master+0\",\n    model=\"Wave Plus\",\n    model_raw=\"2930\",\n    name=\"Airthings Wave+\",\n    identifier=\"123456\",\n    sensors={\n        \"illuminance\": 25,\n        \"battery\": 85,\n        \"humidity\": 60.0,\n        \"radon_1day_avg\": 30,\n        \"radon_longterm_avg\": 30,\n        \"temperature\": 21.0,\n        \"co2\": 500.0,\n        \"voc\": 155.0,\n        \"radon_1day_level\": \"very low\",\n        \"radon_longterm_level\": \"very low\",\n        \"pressure\": 1020,\n    },\n    address=\"cc:cc:cc:cc:cc:cc\",\n)\n"
+  },
+  "ingested_at": "2026-10-11T10:26:06.229967Z"
+}

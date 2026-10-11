@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Write the check as `s1.st_ino == 0 or s2.st_ino == 0` (suggestion)",
+        "description": "Change conditional checks",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/pathlib.py:1104: if s1.st_ino == 0 or s2.st_ino == 0:",
+    "evidence": "src/_pytest/pathlib.py:1108",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

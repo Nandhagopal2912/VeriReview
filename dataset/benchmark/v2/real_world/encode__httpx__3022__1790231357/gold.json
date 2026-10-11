@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Put the transport parameter before trust_env in Client._init_transport (suggestion)",
+        "description": "Add transport and trust_env parameters to _init_transport().",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "httpx/_client.py:690-691: transport: BaseTransport | None = None, then trust_env: bool = True",
+    "evidence": "httpx/_client.py:691-692",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

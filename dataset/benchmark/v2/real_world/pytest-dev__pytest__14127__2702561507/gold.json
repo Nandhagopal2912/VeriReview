@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Shorten the idents() docstring to 'Return the set of all identifiers which appear in the expression.', dropping the marker/keyword mention (suggestion)",
+        "description": "Remove the marker/keyword-specific wording from the idents() docstring.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/_pytest/mark/expression.py:347: the suggested one-line docstring",
+    "evidence": "src/_pytest/mark/expression.py:349-351",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

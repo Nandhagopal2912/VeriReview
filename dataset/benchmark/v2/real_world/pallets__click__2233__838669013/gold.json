@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "naming",
-        "description": "Rename the group overload parameter __name to __func (suggestion)",
+        "category": "api_behavior",
+        "description": "Rename the first group() overload's parameter from __name to __func, keeping t.Callable (naming): satisfied",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/click/decorators.py:231: __func: t.Callable",
-    "confidence": "medium",
-    "notes": "Rewritten history; the change is visible in the window diff."
+    "evidence": "src/click/core.py:1813 (the after code has def command(self, __func: t.Callable[..., t.Any]) -> Command:)",
+    "confidence": "high",
+    "notes": "Reviewer's suggestion applied verbatim at the anchor line. The same diff also adds assertions and group() overloads not requested in this thread; they don't affect this requirement. No test changes, expected for a type-annotation-only request."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

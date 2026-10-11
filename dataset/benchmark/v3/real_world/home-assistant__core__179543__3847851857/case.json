@@ -1,0 +1,2190 @@
+{
+  "schema_version": "3",
+  "case_id": "home-assistant/core#179543/3847851857",
+  "repository": "home-assistant/core",
+  "pull_number": 179543,
+  "pull_title": "Add AirGradient Go support",
+  "base_sha": "66a99cf51c27f740df5e7ef855b4e7788b44fd72",
+  "head_sha": "d622b57a1af331b23a1133e253bb07c8a42ccdf4",
+  "thread": {
+    "root_comment_id": 3847851857,
+    "path": "tests/components/airgradient/test_config_flow.py",
+    "line": 432,
+    "original_line": 412,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -239,13 +290,203 @@ async def test_zeroconf_flow_cloud_device(\n     mock_cloud_airgradient_client.set_configuration_control.assert_not_called()\n \n \n-async def test_zeroconf_flow_abort_old_firmware(hass: HomeAssistant) -> None:\n-    \"\"\"Test zeroconf flow aborts with old firmware.\"\"\"\n+@pytest.mark.usefixtures(\"mock_setup_entry\")\n+async def test_zeroconf_flow_config_source_error(\n+    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n+) -> None:\n+    \"\"\"Test errors while setting the discovered device configuration source.\"\"\"\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": SOURCE_ZEROCONF},\n+        data=ZEROCONF_DISCOVERY,\n+    )\n+    mock_new_airgradient_client.set_configuration_control.side_effect = (\n+        AirGradientBusyError(status=503, code=\"busy\")\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"step_id\"] == \"discovery_confirm\"\n+    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n+\n+    mock_new_airgradient_client.set_configuration_control.side_effect = None\n+    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+@pytest.mark.parametrize(\n+    \"firmware_version\",\n+    [\n+        pytest.param(\"3.0.8\", id=\"old\"),\n+        pytest.param(\"invalid\", id=\"invalid\"),\n+    ],\n+)\n+async def test_zeroconf_flow_abort_unsupported_firmware(\n+    hass: HomeAssistant,\n+    mock_airgradient_client: AsyncMock,\n+    firmware_version: str,\n+) -> None:\n+    \"\"\"Test zeroconf flow aborts with unsupported firmware.\"\"\"\n+    discovery_info = replace(\n+        OLD_ZEROCONF_DISCOVERY,\n+        properties={\n+            **OLD_ZEROCONF_DISCOVERY.properties,\n+            \"fw_ver\": firmware_version,\n+        },\n+    )\n     result = await hass.config_entries.flow.async_init(\n         DOMAIN,\n         context={\"source\": SOURCE_ZEROCONF},\n-        data=OLD_ZEROCONF_DISCOVERY,\n+        data=discovery_info,\n+    )\n+    assert result[\"type\"] is FlowResultType.ABORT\n+    assert result[\"reason\"] == \"invalid_version\"\n+\n+\n+@pytest.mark.usefixtures(\"mock_setup_entry\")\n+async def test_zeroconf_flow_v1_hint(hass: HomeAssistant) -> None:\n+    \"\"\"Test zeroconf V1 hint seeds the client and skips the legacy gate.\"\"\"\n+    discovery_info = replace(\n+        ZEROCONF_DISCOVERY,\n+        properties={\n+            **ZEROCONF_DISCOVERY.properties,\n+            \"api\": \"1\",\n+            \"fw_ver\": \"1.0.0\",\n+            \"model\": \"P-1PSG\",\n+        },\n+    )\n+    with patch(\n+        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n+        autospec=True,\n+    ) as mock_client:\n+        client = mock_client.return_value\n+        client.api_version = ApiVersion.V1\n+        client.get_current_measures.return_value = load_measures_fixture(\n+            \"measures_v1_full.json\", ApiVersion.V1\n+        )\n+\n+        result = await hass.config_entries.flow.async_init(\n+            DOMAIN,\n+            context={\"source\": SOURCE_ZEROCONF},\n+            data=discovery_info,\n+        )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    assert result[\"step_id\"] == \"discovery_confirm\"\n+    mock_client.assert_called_once_with(\n+        \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n     )\n+\n+\n+@pytest.mark.parametrize(\n+    \"properties\",\n+    [\n+        pytest.param(dict(ZEROCONF_DISCOVERY.properties), id=\"missing\"),\n+        pytest.param({**ZEROCONF_DISCOVERY.properties, \"api\": \"2\"}, id=\"unknown\"),\n+    ],\n+)\n+@pytest.mark.usefixtures(\"mock_setup_entry\")\n+async def test_zeroconf_flow_probes_for_missing_or_unknown_api_hint(\n+    hass: HomeAssistant, properties: dict[str, str]\n+) -> None:\n+    \"\"\"Test missing and unknown API hints leave the client unseeded.\"\"\"\n+    discovery_info = replace(ZEROCONF_DISCOVERY, properties=properties)\n+    with patch(\n+        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n+        autospec=True,\n+    ) as mock_client:\n+        client = mock_client.return_value\n+        client.api_version = ApiVersion.LEGACY\n+        client.get_current_measures.return_value = load_measures_fixture(\n+            \"current_measures_indoor.json\"\n+        )\n+\n+        result = await hass.config_entries.flow.async_init(\n+            DOMAIN,\n+            context={\"source\": SOURCE_ZEROCONF},\n+            data=discovery_info,\n+        )\n+\n+    assert result[\"type\"] is FlowResultType.FORM",
+    "original_commit_sha": "2b85d84c2d0292ab400376bd7ecad4cce3e8b82a",
+    "commit_sha": "d622b57a1af331b23a1133e253bb07c8a42ccdf4",
+    "comments": [
+      {
+        "id": 3847851857,
+        "author": "reviewer",
+        "body": "all flows should end in CREATE_ENTRY or ABORT",
+        "created_at": "2026-08-24T22:05:23Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": false
+  },
+  "window": {
+    "start_commit_sha": "2b85d84c2d0292ab400376bd7ecad4cce3e8b82a",
+    "end_commit_sha": "d622b57a1af331b23a1133e253bb07c8a42ccdf4",
+    "subsequent_commits": [
+      {
+        "sha": "35ea95cac61c5c3bc4beb3eac6385a024c55343c",
+        "message": "refactor(airgradient): defer interval control",
+        "authored_at": "2026-08-25T04:54:26Z",
+        "committed_at": "2026-08-25T04:54:26Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "8a72b6345409fef28388bfab2cafdac34794106c",
+        "message": "test(airgradient): complete discovery flows",
+        "authored_at": "2026-08-25T05:02:29Z",
+        "committed_at": "2026-08-25T05:02:29Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "f58871a8a2b29a3a723a0f56828137a8b395ebee",
+        "message": "test(airgradient): reuse client class mock",
+        "authored_at": "2026-08-25T05:17:42Z",
+        "committed_at": "2026-08-25T05:17:42Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "50b396431ce95080b0c1732ebeb3e11840f1fafa",
+        "message": "Merge branch 'dev' into airgradient-go-support-split",
+        "authored_at": "2026-08-26T13:15:08Z",
+        "committed_at": "2026-08-26T13:15:08Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d622b57a1af331b23a1133e253bb07c8a42ccdf4",
+        "message": "test(airgradient): complete branch coverage",
+        "authored_at": "2026-08-26T13:56:03Z",
+        "committed_at": "2026-08-26T13:56:03Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "tests/components/airgradient/test_config_flow.py",
+  "before_code": "\"\"\"Tests for the AirGradient config flow.\"\"\"\n\nfrom dataclasses import replace\nfrom ipaddress import ip_address\nfrom unittest.mock import ANY, AsyncMock, patch\n\nfrom airgradient import (\n    AirGradientBusyError,\n    AirGradientConnectionError,\n    AirGradientError,\n    AirGradientParseError,\n    ApiVersion,\n    ConfigurationControl,\n)\nimport pytest\n\nfrom homeassistant.components.airgradient.const import DOMAIN\nfrom homeassistant.config_entries import SOURCE_USER, SOURCE_ZEROCONF\nfrom homeassistant.const import CONF_HOST\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\nfrom homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo\n\nfrom . import load_measures_fixture\n\nfrom tests.common import MockConfigEntry\n\nOLD_ZEROCONF_DISCOVERY = ZeroconfServiceInfo(\n    ip_address=ip_address(\"10.0.0.131\"),\n    ip_addresses=[ip_address(\"10.0.0.131\")],\n    hostname=\"airgradient_84fce612f5b8.local.\",\n    name=\"airgradient_84fce612f5b8._airgradient._tcp.local.\",\n    port=80,\n    type=\"_airgradient._tcp.local.\",\n    properties={\n        \"vendor\": \"AirGradient\",\n        \"fw_ver\": \"3.0.8\",\n        \"serialno\": \"84fce612f5b8\",\n        \"model\": \"I-9PSL\",\n    },\n)\n\nZEROCONF_DISCOVERY = ZeroconfServiceInfo(\n    ip_address=ip_address(\"10.0.0.131\"),\n    ip_addresses=[ip_address(\"10.0.0.131\")],\n    hostname=\"airgradient_84fce612f5b8.local.\",\n    name=\"airgradient_84fce612f5b8._airgradient._tcp.local.\",\n    port=80,\n    type=\"_airgradient._tcp.local.\",\n    properties={\n        \"vendor\": \"AirGradient\",\n        \"fw_ver\": \"3.1.1\",\n        \"serialno\": \"84fce612f5b8\",\n        \"model\": \"I-9PSL\",\n    },\n)\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_full_flow(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test full flow.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"I-9PSL\"\n    assert result[\"data\"] == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_new_airgradient_client.set_configuration_control.assert_awaited_once_with(\n        ConfigurationControl.LOCAL\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_with_registered_device(\n    hass: HomeAssistant, mock_cloud_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test we don't revert the cloud setting.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_cloud_airgradient_client.set_configuration_control.assert_not_called()\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_errors(\n    hass: HomeAssistant, mock_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test flow errors.\"\"\"\n    mock_airgradient_client.get_current_measures.side_effect = (\n        AirGradientConnectionError()\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_airgradient_client.get_current_measures.side_effect = None\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    (\"method\", \"exception\"),\n    [\n        pytest.param(\n            \"get_config\", AirGradientConnectionError(), id=\"read-configuration\"\n        ),\n        pytest.param(\n            \"set_configuration_control\",\n            AirGradientBusyError(status=503, code=\"busy\"),\n            id=\"write-configuration\",\n        ),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_config_source_errors(\n    hass: HomeAssistant,\n    mock_v1_airgradient_client: AsyncMock,\n    method: str,\n    exception: AirGradientError,\n) -> None:\n    \"\"\"Test errors while setting the configuration source.\"\"\"\n    getattr(mock_v1_airgradient_client, method).side_effect = exception\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    getattr(mock_v1_airgradient_client, method).side_effect = None\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_old_firmware_version(\n    hass: HomeAssistant, mock_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test flow with old firmware version.\"\"\"\n    mock_airgradient_client.get_current_measures.side_effect = AirGradientParseError\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_duplicate(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test duplicate flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test zeroconf flow.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"I-9PSL\"\n    assert result[\"data\"] == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_new_airgradient_client.set_configuration_control.assert_awaited_once_with(\n        ConfigurationControl.LOCAL\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_cloud_device(\n    hass: HomeAssistant, mock_cloud_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test zeroconf flow doesn't revert the cloud setting.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    mock_cloud_airgradient_client.set_configuration_control.assert_not_called()\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_config_source_error(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test errors while setting the discovered device configuration source.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    mock_new_airgradient_client.set_configuration_control.side_effect = (\n        AirGradientBusyError(status=503, code=\"busy\")\n    )\n\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_new_airgradient_client.set_configuration_control.side_effect = None\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    \"firmware_version\",\n    [\n        pytest.param(\"3.0.8\", id=\"old\"),\n        pytest.param(\"invalid\", id=\"invalid\"),\n    ],\n)\nasync def test_zeroconf_flow_abort_unsupported_firmware(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    firmware_version: str,\n) -> None:\n    \"\"\"Test zeroconf flow aborts with unsupported firmware.\"\"\"\n    discovery_info = replace(\n        OLD_ZEROCONF_DISCOVERY,\n        properties={\n            **OLD_ZEROCONF_DISCOVERY.properties,\n            \"fw_ver\": firmware_version,\n        },\n    )\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=discovery_info,\n    )\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_v1_hint(hass: HomeAssistant) -> None:\n    \"\"\"Test zeroconf V1 hint seeds the client and skips the legacy gate.\"\"\"\n    discovery_info = replace(\n        ZEROCONF_DISCOVERY,\n        properties={\n            **ZEROCONF_DISCOVERY.properties,\n            \"api\": \"1\",\n            \"fw_ver\": \"1.0.0\",\n            \"model\": \"P-1PSG\",\n        },\n    )\n    with patch(\n        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n        autospec=True,\n    ) as mock_client:\n        client = mock_client.return_value\n        client.api_version = ApiVersion.V1\n        client.get_current_measures.return_value = load_measures_fixture(\n            \"measures_v1_full.json\", ApiVersion.V1\n        )\n\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN,\n            context={\"source\": SOURCE_ZEROCONF},\n            data=discovery_info,\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n    mock_client.assert_called_once_with(\n        \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n    )\n\n\n@pytest.mark.parametrize(\n    \"properties\",\n    [\n        pytest.param(dict(ZEROCONF_DISCOVERY.properties), id=\"missing\"),\n        pytest.param({**ZEROCONF_DISCOVERY.properties, \"api\": \"2\"}, id=\"unknown\"),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_probes_for_missing_or_unknown_api_hint(\n    hass: HomeAssistant, properties: dict[str, str]\n) -> None:\n    \"\"\"Test missing and unknown API hints leave the client unseeded.\"\"\"\n    discovery_info = replace(ZEROCONF_DISCOVERY, properties=properties)\n    with patch(\n        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n        autospec=True,\n    ) as mock_client:\n        client = mock_client.return_value\n        client.api_version = ApiVersion.LEGACY\n        client.get_current_measures.return_value = load_measures_fixture(\n            \"current_measures_indoor.json\"\n        )\n\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN,\n            context={\"source\": SOURCE_ZEROCONF},\n            data=discovery_info,\n        )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    mock_client.assert_called_once_with(\"10.0.0.131\", session=ANY, api_version=None)\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_stale_v1_hint_applies_legacy_gate(\n    hass: HomeAssistant,\n) -> None:\n    \"\"\"Test a stale V1 hint still enforces the legacy minimum firmware.\"\"\"\n    discovery_info = replace(\n        OLD_ZEROCONF_DISCOVERY,\n        properties={**OLD_ZEROCONF_DISCOVERY.properties, \"api\": \"1\"},\n    )\n    with patch(\n        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n        autospec=True,\n    ) as mock_client:\n        client = mock_client.return_value\n        client.api_version = ApiVersion.LEGACY\n        client.get_current_measures.return_value = load_measures_fixture(\n            \"current_measures_indoor.json\"\n        )\n\n        result = await hass.config_entries.flow.async_init(\n            DOMAIN,\n            context={\"source\": SOURCE_ZEROCONF},\n            data=discovery_info,\n        )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n    mock_client.assert_called_once_with(\n        \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_v1_skips_legacy_firmware_gate(\n    hass: HomeAssistant, mock_v1_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test manual setup skips the legacy firmware minimum for API V1.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"], {CONF_HOST: \"10.0.0.131\"}\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    \"firmware_version\",\n    [\n        pytest.param(\"3.0.8\", id=\"old\"),\n        pytest.param(\"invalid\", id=\"invalid\"),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_legacy_firmware_gate(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    firmware_version: str,\n) -> None:\n    \"\"\"Test manual legacy setup enforces the minimum firmware version.\"\"\"\n    mock_airgradient_client.get_current_measures.return_value.firmware_version = (\n        firmware_version\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"], {CONF_HOST: \"10.0.0.131\"}\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\nasync def test_zeroconf_flow_abort_duplicate(\n    hass: HomeAssistant, mock_config_entry: MockConfigEntry\n) -> None:\n    \"\"\"Test zeroconf flow aborts with duplicate.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_works_discovery(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test user flow can continue after discovery happened.\"\"\"\n    await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    assert len(hass.config_entries.flow.async_progress(DOMAIN)) == 2\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n    # Verify the discovery flow was aborted\n    assert not hass.config_entries.flow.async_progress(DOMAIN)\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reconfigure_successful\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow_errors(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    mock_new_airgradient_client.get_current_measures.side_effect = (\n        AirGradientConnectionError()\n    )\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_new_airgradient_client.get_current_measures.side_effect = None\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reconfigure_successful\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.132\",\n    }\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow_unique_id_mismatch(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow aborts with unique id mismatch.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    mock_new_airgradient_client.get_current_measures.return_value.serial_number = (\n        \"84fce612f5b9\"\n    )\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"unique_id_mismatch\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n",
+  "anchor_line": 412,
+  "after_code": "\"\"\"Tests for the AirGradient config flow.\"\"\"\n\nfrom dataclasses import replace\nfrom ipaddress import ip_address\nfrom unittest.mock import ANY, AsyncMock, MagicMock\n\nfrom airgradient import (\n    AirGradientBusyError,\n    AirGradientConnectionError,\n    AirGradientError,\n    AirGradientParseError,\n    ApiVersion,\n    ConfigurationControl,\n)\nimport pytest\n\nfrom homeassistant.components.airgradient.const import DOMAIN\nfrom homeassistant.config_entries import SOURCE_USER, SOURCE_ZEROCONF\nfrom homeassistant.const import CONF_HOST\nfrom homeassistant.core import HomeAssistant\nfrom homeassistant.data_entry_flow import FlowResultType\nfrom homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo\n\nfrom tests.common import MockConfigEntry\n\nOLD_ZEROCONF_DISCOVERY = ZeroconfServiceInfo(\n    ip_address=ip_address(\"10.0.0.131\"),\n    ip_addresses=[ip_address(\"10.0.0.131\")],\n    hostname=\"airgradient_84fce612f5b8.local.\",\n    name=\"airgradient_84fce612f5b8._airgradient._tcp.local.\",\n    port=80,\n    type=\"_airgradient._tcp.local.\",\n    properties={\n        \"vendor\": \"AirGradient\",\n        \"fw_ver\": \"3.0.8\",\n        \"serialno\": \"84fce612f5b8\",\n        \"model\": \"I-9PSL\",\n    },\n)\n\nZEROCONF_DISCOVERY = ZeroconfServiceInfo(\n    ip_address=ip_address(\"10.0.0.131\"),\n    ip_addresses=[ip_address(\"10.0.0.131\")],\n    hostname=\"airgradient_84fce612f5b8.local.\",\n    name=\"airgradient_84fce612f5b8._airgradient._tcp.local.\",\n    port=80,\n    type=\"_airgradient._tcp.local.\",\n    properties={\n        \"vendor\": \"AirGradient\",\n        \"fw_ver\": \"3.1.1\",\n        \"serialno\": \"84fce612f5b8\",\n        \"model\": \"I-9PSL\",\n    },\n)\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_full_flow(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test full flow.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"I-9PSL\"\n    assert result[\"data\"] == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_new_airgradient_client.set_configuration_control.assert_awaited_once_with(\n        ConfigurationControl.LOCAL\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_with_registered_device(\n    hass: HomeAssistant, mock_cloud_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test we don't revert the cloud setting.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_cloud_airgradient_client.set_configuration_control.assert_not_called()\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_errors(\n    hass: HomeAssistant, mock_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test flow errors.\"\"\"\n    mock_airgradient_client.get_current_measures.side_effect = (\n        AirGradientConnectionError()\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_airgradient_client.get_current_measures.side_effect = None\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    (\"method\", \"exception\"),\n    [\n        pytest.param(\n            \"get_config\", AirGradientConnectionError(), id=\"read-configuration\"\n        ),\n        pytest.param(\n            \"set_configuration_control\",\n            AirGradientBusyError(status=503, code=\"busy\"),\n            id=\"write-configuration\",\n        ),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_config_source_errors(\n    hass: HomeAssistant,\n    mock_v1_airgradient_client: AsyncMock,\n    method: str,\n    exception: AirGradientError,\n) -> None:\n    \"\"\"Test errors while setting the configuration source.\"\"\"\n    getattr(mock_v1_airgradient_client, method).side_effect = exception\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    getattr(mock_v1_airgradient_client, method).side_effect = None\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_flow_old_firmware_version(\n    hass: HomeAssistant, mock_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test flow with old firmware version.\"\"\"\n    mock_airgradient_client.get_current_measures.side_effect = AirGradientParseError\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_duplicate(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test duplicate flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    await hass.async_block_till_done()\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test zeroconf flow.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {},\n    )\n    await hass.async_block_till_done()\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    assert result[\"title\"] == \"I-9PSL\"\n    assert result[\"data\"] == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n    assert result[\"result\"].unique_id == \"84fce612f5b8\"\n    mock_new_airgradient_client.set_configuration_control.assert_awaited_once_with(\n        ConfigurationControl.LOCAL\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_cloud_device(\n    hass: HomeAssistant, mock_cloud_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test zeroconf flow doesn't revert the cloud setting.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n    mock_cloud_airgradient_client.set_configuration_control.assert_not_called()\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_config_source_error(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test errors while setting the discovered device configuration source.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    mock_new_airgradient_client.set_configuration_control.side_effect = (\n        AirGradientBusyError(status=503, code=\"busy\")\n    )\n\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_new_airgradient_client.set_configuration_control.side_effect = None\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    (\"exception\", \"reason\"),\n    [\n        pytest.param(AirGradientParseError, \"invalid_version\", id=\"parse-error\"),\n        pytest.param(\n            AirGradientConnectionError, \"cannot_connect\", id=\"connection-error\"\n        ),\n    ],\n)\nasync def test_zeroconf_flow_client_errors(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    exception: type[AirGradientError],\n    reason: str,\n) -> None:\n    \"\"\"Test errors while reading a discovered device.\"\"\"\n    mock_airgradient_client.get_current_measures.side_effect = exception\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == reason\n\n\n@pytest.mark.parametrize(\n    \"firmware_version\",\n    [\n        pytest.param(\"3.0.8\", id=\"old\"),\n        pytest.param(\"invalid\", id=\"invalid\"),\n    ],\n)\nasync def test_zeroconf_flow_abort_unsupported_firmware(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    firmware_version: str,\n) -> None:\n    \"\"\"Test zeroconf flow aborts with unsupported firmware.\"\"\"\n    discovery_info = replace(\n        OLD_ZEROCONF_DISCOVERY,\n        properties={\n            **OLD_ZEROCONF_DISCOVERY.properties,\n            \"fw_ver\": firmware_version,\n        },\n    )\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=discovery_info,\n    )\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_zeroconf_flow_v1_hint(\n    hass: HomeAssistant,\n    mock_airgradient_client_class: MagicMock,\n    mock_v1_airgradient_client: AsyncMock,\n) -> None:\n    \"\"\"Test zeroconf V1 hint seeds the client and skips the legacy gate.\"\"\"\n    discovery_info = replace(\n        ZEROCONF_DISCOVERY,\n        properties={\n            **ZEROCONF_DISCOVERY.properties,\n            \"api\": \"1\",\n            \"fw_ver\": \"1.0.0\",\n            \"model\": \"P-1PSG\",\n        },\n    )\n    mock_v1_airgradient_client.get_config.return_value.configuration_control = (\n        ConfigurationControl.LOCAL\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=discovery_info,\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"discovery_confirm\"\n    mock_airgradient_client_class.assert_called_once_with(\n        \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n    )\n\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    \"properties\",\n    [\n        pytest.param(dict(ZEROCONF_DISCOVERY.properties), id=\"missing\"),\n        pytest.param({**ZEROCONF_DISCOVERY.properties, \"api\": \"2\"}, id=\"unknown\"),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_airgradient_client\", \"mock_setup_entry\")\nasync def test_zeroconf_flow_probes_for_missing_or_unknown_api_hint(\n    hass: HomeAssistant,\n    mock_airgradient_client_class: MagicMock,\n    properties: dict[str, str],\n) -> None:\n    \"\"\"Test missing and unknown API hints leave the client unseeded.\"\"\"\n    discovery_info = replace(ZEROCONF_DISCOVERY, properties=properties)\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=discovery_info,\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    mock_airgradient_client_class.assert_called_once_with(\n        \"10.0.0.131\", session=ANY, api_version=None\n    )\n\n    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.usefixtures(\"mock_airgradient_client\", \"mock_setup_entry\")\nasync def test_zeroconf_flow_stale_v1_hint_applies_legacy_gate(\n    hass: HomeAssistant,\n    mock_airgradient_client_class: MagicMock,\n) -> None:\n    \"\"\"Test a stale V1 hint still enforces the legacy minimum firmware.\"\"\"\n    discovery_info = replace(\n        OLD_ZEROCONF_DISCOVERY,\n        properties={**OLD_ZEROCONF_DISCOVERY.properties, \"api\": \"1\"},\n    )\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=discovery_info,\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n    mock_airgradient_client_class.assert_called_once_with(\n        \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n    )\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_v1_skips_legacy_firmware_gate(\n    hass: HomeAssistant, mock_v1_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test manual setup skips the legacy firmware minimum for API V1.\"\"\"\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"], {CONF_HOST: \"10.0.0.131\"}\n    )\n\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n\n@pytest.mark.parametrize(\n    \"firmware_version\",\n    [\n        pytest.param(\"3.0.8\", id=\"old\"),\n        pytest.param(\"invalid\", id=\"invalid\"),\n    ],\n)\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_legacy_firmware_gate(\n    hass: HomeAssistant,\n    mock_airgradient_client: AsyncMock,\n    firmware_version: str,\n) -> None:\n    \"\"\"Test manual legacy setup enforces the minimum firmware version.\"\"\"\n    mock_airgradient_client.get_current_measures.return_value.firmware_version = (\n        firmware_version\n    )\n\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"], {CONF_HOST: \"10.0.0.131\"}\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"invalid_version\"\n\n\nasync def test_zeroconf_flow_abort_duplicate(\n    hass: HomeAssistant, mock_config_entry: MockConfigEntry\n) -> None:\n    \"\"\"Test zeroconf flow aborts with duplicate.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"already_configured\"\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_user_flow_works_discovery(\n    hass: HomeAssistant, mock_new_airgradient_client: AsyncMock\n) -> None:\n    \"\"\"Test user flow can continue after discovery happened.\"\"\"\n    await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_ZEROCONF},\n        data=ZEROCONF_DISCOVERY,\n    )\n    result = await hass.config_entries.flow.async_init(\n        DOMAIN,\n        context={\"source\": SOURCE_USER},\n    )\n    assert len(hass.config_entries.flow.async_progress(DOMAIN)) == 2\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n\n    # Verify the discovery flow was aborted\n    assert not hass.config_entries.flow.async_progress(DOMAIN)\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.131\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reconfigure_successful\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow_errors(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n    mock_new_airgradient_client.get_current_measures.side_effect = (\n        AirGradientConnectionError()\n    )\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n    assert result[\"errors\"] == {\"base\": \"cannot_connect\"}\n\n    mock_new_airgradient_client.get_current_measures.side_effect = None\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"reconfigure_successful\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.132\",\n    }\n\n\n@pytest.mark.usefixtures(\"mock_setup_entry\")\nasync def test_reconfigure_flow_unique_id_mismatch(\n    hass: HomeAssistant,\n    mock_new_airgradient_client: AsyncMock,\n    mock_config_entry: MockConfigEntry,\n) -> None:\n    \"\"\"Test reconfigure flow aborts with unique id mismatch.\"\"\"\n    mock_config_entry.add_to_hass(hass)\n\n    mock_new_airgradient_client.get_current_measures.return_value.serial_number = (\n        \"84fce612f5b9\"\n    )\n\n    result = await mock_config_entry.start_reconfigure_flow(hass)\n\n    assert result[\"type\"] is FlowResultType.FORM\n    assert result[\"step_id\"] == \"user\"\n\n    result = await hass.config_entries.flow.async_configure(\n        result[\"flow_id\"],\n        {CONF_HOST: \"10.0.0.132\"},\n    )\n\n    assert result[\"type\"] is FlowResultType.ABORT\n    assert result[\"reason\"] == \"unique_id_mismatch\"\n    assert mock_config_entry.data == {\n        CONF_HOST: \"10.0.0.131\",\n    }\n",
+  "unified_diff": "--- a/tests/components/airgradient/test_config_flow.py\n+++ b/tests/components/airgradient/test_config_flow.py\n@@ -2,7 +2,7 @@\n \n from dataclasses import replace\n from ipaddress import ip_address\n-from unittest.mock import ANY, AsyncMock, patch\n+from unittest.mock import ANY, AsyncMock, MagicMock\n \n from airgradient import (\n     AirGradientBusyError,\n@@ -20,8 +20,6 @@\n from homeassistant.core import HomeAssistant\n from homeassistant.data_entry_flow import FlowResultType\n from homeassistant.helpers.service_info.zeroconf import ZeroconfServiceInfo\n-\n-from . import load_measures_fixture\n \n from tests.common import MockConfigEntry\n \n@@ -317,6 +315,34 @@\n \n \n @pytest.mark.parametrize(\n+    (\"exception\", \"reason\"),\n+    [\n+        pytest.param(AirGradientParseError, \"invalid_version\", id=\"parse-error\"),\n+        pytest.param(\n+            AirGradientConnectionError, \"cannot_connect\", id=\"connection-error\"\n+        ),\n+    ],\n+)\n+async def test_zeroconf_flow_client_errors(\n+    hass: HomeAssistant,\n+    mock_airgradient_client: AsyncMock,\n+    exception: type[AirGradientError],\n+    reason: str,\n+) -> None:\n+    \"\"\"Test errors while reading a discovered device.\"\"\"\n+    mock_airgradient_client.get_current_measures.side_effect = exception\n+\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": SOURCE_ZEROCONF},\n+        data=ZEROCONF_DISCOVERY,\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.ABORT\n+    assert result[\"reason\"] == reason\n+\n+\n+@pytest.mark.parametrize(\n     \"firmware_version\",\n     [\n         pytest.param(\"3.0.8\", id=\"old\"),\n@@ -346,7 +372,11 @@\n \n \n @pytest.mark.usefixtures(\"mock_setup_entry\")\n-async def test_zeroconf_flow_v1_hint(hass: HomeAssistant) -> None:\n+async def test_zeroconf_flow_v1_hint(\n+    hass: HomeAssistant,\n+    mock_airgradient_client_class: MagicMock,\n+    mock_v1_airgradient_client: AsyncMock,\n+) -> None:\n     \"\"\"Test zeroconf V1 hint seeds the client and skips the legacy gate.\"\"\"\n     discovery_info = replace(\n         ZEROCONF_DISCOVERY,\n@@ -357,27 +387,25 @@\n             \"model\": \"P-1PSG\",\n         },\n     )\n-    with patch(\n-        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n-        autospec=True,\n-    ) as mock_client:\n-        client = mock_client.return_value\n-        client.api_version = ApiVersion.V1\n-        client.get_current_measures.return_value = load_measures_fixture(\n-            \"measures_v1_full.json\", ApiVersion.V1\n-        )\n-\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN,\n-            context={\"source\": SOURCE_ZEROCONF},\n-            data=discovery_info,\n-        )\n+    mock_v1_airgradient_client.get_config.return_value.configuration_control = (\n+        ConfigurationControl.LOCAL\n+    )\n+\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": SOURCE_ZEROCONF},\n+        data=discovery_info,\n+    )\n \n     assert result[\"type\"] is FlowResultType.FORM\n     assert result[\"step_id\"] == \"discovery_confirm\"\n-    mock_client.assert_called_once_with(\n+    mock_airgradient_client_class.assert_called_once_with(\n         \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n     )\n+\n+    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n \n \n @pytest.mark.parametrize(\n@@ -387,60 +415,49 @@\n         pytest.param({**ZEROCONF_DISCOVERY.properties, \"api\": \"2\"}, id=\"unknown\"),\n     ],\n )\n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n+@pytest.mark.usefixtures(\"mock_airgradient_client\", \"mock_setup_entry\")\n async def test_zeroconf_flow_probes_for_missing_or_unknown_api_hint(\n-    hass: HomeAssistant, properties: dict[str, str]\n+    hass: HomeAssistant,\n+    mock_airgradient_client_class: MagicMock,\n+    properties: dict[str, str],\n ) -> None:\n     \"\"\"Test missing and unknown API hints leave the client unseeded.\"\"\"\n     discovery_info = replace(ZEROCONF_DISCOVERY, properties=properties)\n-    with patch(\n-        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n-        autospec=True,\n-    ) as mock_client:\n-        client = mock_client.return_value\n-        client.api_version = ApiVersion.LEGACY\n-        client.get_current_measures.return_value = load_measures_fixture(\n-            \"current_measures_indoor.json\"\n-        )\n-\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN,\n-            context={\"source\": SOURCE_ZEROCONF},\n-            data=discovery_info,\n-        )\n-\n-    assert result[\"type\"] is FlowResultType.FORM\n-    mock_client.assert_called_once_with(\"10.0.0.131\", session=ANY, api_version=None)\n-\n-\n-@pytest.mark.usefixtures(\"mock_setup_entry\")\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": SOURCE_ZEROCONF},\n+        data=discovery_info,\n+    )\n+\n+    assert result[\"type\"] is FlowResultType.FORM\n+    mock_airgradient_client_class.assert_called_once_with(\n+        \"10.0.0.131\", session=ANY, api_version=None\n+    )\n+\n+    result = await hass.config_entries.flow.async_configure(result[\"flow_id\"], {})\n+\n+    assert result[\"type\"] is FlowResultType.CREATE_ENTRY\n+\n+\n+@pytest.mark.usefixtures(\"mock_airgradient_client\", \"mock_setup_entry\")\n async def test_zeroconf_flow_stale_v1_hint_applies_legacy_gate(\n     hass: HomeAssistant,\n+    mock_airgradient_client_class: MagicMock,\n ) -> None:\n     \"\"\"Test a stale V1 hint still enforces the legacy minimum firmware.\"\"\"\n     discovery_info = replace(\n         OLD_ZEROCONF_DISCOVERY,\n         properties={**OLD_ZEROCONF_DISCOVERY.properties, \"api\": \"1\"},\n     )\n-    with patch(\n-        \"homeassistant.components.airgradient.config_flow.AirGradientClient\",\n-        autospec=True,\n-    ) as mock_client:\n-        client = mock_client.return_value\n-        client.api_version = ApiVersion.LEGACY\n-        client.get_current_measures.return_value = load_measures_fixture(\n-            \"current_measures_indoor.json\"\n-        )\n-\n-        result = await hass.config_entries.flow.async_init(\n-            DOMAIN,\n-            context={\"source\": SOURCE_ZEROCONF},\n-            data=discovery_info,\n-        )\n+    result = await hass.config_entries.flow.async_init(\n+        DOMAIN,\n+        context={\"source\": SOURCE_ZEROCONF},\n+        data=discovery_info,\n+    )\n \n     assert result[\"type\"] is FlowResultType.ABORT\n     assert result[\"reason\"] == \"invalid_version\"\n-    mock_client.assert_called_once_with(\n+    mock_airgradient_client_class.assert_called_once_with(\n         \"10.0.0.131\", session=ANY, api_version=ApiVersion.V1\n     )\n \n",
+  "changed_files": [
+    {
+      "path": ".claude/skills/ha-merge-queue/SKILL.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".devcontainer/devcontainer.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/builder.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.lock.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/check-requirements.md",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/ci.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/codeql.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".strict-typing",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "CODEOWNERS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/brands/samsung.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/abode/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/actron_air/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ai_task/task.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/airgradient/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/airgradient/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/airgradient/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/select.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/alexa_devices/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/analytics/analytics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv_remote/remote.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/androidtv_remote/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anglian_water/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anglian_water/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anglian_water/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anglian_water/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anova/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/anthropic/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/arcam_fmj/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ariston/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ariston/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_pipeline/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/assist_satellite/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/august/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/indieauth.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/login_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/auth/mfa_setup_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bang_olufsen/event.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bang_olufsen/websocket.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/icons.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/besen/switch.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/beverly/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/beverly/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/binary_sensor/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blebox/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blue_current/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/blue_current/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluesound/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bluetooth/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bond/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bond/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/braviatv/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/braviatv/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/broadlink/heartbeat.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bsblan/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bthome/device_trigger.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bthome/event.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bugu/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/bugu/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/buienradar/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/buienradar/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/button/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/caldav/api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/caldav/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/caldav/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/caldav/todo.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/calendar/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/calendar/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/carrier/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/carrier/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/centriconnect/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/centriconnect/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/centriconnect/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/climate/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/climate/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/alexa_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/assist_pipeline.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/google_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/http_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/models.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cloud/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/icons.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/image.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/quality_scale.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/services.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/collection_image/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/colmo/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/colmo/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comelit/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comelit/humidifier.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comelit/utils.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comfee/__init__.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/comfee/manifest.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/compensation/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/config/area_registry.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/config/device_registry.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/config/entity_registry.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/conversation/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/conversation/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cover/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cover/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cover/services.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/cover/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/data_grand_lyon/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/date/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/datetime/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/deconz/logbook.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/deconz/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/demo/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/demo/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/denon_rs232/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/derivative/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/device_automation/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/device_automation/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/devolo_home_network/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/devolo_home_network/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/diagnostics/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dialogflow/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dlna_dmr/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dlna_dms/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dropbox/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dwd_weather_warnings/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dwd_weather_warnings/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dwd_weather_warnings/exceptions.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/dwd_weather_warnings/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ecobee/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ecobee/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ekeybionyx/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/enphase_envoy/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/enphase_envoy/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/enphase_envoy/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/environment_canada/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/environment_canada/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/environment_canada/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/environment_canada/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/entry_data.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/manager.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/esphome/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/event/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/ezviz/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fan/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fan/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fish_audio/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/climate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/config_flow.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/coordinator.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/flexit/strings.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/forecast_solar/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/forecast_solar/icons.json",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/forecast_solar/services.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/forecast_solar/services.yaml",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/forecast_solar/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/freebox/router.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/diagnostics.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/icons.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/number.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fronius/switch.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/frontend/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/frontier_silicon/entity.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/frontier_silicon/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fujitsu_fglair/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fully_kiosk/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fyta/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/fyta/image.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gardena_bluetooth/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/geniushub/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/geo_location/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/geofency/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/geofency/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/go2rtc/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/goodwe/button.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google/calendar.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_air_quality/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/helpers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_assistant/trait.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_generative_ai_conversation/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_generative_ai_conversation/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_health/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_health/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_wifi/const.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/google_wifi/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gpslogger/device_tracker.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/gpslogger/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/cover.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/entity.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/event.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/fan.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/light.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/media_player.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/notify.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/sensor.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/group/valve.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/growatt_server/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/growatt_server/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/growatt_server/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/growatt_server/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/guardian/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/guntamatic/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/quality_scale.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/harbor/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/addon_panel.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/const.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/repairs.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hassio/websocket_api.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/heos/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/hive/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/holiday/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/common.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/coordinator.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/image.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/services.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/home_connect/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/exposed_entities.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/llm.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/strings.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/triggers/event.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homeassistant/triggers/time.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homee/manifest.json",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/accessories.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/climate_base.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/climate_util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/config_flow.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_air_purifiers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_covers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_fans.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_heater_coolers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_humidifiers.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_lights.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_media_players.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_remotes.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_security_systems.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_sensors.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_switches.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "homeassistant/components/homekit/type_thermostats.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {},
+  "test_files_before": {},
+  "ingested_at": "2026-10-11T10:26:48.704477Z"
+}

@@ -104,6 +104,17 @@ def test_collect_skips_cases_already_collected(tmp_path: Path) -> None:
     assert report.written == [] and report.skipped == {KEY: "already collected"}
 
 
+def test_collect_caps_the_cases_taken_from_one_pull_request(tmp_path: Path) -> None:
+    root = collected(tmp_path)  # one case from PR 7 is already there
+    [first] = find_candidates(api(), REPO)
+    another = first.model_copy(update={"root_comment_id": 5003})  # same PR, another thread
+
+    report = collect(api(), [another], n=5, seed=1, dataset_root=root, max_per_pull=1)
+
+    assert report.written == []
+    assert report.skipped == {"acme__shop__7__5003": "pull request already has 1 case(s)"}
+
+
 def test_split_is_deterministic_and_roughly_balanced() -> None:
     splits = [assign_split(f"case-{i}", 7, 0.5) for i in range(400)]
 

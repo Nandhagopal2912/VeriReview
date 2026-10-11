@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "other",
-        "description": "Reword the get_help_option docstring to 'Skipped if :attr:`add_help_option` is ``False``.' (suggestion)",
+        "description": "Reword the get_help_option docstring to \"Skipped if :attr:add_help_option is ``False``.\"",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "src/click/core.py:1019: the suggested sentence",
+    "evidence": "src/click/core.py:1019 (after code): Skipped if :attr:`add_help_option` is False.",
     "confidence": "high",
-    "notes": ""
+    "notes": "Suggestion applied verbatim at the get_help_option docstring (core.py:1019). Other changes in the diff (dummy_func removal, make_metavar ctx parameter) belong to other threads and don't affect this requirement."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "error_handling",
-        "description": "Keep only the statements that can raise inside the try block",
+        "description": "Keep only the key-generation operation that can raise inside the try block; move subsequent assignments outside it.",
         "status": "satisfied"
       }
     ],
     "ambiguous": false,
     "verdict": "SATISFIED",
-    "evidence": "config_flow.py:111-119: only the executor call is inside try; the assignment moved after the except",
+    "evidence": "homeassistant/components/threema/config_flow.py:79-85",
     "confidence": "high",
-    "notes": ""
+    "notes": "The updated code keeps generate_key_pair() inside the block and moves the assignments to self._private_key and self._public_key outside it."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

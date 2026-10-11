@@ -1,0 +1,1198 @@
+{
+  "schema_version": "3",
+  "case_id": "pytest-dev/pytest#14331/3299512490",
+  "repository": "pytest-dev/pytest",
+  "pull_number": 14331,
+  "pull_title": "fix: rm_rf now handles directories without S_IXUSR permission",
+  "base_sha": "eb79044cea1c2c7b6e58ebcce17c55da871fef6c",
+  "head_sha": "d103697393a922ab011c01bb3ba725fdd49c8400",
+  "thread": {
+    "root_comment_id": 3299512490,
+    "path": "testing/test_tmpdir.py",
+    "line": null,
+    "original_line": 686,
+    "start_line": null,
+    "original_start_line": null,
+    "side": "RIGHT",
+    "diff_hunk": "@@ -593,17 +617,125 @@ def test_on_rm_rf_error(self, tmp_path: Path) -> None:\n             on_rm_rf_error(None, str(fn), exc_info3, start_path=tmp_path)\n             assert fn.is_file()\n \n-        # ignored function\n-        with warnings.catch_warnings(record=True) as w:\n-            exc_info4 = PermissionError()\n-            on_rm_rf_error(os.open, str(fn), exc_info4, start_path=tmp_path)\n-            assert fn.is_file()\n-            assert not [x.message for x in w]\n-\n+        # os.unlink PermissionError is handled (chmod + retry)\n         exc_info5 = PermissionError()\n         on_rm_rf_error(os.unlink, str(fn), exc_info5, start_path=tmp_path)\n         assert not fn.is_file()\n \n+    def test_on_rm_rf_error_os_open_handles_file(self, tmp_path: Path) -> None:\n+        \"\"\"os.open PermissionError on a file is handled by fixing\n+        permissions and removing it (#7940).\"\"\"\n+        adir = tmp_path / \"dir\"\n+        adir.mkdir()\n+        fn = adir / \"foo.txt\"\n+        fn.touch()\n+        self.chmod_r(fn)\n+\n+        with warnings.catch_warnings(record=True) as w:\n+            exc_info = PermissionError()\n+            on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n+            assert not fn.exists()\n+            assert not [x.message for x in w]\n+\n+    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n+    def test_on_rm_rf_error_os_open_handles_directory(self, tmp_path: Path) -> None:\n+        \"\"\"os.open PermissionError on a directory is handled by fixing\n+        permissions and recursively removing it (#7940).\"\"\"\n+        adir = tmp_path / \"dir\"\n+        adir.mkdir()\n+        (adir / \"child\").mkdir()\n+        (adir / \"child\" / \"file.txt\").touch()\n+        os.chmod(str(adir), 0o600)\n+\n+        with warnings.catch_warnings(record=True) as w:\n+            exc_info = PermissionError()\n+            on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n+            assert not adir.exists()\n+            assert not [x.message for x in w]\n+\n+    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n+    def test_on_rm_rf_error_os_open_parent_perms(self, tmp_path: Path) -> None:\n+        \"\"\"When the PermissionError is caused by the *parent* directory lacking\n+        S_IXUSR, fixing the parent is sufficient even if the child already has\n+        correct permissions.\"\"\"\n+        parent = tmp_path / \"parent\"\n+        parent.mkdir()\n+        child = parent / \"child\"\n+        child.mkdir()\n+        (child / \"file.txt\").touch()\n+        # Child has full perms, but parent lacks execute -> os.open(child) fails.\n+        os.chmod(str(parent), 0o600)\n+\n+        with warnings.catch_warnings(record=True) as w:\n+            exc_info = PermissionError()\n+            result = on_rm_rf_error(os.open, str(child), exc_info, start_path=tmp_path)\n+            assert result is True\n+            assert not child.exists()\n+            assert not [x.message for x in w]\n+\n+    def test_chmod_rwx_returns_false_on_nonexistent_path(self, tmp_path: Path) -> None:\n+        \"\"\"_chmod_rwx returns False when the path doesn't exist (OSError).\"\"\"\n+        nonexistent = tmp_path / \"does_not_exist\"\n+        assert _chmod_rwx(str(nonexistent)) is False\n+\n+    def test_chmod_rwx_returns_false_when_already_sufficient(\n+        self, tmp_path: Path\n+    ) -> None:\n+        \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n+        d = tmp_path / \"dir\"\n+        d.mkdir(mode=0o700)",
+    "original_commit_sha": "9511d93b73b749aeea081c1f2b3a2e393d5957b8",
+    "commit_sha": "9511d93b73b749aeea081c1f2b3a2e393d5957b8",
+    "comments": [
+      {
+        "id": 3299512490,
+        "author": "reviewer",
+        "body": "```suggestion\n        d.mkdir(mode=stat.S_IRWXU)\n```",
+        "created_at": "2026-05-25T18:30:44Z",
+        "in_reply_to_id": null
+      }
+    ],
+    "is_resolved": true,
+    "resolved_by": "author",
+    "is_outdated": true
+  },
+  "window": {
+    "start_commit_sha": "9511d93b73b749aeea081c1f2b3a2e393d5957b8",
+    "end_commit_sha": "d103697393a922ab011c01bb3ba725fdd49c8400",
+    "subsequent_commits": [
+      {
+        "sha": "530f9852d5e7fe96c89a7d58a2fdde8637863a03",
+        "message": "Address remaining review feedback on rm_rf permission handling\n\nNarrow OSError handling in _chmod_rwx and use stat constants in tests.\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Cursor Grok 4.5 <<email>>",
+        "authored_at": "2026-07-20T15:33:00Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d103697393a922ab011c01bb3ba725fdd49c8400",
+        "message": "test: cover _chmod_rwx when os.chmod raises OSError\n\nPin the chmod-failure branch with a monkeypatch; a portable real-FS\nlayout for that case is not available in CI.\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Cursor Grok 4.5 <<email>>",
+        "authored_at": "2026-07-21T11:47:11Z",
+        "committed_at": "2026-07-21T11:47:11Z",
+        "author_login": "author"
+      }
+    ],
+    "ambiguous_rewritten_commits": [
+      {
+        "sha": "8aa5a932c53814e47f6bf029e353d28f6a08a28f",
+        "message": "fix: rm_rf now handles directories without S_IXUSR permission (#7940)\n\nThe on_rm_rf_error handler previously only set S_IRUSR|S_IWUSR (read+write)\nwhen retrying failed removals, and silently skipped os.open/os.scandir\nfailures. This meant directories lacking execute permission (S_IXUSR) could\nnot be traversed or removed by shutil.rmtree.\n\nNow the handler:\n- Uses S_IRWXU (read+write+execute) for all permission fixes\n- Handles os.open and os.scandir PermissionError by fixing permissions\n  on the path and its parent, then removing the entry directly\n- Includes a guard against infinite recursion when chmod has no effect\n\nSupersedes #7941 which took the approach of delegating to\ntempfile.TemporaryDirectory._rmtree.\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Claude Opus <<email>>",
+        "authored_at": "2026-03-27T19:24:18Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "b124f8696e4b5486c45ff80521fde9090b640804",
+        "message": "Address Copilot review feedback on rm_rf permission handling\n\n- Use stat.S_IMODE() to extract only permission bits before\n  comparing/setting, avoiding file-type bit leakage into os.chmod\n- Only add S_IXUSR for directories; regular files get S_IRUSR|S_IWUSR\n  only, avoiding unnecessary execute side-effect on files\n- Fix recursion guard: track whether *either* parent or path chmod\n  changed permissions, so fixing the parent alone (the common case for\n  missing S_IXUSR) is sufficient to proceed with removal\n- Add test for parent-only permission fix scenario\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Claude Opus <<email>>",
+        "authored_at": "2026-03-27T19:43:47Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "06665395aef938e749d70f76725a6ab611c09e8a",
+        "message": "fix: address review feedback on rm_rf permission handling\n\n- Move `import stat` to module level (no lazy import)\n- Bound parent chmod by start_path to prevent escaping rm_rf scope\n- Use `p.is_dir()` and `rm_rf(p)` consistently with Path objects\n- Rewrite changelog to be user-facing (no internal function names)\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Sonnet 4 <<email>>",
+        "authored_at": "2026-05-24T21:11:09Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "ad08b68f1b7bb544661b1b35b0ec1fd532d6056b",
+        "message": "test: add coverage for _chmod_rwx OSError and recursion guard paths\n\n- Test _chmod_rwx returns False on nonexistent path (OSError branch)\n- Test _chmod_rwx returns False when permissions already sufficient\n- Test os.open handler returns False when chmod is ineffective\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Sonnet 4 <<email>>",
+        "authored_at": "2026-05-25T05:05:47Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "d525f62aa3f57235ec6d1793ef87d06eda1483e7",
+        "message": "test: add coverage for unlink OSError and parent walk, add no-branch pragmas\n\n- Test os.open handler returns False when unlink raises OSError\n- Test os.unlink handler walks multiple read-only parent directories\n- Add pragma: no branch to for-loops that always exit via break\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Sonnet 4 <<email>>",
+        "authored_at": "2026-05-25T08:17:30Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      },
+      {
+        "sha": "042a289a49e8141c9661662f64d838ba7441938c",
+        "message": "refactor: hoist p = Path(path) above branches in on_rm_rf_error\n\nMove the Path conversion to a single location shared by both the\nos.open/os.scandir handler and the os.rmdir/os.unlink handler,\nas suggested in review.\n\nCo-authored-by: Cursor AI <<email>>\nCo-authored-by: Anthropic Claude Sonnet 4 <<email>>",
+        "authored_at": "2026-05-25T12:53:27Z",
+        "committed_at": "2026-07-21T08:52:18Z",
+        "author_login": "author"
+      }
+    ],
+    "excluded_pre_comment_commits": [],
+    "flags": [
+      "original_commit_not_in_pr",
+      "history_rewritten",
+      "ordered_by_timestamp",
+      "ambiguous_rewritten_commits",
+      "resolution_time_unknown",
+      "base_drift_possible"
+    ]
+  },
+  "file_path": "testing/test_tmpdir.py",
+  "before_code": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nfrom collections.abc import Callable\nimport dataclasses\nimport os\nfrom pathlib import Path\nimport shutil\nimport stat\nimport sys\nfrom typing import cast\nimport warnings\n\nfrom _pytest import pathlib\nfrom _pytest.config import Config\nfrom _pytest.monkeypatch import MonkeyPatch\nfrom _pytest.pathlib import _chmod_rwx\nfrom _pytest.pathlib import cleanup_numbered_dir\nfrom _pytest.pathlib import create_cleanup_lock\nfrom _pytest.pathlib import make_numbered_dir\nfrom _pytest.pathlib import maybe_delete_a_numbered_dir\nfrom _pytest.pathlib import on_rm_rf_error\nfrom _pytest.pathlib import register_cleanup_lock_removal\nfrom _pytest.pathlib import rm_rf\nfrom _pytest.pytester import Pytester\nfrom _pytest.tmpdir import get_user\nfrom _pytest.tmpdir import TempPathFactory\nimport pytest\n\n\ndef test_tmp_path_fixture(pytester: Pytester) -> None:\n    p = pytester.copy_example(\"tmpdir/tmp_path_fixture.py\")\n    results = pytester.runpytest(p)\n    results.stdout.fnmatch_lines([\"*1 passed*\"])\n\n\n@dataclasses.dataclass\nclass FakeConfig:\n    basetemp: str | Path\n\n    @property\n    def trace(self):\n        return self\n\n    def get(self, key):\n        return lambda *k: None\n\n    def getini(self, name):\n        if name == \"tmp_path_retention_count\":\n            return 3\n        elif name == \"tmp_path_retention_policy\":\n            return \"all\"\n        else:\n            assert False\n\n    @property\n    def option(self):\n        return self\n\n\nclass TestTmpPathHandler:\n    def test_mktemp(self, tmp_path: Path) -> None:\n        config = cast(Config, FakeConfig(tmp_path))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        tmp = t.mktemp(\"world\")\n        assert str(tmp.relative_to(t.getbasetemp())) == \"world0\"\n        tmp = t.mktemp(\"this\")\n        assert str(tmp.relative_to(t.getbasetemp())).startswith(\"this\")\n        tmp2 = t.mktemp(\"this\")\n        assert str(tmp2.relative_to(t.getbasetemp())).startswith(\"this\")\n        assert tmp2 != tmp\n\n    def test_tmppath_relative_basetemp_absolute(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"#4425\"\"\"\n        monkeypatch.chdir(tmp_path)\n        config = cast(Config, FakeConfig(\"hello\"))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        assert t.getbasetemp().resolve() == (tmp_path / \"hello\").resolve()\n\n\nclass TestConfigTmpPath:\n    def test_getbasetemp_custom_removes_old(self, pytester: Pytester) -> None:\n        mytemp = pytester.path.joinpath(\"xyz\")\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                pass\n        \"\"\"\n        )\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        mytemp.joinpath(\"hello\").touch()\n\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        assert not mytemp.joinpath(\"hello\").exists()\n\n    def test_policy_none_delete_all(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"none\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            # Check the base dir itself is gone without depending on test results\n            assert base_dir == []\n\n    @pytest.mark.parametrize(\"policy\", ['\"failed\"', '\"all\"'])\n    @pytest.mark.parametrize(\"count\", [0, 1, 3])\n    def test_retention_count(self, pytester: Pytester, policy, count) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n\n        pytester.makepyprojecttoml(\n            f\"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = {policy}\n            tmp_path_retention_count = {count}\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            assert len(list(base_dir)) == count\n\n    def test_policy_failed_removes_only_passed_dir(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n            def test_2(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            # Check only the failed one remains\n            assert len(test_dir) == 1\n            assert test_dir[0].name == \"test_20\"\n\n    def test_policy_failed_removes_basedir_when_all_passed(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            # This symlink will be deleted by cleanup_numbered_dir **after**\n            # the test finishes because it's triggered by atexit.\n            # So it has to be ignored here.\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            # Check the base dir itself is gone\n            assert len(list(base_dir)) == 0\n\n    # issue #10502\n    def test_policy_failed_removes_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n\n        # Check if the whole directory is removed\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            assert base_dir == []\n\n    # issue #10502\n    def test_policy_all_keeps_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"all\"\n        \"\"\"\n        )\n        pytester.inline_run(p)\n\n        # Check if the whole directory is kept\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            assert len(test_dir) == 1\n\n\ntestdata = [\n    (\"mypath\", True),\n    (\"/mypath1\", False),\n    (\"./mypath1\", True),\n    (\"../mypath3\", False),\n    (\"../../mypath4\", False),\n    (\"mypath5/..\", False),\n    (\"mypath6/../mypath6\", True),\n    (\"mypath7/../mypath7/..\", False),\n]\n\n\n@pytest.mark.parametrize(\"basename, is_ok\", testdata)\ndef test_mktemp(pytester: Pytester, basename: str, is_ok: bool) -> None:\n    mytemp = pytester.mkdir(\"mytemp\")\n    p = pytester.makepyfile(\n        f\"\"\"\n        def test_abs_path(tmp_path_factory):\n            tmp_path_factory.mktemp('{basename}', numbered=False)\n        \"\"\"\n    )\n\n    result = pytester.runpytest(p, f\"--basetemp={mytemp}\")\n    if is_ok:\n        assert result.ret == 0\n        assert mytemp.joinpath(basename).exists()\n    else:\n        assert result.ret == 1\n        result.stdout.fnmatch_lines(\"*ValueError*\")\n\n\ndef test_tmp_path_always_is_realpath(pytester: Pytester, monkeypatch) -> None:\n    # the reason why tmp_path should be a realpath is that\n    # when you cd to it and do \"os.getcwd()\" you will anyway\n    # get the realpath.  Using the symlinked path can thus\n    # easily result in path-inequality\n    # XXX if that proves to be a problem, consider using\n    # os.environ[\"PWD\"]\n    realtemp = pytester.mkdir(\"myrealtemp\")\n    linktemp = pytester.path.joinpath(\"symlinktemp\")\n    attempt_symlink_to(linktemp, str(realtemp))\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(linktemp))\n    pytester.makepyfile(\n        \"\"\"\n        def test_1(tmp_path):\n            assert tmp_path.resolve() == tmp_path\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_too_long_on_parametrization(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [\"1\"*1000])\n        def test_some(arg, tmp_path):\n            tmp_path.joinpath(\"hello\").touch()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_factory(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.fixture(scope='session')\n        def session_dir(tmp_path_factory):\n            return tmp_path_factory.mktemp('data', numbered=False)\n        def test_some(session_dir):\n            assert session_dir.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_fallback_tox_env(pytester: Pytester, monkeypatch) -> None:\n    \"\"\"Test that tmp_path works even if environment variables required by getpass\n    module are missing (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.fixture\ndef break_getuser(monkeypatch):\n    monkeypatch.setattr(\"os.getuid\", lambda: -1)\n    # taken from python 2.7/3.4\n    for envvar in (\"LOGNAME\", \"USER\", \"LNAME\", \"USERNAME\"):\n        monkeypatch.delenv(envvar, raising=False)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_tmp_path_fallback_uid_not_found(pytester: Pytester) -> None:\n    \"\"\"Test that tmp_path works even if the current process's user id does not\n    correspond to a valid user.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_get_user_uid_not_found():\n    \"\"\"Test that get_user() function works even if the current process's\n    user id does not correspond to a valid user (e.g. running pytest in a\n    Docker container with 'docker run -u'.\n    \"\"\"\n    assert get_user() is None\n\n\n@pytest.mark.skipif(not sys.platform.startswith(\"win\"), reason=\"win only\")\ndef test_get_user(monkeypatch):\n    \"\"\"Test that get_user() function works even if environment variables\n    required by getpass module are missing from the environment on Windows\n    (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    assert get_user() is None\n\n\nclass TestNumberedDir:\n    PREFIX = \"fun-\"\n\n    def test_make(self, tmp_path):\n        for i in range(10):\n            d = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n            assert d.name.startswith(self.PREFIX)\n            assert d.name.endswith(str(i))\n\n        symlink = tmp_path.joinpath(self.PREFIX + \"current\")\n        if symlink.exists():\n            # unix\n            assert symlink.is_symlink()\n            assert symlink.resolve() == d.resolve()\n\n    def test_cleanup_lock_create(self, tmp_path):\n        d = tmp_path.joinpath(\"test\")\n        d.mkdir()\n        lockfile = create_cleanup_lock(d)\n        with pytest.raises(OSError, match=r\"cannot create lockfile in .*\"):\n            create_cleanup_lock(d)\n\n        lockfile.unlink()\n\n    def test_lock_register_cleanup_removal(self, tmp_path: Path) -> None:\n        lock = create_cleanup_lock(tmp_path)\n\n        registry: list[Callable[..., None]] = []\n        register_cleanup_lock_removal(lock, register=registry.append)\n\n        (cleanup_func,) = registry\n\n        assert lock.is_file()\n\n        cleanup_func(original_pid=\"intentionally_different\")\n\n        assert lock.is_file()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n    def _do_cleanup(self, tmp_path: Path, keep: int = 2) -> None:\n        self.test_make(tmp_path)\n        cleanup_numbered_dir(\n            root=tmp_path,\n            prefix=self.PREFIX,\n            keep=keep,\n            consider_lock_dead_if_created_before=0,\n        )\n\n    def test_cleanup_keep(self, tmp_path):\n        self._do_cleanup(tmp_path)\n        a, b = (x for x in tmp_path.iterdir() if not x.is_symlink())\n        print(a, b)\n\n    def test_cleanup_keep_0(self, tmp_path: Path):\n        self._do_cleanup(tmp_path, 0)\n        dir_num = len(list(tmp_path.iterdir()))\n        assert dir_num == 0\n\n    def test_cleanup_locked(self, tmp_path):\n        p = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n\n        create_cleanup_lock(p)\n\n        assert not pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime - 1\n        )\n        assert pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime + 1\n        )\n\n    def test_cleanup_ignores_symlink(self, tmp_path):\n        the_symlink = tmp_path / (self.PREFIX + \"current\")\n        attempt_symlink_to(the_symlink, tmp_path / (self.PREFIX + \"5\"))\n        self._do_cleanup(tmp_path)\n\n    def test_removal_accepts_lock(self, tmp_path):\n        dir = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n        create_cleanup_lock(dir)\n        maybe_delete_a_numbered_dir(dir)\n        assert dir.is_dir()\n\n\ndef _raise_oserror(*args: object, **kwargs: object) -> None:\n    raise OSError(\"simulated failure\")\n\n\nclass TestRmRf:\n    def test_rm_rf(self, tmp_path):\n        adir = tmp_path / \"adir\"\n        adir.mkdir()\n        rm_rf(adir)\n\n        assert not adir.exists()\n\n        adir.mkdir()\n        afile = adir / \"afile\"\n        afile.write_bytes(b\"aa\")\n\n        rm_rf(adir)\n        assert not adir.exists()\n\n    def test_rm_rf_with_read_only_file(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories with read-only files in them (#5524)\"\"\"\n        fn = tmp_path / \"dir/foo.txt\"\n        fn.parent.mkdir()\n\n        fn.touch()\n\n        self.chmod_r(fn)\n\n        rm_rf(fn.parent)\n\n        assert not fn.parent.is_dir()\n\n    def chmod_r(self, path):\n        mode = os.stat(str(path)).st_mode\n        os.chmod(str(path), mode & ~stat.S_IWRITE)\n\n    def test_rm_rf_with_read_only_directory(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove read-only directories (#5524)\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        (adir / \"foo.txt\").touch()\n        self.chmod_r(adir)\n\n        rm_rf(adir)\n\n        assert not adir.is_dir()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_rm_rf_with_no_exec_permission_directories(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories without S_IXUSR (#7940).\n\n        This is the exact scenario from the original issue: nested directories\n        and files with all permissions stripped.\n        \"\"\"\n        p = tmp_path / \"foo\" / \"bar\" / \"baz\"\n        p.parent.mkdir(parents=True)\n        p.touch(mode=0)\n        for parent in p.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(mode=0)\n\n        rm_rf(tmp_path / \"foo\")\n\n        assert not (tmp_path / \"foo\").exists()\n\n    def test_on_rm_rf_error(self, tmp_path: Path) -> None:\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        # unknown exception\n        with pytest.warns(pytest.PytestWarning):\n            exc_info1 = (RuntimeError, RuntimeError(), None)\n            on_rm_rf_error(os.unlink, str(fn), exc_info1, start_path=tmp_path)\n            assert fn.is_file()\n\n        # we ignore FileNotFoundError\n        exc_info2 = (FileNotFoundError, FileNotFoundError(), None)\n        assert not on_rm_rf_error(None, str(fn), exc_info2, start_path=tmp_path)\n\n        # unknown function\n        with pytest.warns(\n            pytest.PytestWarning,\n            match=r\"^\\(rm_rf\\) unknown function None when removing .*foo.txt:\\n<class 'PermissionError'>: \",\n        ):\n            exc_info3 = (PermissionError, PermissionError(), None)\n            on_rm_rf_error(None, str(fn), exc_info3, start_path=tmp_path)\n            assert fn.is_file()\n\n        # os.unlink PermissionError is handled (chmod + retry)\n        exc_info5 = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info5, start_path=tmp_path)\n        assert not fn.is_file()\n\n    def test_on_rm_rf_error_os_open_handles_file(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a file is handled by fixing\n        permissions and removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n            assert not fn.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_handles_directory(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a directory is handled by fixing\n        permissions and recursively removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        (adir / \"child\").mkdir()\n        (adir / \"child\" / \"file.txt\").touch()\n        os.chmod(str(adir), 0o600)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n            assert not adir.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_parent_perms(self, tmp_path: Path) -> None:\n        \"\"\"When the PermissionError is caused by the *parent* directory lacking\n        S_IXUSR, fixing the parent is sufficient even if the child already has\n        correct permissions.\"\"\"\n        parent = tmp_path / \"parent\"\n        parent.mkdir()\n        child = parent / \"child\"\n        child.mkdir()\n        (child / \"file.txt\").touch()\n        # Child has full perms, but parent lacks execute -> os.open(child) fails.\n        os.chmod(str(parent), 0o600)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            result = on_rm_rf_error(os.open, str(child), exc_info, start_path=tmp_path)\n            assert result is True\n            assert not child.exists()\n            assert not [x.message for x in w]\n\n    def test_chmod_rwx_returns_false_on_nonexistent_path(self, tmp_path: Path) -> None:\n        \"\"\"_chmod_rwx returns False when the path doesn't exist (OSError).\"\"\"\n        nonexistent = tmp_path / \"does_not_exist\"\n        assert _chmod_rwx(str(nonexistent)) is False\n\n    def test_chmod_rwx_returns_false_when_already_sufficient(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n        d = tmp_path / \"dir\"\n        d.mkdir(mode=0o700)\n        assert _chmod_rwx(str(d)) is False\n\n        f = tmp_path / \"file\"\n        f.touch(mode=0o600)\n        assert _chmod_rwx(str(f)) is False\n\n    def test_on_rm_rf_error_os_open_returns_false_when_chmod_ineffective(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"os.open handler returns False when neither parent nor path chmod\n        changes anything (recursion guard).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir(mode=0o700)\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n        assert result is False\n        assert adir.exists()\n\n    def test_on_rm_rf_error_os_open_unlink_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"os.open handler returns False when chmod succeeds but os.unlink\n        still raises OSError (e.g. sandbox or other mechanism).\"\"\"\n        fn = tmp_path / \"stubborn.txt\"\n        fn.touch(mode=0)\n\n        monkeypatch.setattr(os, \"unlink\", _raise_oserror)\n\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n        assert result is False\n        assert fn.exists()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_chmod_retry_walks_parents(self, tmp_path: Path) -> None:\n        \"\"\"The os.rmdir/os.unlink handler walks up through multiple parent\n        directories to fix permissions before retrying.\"\"\"\n        deep = tmp_path / \"a\" / \"b\" / \"c\"\n        deep.mkdir(parents=True)\n        fn = deep / \"file.txt\"\n        fn.touch()\n        # Remove write from intermediate dirs (keep exec so traversal works,\n        # but os.unlink needs write on the parent).\n        for parent in fn.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(0o555)\n\n        exc_info = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info, start_path=tmp_path)\n        assert not fn.exists()\n\n\ndef attempt_symlink_to(path, to_path):\n    \"\"\"Try to make a symlink from \"path\" to \"to_path\", skipping in case this platform\n    does not support it or we don't have sufficient privileges (common on Windows).\"\"\"\n    try:\n        Path(path).symlink_to(Path(to_path))\n    except OSError:\n        pytest.skip(\"could not create symbolic link\")\n\n\ndef test_basetemp_with_read_only_files(pytester: Pytester) -> None:\n    \"\"\"Integration test for #5524\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import os\n        import stat\n\n        def test(tmp_path):\n            fn = tmp_path / 'foo.txt'\n            fn.write_text('hello', encoding='utf-8')\n            mode = os.stat(str(fn)).st_mode\n            os.chmod(str(fn), mode & ~stat.S_IREAD)\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n    # running a second time and ensure we don't crash\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n\n\ndef test_tmp_path_factory_handles_invalid_dir_characters(\n    tmp_path_factory: TempPathFactory, monkeypatch: MonkeyPatch\n) -> None:\n    monkeypatch.setattr(\"getpass.getuser\", lambda: \"os/<:*?;>agnostic\")\n    # _basetemp / _given_basetemp are cached / set in parallel runs, patch them\n    monkeypatch.setattr(tmp_path_factory, \"_basetemp\", None)\n    monkeypatch.setattr(tmp_path_factory, \"_given_basetemp\", None)\n    p = tmp_path_factory.getbasetemp()\n    assert \"pytest-of-unknown\" in str(p)\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_create_directory_with_safe_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that pytest creates directories under /tmp with private permissions.\"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # No world-readable permissions.\n    assert (basetemp.stat().st_mode & 0o077) == 0\n    # Parent too (pytest-of-foo).\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_fixes_up_world_readable_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory already exists with\n    world-readable permissions, it is fixed.\n\n    pytest used to mkdir with such permissions, that's why we fix it up.\n    \"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # Before - simulate bad perms.\n    os.chmod(basetemp.parent, 0o777)\n    assert (basetemp.parent.stat().st_mode & 0o077) != 0\n\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # After - fixed.\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(\n    not hasattr(os, \"getuid\") or os.stat not in os.supports_follow_symlinks,\n    reason=\"checks unix permissions and symlinks\",\n)\ndef test_tmp_path_factory_doesnt_follow_symlinks(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory is a symbolic link,\n    it is rejected (#13669, CVE-2025-71176).\"\"\"\n    attacker_controlled = tmp_path / \"attacker_controlled\"\n    attacker_controlled.mkdir()\n\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n\n    # First just get the pytest-of-user path.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    pytest_of_user = tmp_factory.getbasetemp().parent\n    # Just for safety in the test, before we nuke it.\n    assert \"pytest-of-\" in str(pytest_of_user)\n    shutil.rmtree(pytest_of_user)\n\n    pytest_of_user.symlink_to(attacker_controlled)\n\n    # This now tries to use the directory when it's a symlink.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    with pytest.raises(OSError, match=r\"temporary directory .* is a symbolic link\"):\n        tmp_factory.getbasetemp()\n\n\ndef test_get_user_handles_getpass_oserror(monkeypatch: MonkeyPatch) -> None:\n    \"\"\"Regression test: get_user() should return None when getpass.getuser()\n    raises OSError (Python 3.13+ behavior, #13835).\"\"\"\n    import getpass\n\n    def _raise_oserror():\n        raise OSError(\"No username set in the environment\")\n\n    monkeypatch.setattr(getpass, \"getuser\", _raise_oserror)\n    assert get_user() is None\n",
+  "anchor_line": 686,
+  "after_code": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nfrom collections.abc import Callable\nimport dataclasses\nimport os\nfrom pathlib import Path\nimport shutil\nimport stat\nimport sys\nfrom typing import cast\nimport warnings\n\nfrom _pytest import pathlib\nfrom _pytest.config import Config\nfrom _pytest.monkeypatch import MonkeyPatch\nfrom _pytest.pathlib import _chmod_rwx\nfrom _pytest.pathlib import cleanup_numbered_dir\nfrom _pytest.pathlib import create_cleanup_lock\nfrom _pytest.pathlib import make_numbered_dir\nfrom _pytest.pathlib import maybe_delete_a_numbered_dir\nfrom _pytest.pathlib import on_rm_rf_error\nfrom _pytest.pathlib import register_cleanup_lock_removal\nfrom _pytest.pathlib import rm_rf\nfrom _pytest.pytester import Pytester\nfrom _pytest.tmpdir import get_user\nfrom _pytest.tmpdir import TempPathFactory\nimport pytest\n\n\ndef test_tmp_path_fixture(pytester: Pytester) -> None:\n    p = pytester.copy_example(\"tmpdir/tmp_path_fixture.py\")\n    results = pytester.runpytest(p)\n    results.stdout.fnmatch_lines([\"*1 passed*\"])\n\n\n@dataclasses.dataclass\nclass FakeConfig:\n    basetemp: str | Path\n\n    @property\n    def trace(self):\n        return self\n\n    def get(self, key):\n        return lambda *k: None\n\n    def getini(self, name):\n        if name == \"tmp_path_retention_count\":\n            return 3\n        elif name == \"tmp_path_retention_policy\":\n            return \"all\"\n        else:\n            assert False\n\n    @property\n    def option(self):\n        return self\n\n\nclass TestTmpPathHandler:\n    def test_mktemp(self, tmp_path: Path) -> None:\n        config = cast(Config, FakeConfig(tmp_path))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        tmp = t.mktemp(\"world\")\n        assert str(tmp.relative_to(t.getbasetemp())) == \"world0\"\n        tmp = t.mktemp(\"this\")\n        assert str(tmp.relative_to(t.getbasetemp())).startswith(\"this\")\n        tmp2 = t.mktemp(\"this\")\n        assert str(tmp2.relative_to(t.getbasetemp())).startswith(\"this\")\n        assert tmp2 != tmp\n\n    def test_tmppath_relative_basetemp_absolute(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"#4425\"\"\"\n        monkeypatch.chdir(tmp_path)\n        config = cast(Config, FakeConfig(\"hello\"))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        assert t.getbasetemp().resolve() == (tmp_path / \"hello\").resolve()\n\n\nclass TestConfigTmpPath:\n    def test_getbasetemp_custom_removes_old(self, pytester: Pytester) -> None:\n        mytemp = pytester.path.joinpath(\"xyz\")\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                pass\n        \"\"\"\n        )\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        mytemp.joinpath(\"hello\").touch()\n\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        assert not mytemp.joinpath(\"hello\").exists()\n\n    def test_policy_none_delete_all(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"none\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            # Check the base dir itself is gone without depending on test results\n            assert base_dir == []\n\n    @pytest.mark.parametrize(\"policy\", ['\"failed\"', '\"all\"'])\n    @pytest.mark.parametrize(\"count\", [0, 1, 3])\n    def test_retention_count(self, pytester: Pytester, policy, count) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n\n        pytester.makepyprojecttoml(\n            f\"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = {policy}\n            tmp_path_retention_count = {count}\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            assert len(list(base_dir)) == count\n\n    def test_policy_failed_removes_only_passed_dir(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n            def test_2(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            # Check only the failed one remains\n            assert len(test_dir) == 1\n            assert test_dir[0].name == \"test_20\"\n\n    def test_policy_failed_removes_basedir_when_all_passed(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            # This symlink will be deleted by cleanup_numbered_dir **after**\n            # the test finishes because it's triggered by atexit.\n            # So it has to be ignored here.\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            # Check the base dir itself is gone\n            assert len(list(base_dir)) == 0\n\n    # issue #10502\n    def test_policy_failed_removes_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n\n        # Check if the whole directory is removed\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            assert base_dir == []\n\n    # issue #10502\n    def test_policy_all_keeps_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"all\"\n        \"\"\"\n        )\n        pytester.inline_run(p)\n\n        # Check if the whole directory is kept\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            assert len(test_dir) == 1\n\n\ntestdata = [\n    (\"mypath\", True),\n    (\"/mypath1\", False),\n    (\"./mypath1\", True),\n    (\"../mypath3\", False),\n    (\"../../mypath4\", False),\n    (\"mypath5/..\", False),\n    (\"mypath6/../mypath6\", True),\n    (\"mypath7/../mypath7/..\", False),\n]\n\n\n@pytest.mark.parametrize(\"basename, is_ok\", testdata)\ndef test_mktemp(pytester: Pytester, basename: str, is_ok: bool) -> None:\n    mytemp = pytester.mkdir(\"mytemp\")\n    p = pytester.makepyfile(\n        f\"\"\"\n        def test_abs_path(tmp_path_factory):\n            tmp_path_factory.mktemp('{basename}', numbered=False)\n        \"\"\"\n    )\n\n    result = pytester.runpytest(p, f\"--basetemp={mytemp}\")\n    if is_ok:\n        assert result.ret == 0\n        assert mytemp.joinpath(basename).exists()\n    else:\n        assert result.ret == 1\n        result.stdout.fnmatch_lines(\"*ValueError*\")\n\n\ndef test_tmp_path_always_is_realpath(pytester: Pytester, monkeypatch) -> None:\n    # the reason why tmp_path should be a realpath is that\n    # when you cd to it and do \"os.getcwd()\" you will anyway\n    # get the realpath.  Using the symlinked path can thus\n    # easily result in path-inequality\n    # XXX if that proves to be a problem, consider using\n    # os.environ[\"PWD\"]\n    realtemp = pytester.mkdir(\"myrealtemp\")\n    linktemp = pytester.path.joinpath(\"symlinktemp\")\n    attempt_symlink_to(linktemp, str(realtemp))\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(linktemp))\n    pytester.makepyfile(\n        \"\"\"\n        def test_1(tmp_path):\n            assert tmp_path.resolve() == tmp_path\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_too_long_on_parametrization(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [\"1\"*1000])\n        def test_some(arg, tmp_path):\n            tmp_path.joinpath(\"hello\").touch()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_factory(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.fixture(scope='session')\n        def session_dir(tmp_path_factory):\n            return tmp_path_factory.mktemp('data', numbered=False)\n        def test_some(session_dir):\n            assert session_dir.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_fallback_tox_env(pytester: Pytester, monkeypatch) -> None:\n    \"\"\"Test that tmp_path works even if environment variables required by getpass\n    module are missing (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.fixture\ndef break_getuser(monkeypatch):\n    monkeypatch.setattr(\"os.getuid\", lambda: -1)\n    # taken from python 2.7/3.4\n    for envvar in (\"LOGNAME\", \"USER\", \"LNAME\", \"USERNAME\"):\n        monkeypatch.delenv(envvar, raising=False)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_tmp_path_fallback_uid_not_found(pytester: Pytester) -> None:\n    \"\"\"Test that tmp_path works even if the current process's user id does not\n    correspond to a valid user.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_get_user_uid_not_found():\n    \"\"\"Test that get_user() function works even if the current process's\n    user id does not correspond to a valid user (e.g. running pytest in a\n    Docker container with 'docker run -u'.\n    \"\"\"\n    assert get_user() is None\n\n\n@pytest.mark.skipif(not sys.platform.startswith(\"win\"), reason=\"win only\")\ndef test_get_user(monkeypatch):\n    \"\"\"Test that get_user() function works even if environment variables\n    required by getpass module are missing from the environment on Windows\n    (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    assert get_user() is None\n\n\nclass TestNumberedDir:\n    PREFIX = \"fun-\"\n\n    def test_make(self, tmp_path):\n        for i in range(10):\n            d = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n            assert d.name.startswith(self.PREFIX)\n            assert d.name.endswith(str(i))\n\n        symlink = tmp_path.joinpath(self.PREFIX + \"current\")\n        if symlink.exists():\n            # unix\n            assert symlink.is_symlink()\n            assert symlink.resolve() == d.resolve()\n\n    def test_cleanup_lock_create(self, tmp_path):\n        d = tmp_path.joinpath(\"test\")\n        d.mkdir()\n        lockfile = create_cleanup_lock(d)\n        with pytest.raises(OSError, match=r\"cannot create lockfile in .*\"):\n            create_cleanup_lock(d)\n\n        lockfile.unlink()\n\n    def test_lock_register_cleanup_removal(self, tmp_path: Path) -> None:\n        lock = create_cleanup_lock(tmp_path)\n\n        registry: list[Callable[..., None]] = []\n        register_cleanup_lock_removal(lock, register=registry.append)\n\n        (cleanup_func,) = registry\n\n        assert lock.is_file()\n\n        cleanup_func(original_pid=\"intentionally_different\")\n\n        assert lock.is_file()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n    def _do_cleanup(self, tmp_path: Path, keep: int = 2) -> None:\n        self.test_make(tmp_path)\n        cleanup_numbered_dir(\n            root=tmp_path,\n            prefix=self.PREFIX,\n            keep=keep,\n            consider_lock_dead_if_created_before=0,\n        )\n\n    def test_cleanup_keep(self, tmp_path):\n        self._do_cleanup(tmp_path)\n        a, b = (x for x in tmp_path.iterdir() if not x.is_symlink())\n        print(a, b)\n\n    def test_cleanup_keep_0(self, tmp_path: Path):\n        self._do_cleanup(tmp_path, 0)\n        dir_num = len(list(tmp_path.iterdir()))\n        assert dir_num == 0\n\n    def test_cleanup_locked(self, tmp_path):\n        p = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n\n        create_cleanup_lock(p)\n\n        assert not pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime - 1\n        )\n        assert pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime + 1\n        )\n\n    def test_cleanup_ignores_symlink(self, tmp_path):\n        the_symlink = tmp_path / (self.PREFIX + \"current\")\n        attempt_symlink_to(the_symlink, tmp_path / (self.PREFIX + \"5\"))\n        self._do_cleanup(tmp_path)\n\n    def test_removal_accepts_lock(self, tmp_path):\n        dir = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n        create_cleanup_lock(dir)\n        maybe_delete_a_numbered_dir(dir)\n        assert dir.is_dir()\n\n\ndef _raise_oserror(*args: object, **kwargs: object) -> None:\n    raise OSError(\"simulated failure\")\n\n\nclass TestRmRf:\n    def test_rm_rf(self, tmp_path):\n        adir = tmp_path / \"adir\"\n        adir.mkdir()\n        rm_rf(adir)\n\n        assert not adir.exists()\n\n        adir.mkdir()\n        afile = adir / \"afile\"\n        afile.write_bytes(b\"aa\")\n\n        rm_rf(adir)\n        assert not adir.exists()\n\n    def test_rm_rf_with_read_only_file(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories with read-only files in them (#5524)\"\"\"\n        fn = tmp_path / \"dir/foo.txt\"\n        fn.parent.mkdir()\n\n        fn.touch()\n\n        self.chmod_r(fn)\n\n        rm_rf(fn.parent)\n\n        assert not fn.parent.is_dir()\n\n    def chmod_r(self, path):\n        mode = os.stat(str(path)).st_mode\n        os.chmod(str(path), mode & ~stat.S_IWRITE)\n\n    def test_rm_rf_with_read_only_directory(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove read-only directories (#5524)\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        (adir / \"foo.txt\").touch()\n        self.chmod_r(adir)\n\n        rm_rf(adir)\n\n        assert not adir.is_dir()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_rm_rf_with_no_exec_permission_directories(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories without S_IXUSR (#7940).\n\n        This is the exact scenario from the original issue: nested directories\n        and files with all permissions stripped.\n        \"\"\"\n        p = tmp_path / \"foo\" / \"bar\" / \"baz\"\n        p.parent.mkdir(parents=True)\n        p.touch(mode=0)\n        for parent in p.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(mode=0)\n\n        rm_rf(tmp_path / \"foo\")\n\n        assert not (tmp_path / \"foo\").exists()\n\n    def test_on_rm_rf_error(self, tmp_path: Path) -> None:\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        # unknown exception\n        with pytest.warns(pytest.PytestWarning):\n            exc_info1 = (RuntimeError, RuntimeError(), None)\n            on_rm_rf_error(os.unlink, str(fn), exc_info1, start_path=tmp_path)\n            assert fn.is_file()\n\n        # we ignore FileNotFoundError\n        exc_info2 = (FileNotFoundError, FileNotFoundError(), None)\n        assert not on_rm_rf_error(None, str(fn), exc_info2, start_path=tmp_path)\n\n        # unknown function\n        with pytest.warns(\n            pytest.PytestWarning,\n            match=r\"^\\(rm_rf\\) unknown function None when removing .*foo.txt:\\n<class 'PermissionError'>: \",\n        ):\n            exc_info3 = (PermissionError, PermissionError(), None)\n            on_rm_rf_error(None, str(fn), exc_info3, start_path=tmp_path)\n            assert fn.is_file()\n\n        # os.unlink PermissionError is handled (chmod + retry)\n        exc_info5 = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info5, start_path=tmp_path)\n        assert not fn.is_file()\n\n    def test_on_rm_rf_error_os_open_handles_file(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a file is handled by fixing\n        permissions and removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n            assert not fn.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_handles_directory(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a directory is handled by fixing\n        permissions and recursively removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        (adir / \"child\").mkdir()\n        (adir / \"child\" / \"file.txt\").touch()\n        os.chmod(str(adir), stat.S_IRUSR | stat.S_IWUSR)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n            assert not adir.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_parent_perms(self, tmp_path: Path) -> None:\n        \"\"\"When the PermissionError is caused by the *parent* directory lacking\n        S_IXUSR, fixing the parent is sufficient even if the child already has\n        correct permissions.\"\"\"\n        parent = tmp_path / \"parent\"\n        parent.mkdir()\n        child = parent / \"child\"\n        child.mkdir()\n        (child / \"file.txt\").touch()\n        # Child has full perms, but parent lacks execute -> os.open(child) fails.\n        os.chmod(str(parent), stat.S_IRUSR | stat.S_IWUSR)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            result = on_rm_rf_error(os.open, str(child), exc_info, start_path=tmp_path)\n            assert result is True\n            assert not child.exists()\n            assert not [x.message for x in w]\n\n    def test_chmod_rwx_returns_false_on_nonexistent_path(self, tmp_path: Path) -> None:\n        \"\"\"_chmod_rwx returns False when the path doesn't exist (OSError).\"\"\"\n        nonexistent = tmp_path / \"does_not_exist\"\n        assert _chmod_rwx(str(nonexistent)) is False\n\n    def test_chmod_rwx_returns_false_when_chmod_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when os.chmod raises OSError.\n\n        A real FS layout that makes chmod fail while the path remains\n        (immutable bit, RO mount, foreign ownership) is not portable in CI,\n        so pin this branch with a monkeypatch.\n        \"\"\"\n        fn = tmp_path / \"file.txt\"\n        fn.touch(mode=0)  # needs bits so we reach os.chmod\n        monkeypatch.setattr(os, \"chmod\", _raise_oserror)\n        assert _chmod_rwx(str(fn)) is False\n\n    def test_chmod_rwx_returns_false_when_already_sufficient(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n        d = tmp_path / \"dir\"\n        d.mkdir(mode=stat.S_IRWXU)\n        assert _chmod_rwx(str(d)) is False\n\n        f = tmp_path / \"file\"\n        f.touch(mode=stat.S_IRUSR | stat.S_IWUSR)\n        assert _chmod_rwx(str(f)) is False\n\n    def test_on_rm_rf_error_os_open_returns_false_when_chmod_ineffective(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"os.open handler returns False when neither parent nor path chmod\n        changes anything (recursion guard).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir(mode=stat.S_IRWXU)\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n        assert result is False\n        assert adir.exists()\n\n    def test_on_rm_rf_error_os_open_unlink_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"os.open handler returns False when chmod succeeds but os.unlink\n        still raises OSError (e.g. sandbox or other mechanism).\"\"\"\n        fn = tmp_path / \"stubborn.txt\"\n        fn.touch(mode=0)\n\n        monkeypatch.setattr(os, \"unlink\", _raise_oserror)\n\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n        assert result is False\n        assert fn.exists()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_chmod_retry_walks_parents(self, tmp_path: Path) -> None:\n        \"\"\"The os.rmdir/os.unlink handler walks up through multiple parent\n        directories to fix permissions before retrying.\"\"\"\n        deep = tmp_path / \"a\" / \"b\" / \"c\"\n        deep.mkdir(parents=True)\n        fn = deep / \"file.txt\"\n        fn.touch()\n        # Remove write from intermediate dirs (keep exec so traversal works,\n        # but os.unlink needs write on the parent).\n        for parent in fn.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(\n                stat.S_IRUSR\n                | stat.S_IXUSR\n                | stat.S_IRGRP\n                | stat.S_IXGRP\n                | stat.S_IROTH\n                | stat.S_IXOTH\n            )\n\n        exc_info = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info, start_path=tmp_path)\n        assert not fn.exists()\n\n\ndef attempt_symlink_to(path, to_path):\n    \"\"\"Try to make a symlink from \"path\" to \"to_path\", skipping in case this platform\n    does not support it or we don't have sufficient privileges (common on Windows).\"\"\"\n    try:\n        Path(path).symlink_to(Path(to_path))\n    except OSError:\n        pytest.skip(\"could not create symbolic link\")\n\n\ndef test_basetemp_with_read_only_files(pytester: Pytester) -> None:\n    \"\"\"Integration test for #5524\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import os\n        import stat\n\n        def test(tmp_path):\n            fn = tmp_path / 'foo.txt'\n            fn.write_text('hello', encoding='utf-8')\n            mode = os.stat(str(fn)).st_mode\n            os.chmod(str(fn), mode & ~stat.S_IREAD)\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n    # running a second time and ensure we don't crash\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n\n\ndef test_tmp_path_factory_handles_invalid_dir_characters(\n    tmp_path_factory: TempPathFactory, monkeypatch: MonkeyPatch\n) -> None:\n    monkeypatch.setattr(\"getpass.getuser\", lambda: \"os/<:*?;>agnostic\")\n    # _basetemp / _given_basetemp are cached / set in parallel runs, patch them\n    monkeypatch.setattr(tmp_path_factory, \"_basetemp\", None)\n    monkeypatch.setattr(tmp_path_factory, \"_given_basetemp\", None)\n    p = tmp_path_factory.getbasetemp()\n    assert \"pytest-of-unknown\" in str(p)\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_create_directory_with_safe_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that pytest creates directories under /tmp with private permissions.\"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # No world-readable permissions.\n    assert (basetemp.stat().st_mode & 0o077) == 0\n    # Parent too (pytest-of-foo).\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_fixes_up_world_readable_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory already exists with\n    world-readable permissions, it is fixed.\n\n    pytest used to mkdir with such permissions, that's why we fix it up.\n    \"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # Before - simulate bad perms.\n    os.chmod(basetemp.parent, 0o777)\n    assert (basetemp.parent.stat().st_mode & 0o077) != 0\n\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # After - fixed.\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(\n    not hasattr(os, \"getuid\") or os.stat not in os.supports_follow_symlinks,\n    reason=\"checks unix permissions and symlinks\",\n)\ndef test_tmp_path_factory_doesnt_follow_symlinks(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory is a symbolic link,\n    it is rejected (#13669, CVE-2025-71176).\"\"\"\n    attacker_controlled = tmp_path / \"attacker_controlled\"\n    attacker_controlled.mkdir()\n\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n\n    # First just get the pytest-of-user path.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    pytest_of_user = tmp_factory.getbasetemp().parent\n    # Just for safety in the test, before we nuke it.\n    assert \"pytest-of-\" in str(pytest_of_user)\n    shutil.rmtree(pytest_of_user)\n\n    pytest_of_user.symlink_to(attacker_controlled)\n\n    # This now tries to use the directory when it's a symlink.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    with pytest.raises(OSError, match=r\"temporary directory .* is a symbolic link\"):\n        tmp_factory.getbasetemp()\n\n\ndef test_get_user_handles_getpass_oserror(monkeypatch: MonkeyPatch) -> None:\n    \"\"\"Regression test: get_user() should return None when getpass.getuser()\n    raises OSError (Python 3.13+ behavior, #13835).\"\"\"\n    import getpass\n\n    def _raise_oserror():\n        raise OSError(\"No username set in the environment\")\n\n    monkeypatch.setattr(getpass, \"getuser\", _raise_oserror)\n    assert get_user() is None\n",
+  "unified_diff": "--- a/testing/test_tmpdir.py\n+++ b/testing/test_tmpdir.py\n@@ -645,7 +645,7 @@\n         adir.mkdir()\n         (adir / \"child\").mkdir()\n         (adir / \"child\" / \"file.txt\").touch()\n-        os.chmod(str(adir), 0o600)\n+        os.chmod(str(adir), stat.S_IRUSR | stat.S_IWUSR)\n \n         with warnings.catch_warnings(record=True) as w:\n             exc_info = PermissionError()\n@@ -664,7 +664,7 @@\n         child.mkdir()\n         (child / \"file.txt\").touch()\n         # Child has full perms, but parent lacks execute -> os.open(child) fails.\n-        os.chmod(str(parent), 0o600)\n+        os.chmod(str(parent), stat.S_IRUSR | stat.S_IWUSR)\n \n         with warnings.catch_warnings(record=True) as w:\n             exc_info = PermissionError()\n@@ -678,16 +678,30 @@\n         nonexistent = tmp_path / \"does_not_exist\"\n         assert _chmod_rwx(str(nonexistent)) is False\n \n+    def test_chmod_rwx_returns_false_when_chmod_fails(\n+        self, tmp_path: Path, monkeypatch: MonkeyPatch\n+    ) -> None:\n+        \"\"\"_chmod_rwx returns False when os.chmod raises OSError.\n+\n+        A real FS layout that makes chmod fail while the path remains\n+        (immutable bit, RO mount, foreign ownership) is not portable in CI,\n+        so pin this branch with a monkeypatch.\n+        \"\"\"\n+        fn = tmp_path / \"file.txt\"\n+        fn.touch(mode=0)  # needs bits so we reach os.chmod\n+        monkeypatch.setattr(os, \"chmod\", _raise_oserror)\n+        assert _chmod_rwx(str(fn)) is False\n+\n     def test_chmod_rwx_returns_false_when_already_sufficient(\n         self, tmp_path: Path\n     ) -> None:\n         \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n         d = tmp_path / \"dir\"\n-        d.mkdir(mode=0o700)\n+        d.mkdir(mode=stat.S_IRWXU)\n         assert _chmod_rwx(str(d)) is False\n \n         f = tmp_path / \"file\"\n-        f.touch(mode=0o600)\n+        f.touch(mode=stat.S_IRUSR | stat.S_IWUSR)\n         assert _chmod_rwx(str(f)) is False\n \n     def test_on_rm_rf_error_os_open_returns_false_when_chmod_ineffective(\n@@ -696,7 +710,7 @@\n         \"\"\"os.open handler returns False when neither parent nor path chmod\n         changes anything (recursion guard).\"\"\"\n         adir = tmp_path / \"dir\"\n-        adir.mkdir(mode=0o700)\n+        adir.mkdir(mode=stat.S_IRWXU)\n         exc_info = PermissionError()\n         result = on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n         assert result is False\n@@ -730,7 +744,14 @@\n         for parent in fn.parents:  # pragma: no branch\n             if parent == tmp_path:\n                 break\n-            parent.chmod(0o555)\n+            parent.chmod(\n+                stat.S_IRUSR\n+                | stat.S_IXUSR\n+                | stat.S_IRGRP\n+                | stat.S_IXGRP\n+                | stat.S_IROTH\n+                | stat.S_IXOTH\n+            )\n \n         exc_info = PermissionError()\n         on_rm_rf_error(os.unlink, str(fn), exc_info, start_path=tmp_path)\n",
+  "changed_files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/3_security_vulnerability.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/deploy.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/doc-check-links.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/prepare-release-pr.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/stale.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/test.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".github/workflows/update-plugin-list.yml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "AUTHORS",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "README.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "SECURITY.md",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/10819.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11022.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11225.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11295.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/11307.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12860.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/12882.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13038.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13192.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13241.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13304.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13409.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13484.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13626.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13784.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13817.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13862.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13884.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13885.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13902.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13917.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13946.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/13963.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14004.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14004.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14012.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14023.feature.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14026.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14050.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14080.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14114.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14137.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14148.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14161.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14164.improvement.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14214.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14234.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14248.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14303.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14335.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14342.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14371.feature.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14373.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14377.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14381.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14389.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14392.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14430.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14434.deprecation.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14441.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14442.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14456.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14461.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14465.doc.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14474.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14637.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/14638.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/3697.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/3850.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/5848.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/6757.feature.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/719.bugfix.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/7940.bugfix.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "changelog/8265.improvement.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "changelog/8395.feature.rst",
+      "status": "removed",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.1.0.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/announce/release-9.1.1.rst",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/backwards-compatibility.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/builtin.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/changelog.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/conf.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/deprecations.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/nonpython.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/parametrize.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/pythoncollection.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/reportingdemo.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/example/simple.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/getting-started.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/assert.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/cache.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/capture-warnings.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/doctest.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/how-to/fixtures.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/index.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/customize.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/plugin_list.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "doc/en/reference/reference.rst",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "pyproject.toml",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_code/code.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/_io/pprint.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/approx.py",
+      "status": "renamed",
+      "previous_path": "src/_pytest/python_api.py",
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_any.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_mapping.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_sequence.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_compare_set.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_guards.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/_typing.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/compare_text.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/highlight.py",
+      "status": "added",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/truncate.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/assertion/util.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/argparsing.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/config/findpaths.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/deprecated.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/doctest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/fixtures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/junitxml.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/mark/structures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/pathlib.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": true
+    },
+    {
+      "path": "src/_pytest/python.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/raises.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/skipping.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/unittest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/_pytest/unraisableexception.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/pytest/__init__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "src/pytest/__main__.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/_py/test_local.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/code/test_code.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/code/test_excinfo.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/deprecated_test.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/freeze/tox_run.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/io/test_pprint.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/plugins_integration/requirements.txt",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/approx.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/fixtures.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/metafunc.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/python/raises_group.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_assertion.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_assertrewrite.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_config.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_conftest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_doctest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_junitxml.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_monkeypatch.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_reports.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_tmpdir.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": true
+    },
+    {
+      "path": "testing/test_unittest.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/test_unraisableexception.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": true,
+      "in_pr": false
+    },
+    {
+      "path": "testing/typing_checks.py",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    },
+    {
+      "path": "tox.ini",
+      "status": "modified",
+      "previous_path": null,
+      "is_test": false,
+      "in_pr": false
+    }
+  ],
+  "test_files": {
+    "testing/test_tmpdir.py": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nfrom collections.abc import Callable\nimport dataclasses\nimport os\nfrom pathlib import Path\nimport shutil\nimport stat\nimport sys\nfrom typing import cast\nimport warnings\n\nfrom _pytest import pathlib\nfrom _pytest.config import Config\nfrom _pytest.monkeypatch import MonkeyPatch\nfrom _pytest.pathlib import _chmod_rwx\nfrom _pytest.pathlib import cleanup_numbered_dir\nfrom _pytest.pathlib import create_cleanup_lock\nfrom _pytest.pathlib import make_numbered_dir\nfrom _pytest.pathlib import maybe_delete_a_numbered_dir\nfrom _pytest.pathlib import on_rm_rf_error\nfrom _pytest.pathlib import register_cleanup_lock_removal\nfrom _pytest.pathlib import rm_rf\nfrom _pytest.pytester import Pytester\nfrom _pytest.tmpdir import get_user\nfrom _pytest.tmpdir import TempPathFactory\nimport pytest\n\n\ndef test_tmp_path_fixture(pytester: Pytester) -> None:\n    p = pytester.copy_example(\"tmpdir/tmp_path_fixture.py\")\n    results = pytester.runpytest(p)\n    results.stdout.fnmatch_lines([\"*1 passed*\"])\n\n\n@dataclasses.dataclass\nclass FakeConfig:\n    basetemp: str | Path\n\n    @property\n    def trace(self):\n        return self\n\n    def get(self, key):\n        return lambda *k: None\n\n    def getini(self, name):\n        if name == \"tmp_path_retention_count\":\n            return 3\n        elif name == \"tmp_path_retention_policy\":\n            return \"all\"\n        else:\n            assert False\n\n    @property\n    def option(self):\n        return self\n\n\nclass TestTmpPathHandler:\n    def test_mktemp(self, tmp_path: Path) -> None:\n        config = cast(Config, FakeConfig(tmp_path))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        tmp = t.mktemp(\"world\")\n        assert str(tmp.relative_to(t.getbasetemp())) == \"world0\"\n        tmp = t.mktemp(\"this\")\n        assert str(tmp.relative_to(t.getbasetemp())).startswith(\"this\")\n        tmp2 = t.mktemp(\"this\")\n        assert str(tmp2.relative_to(t.getbasetemp())).startswith(\"this\")\n        assert tmp2 != tmp\n\n    def test_tmppath_relative_basetemp_absolute(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"#4425\"\"\"\n        monkeypatch.chdir(tmp_path)\n        config = cast(Config, FakeConfig(\"hello\"))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        assert t.getbasetemp().resolve() == (tmp_path / \"hello\").resolve()\n\n\nclass TestConfigTmpPath:\n    def test_getbasetemp_custom_removes_old(self, pytester: Pytester) -> None:\n        mytemp = pytester.path.joinpath(\"xyz\")\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                pass\n        \"\"\"\n        )\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        mytemp.joinpath(\"hello\").touch()\n\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        assert not mytemp.joinpath(\"hello\").exists()\n\n    def test_policy_none_delete_all(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"none\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            # Check the base dir itself is gone without depending on test results\n            assert base_dir == []\n\n    @pytest.mark.parametrize(\"policy\", ['\"failed\"', '\"all\"'])\n    @pytest.mark.parametrize(\"count\", [0, 1, 3])\n    def test_retention_count(self, pytester: Pytester, policy, count) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n\n        pytester.makepyprojecttoml(\n            f\"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = {policy}\n            tmp_path_retention_count = {count}\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            assert len(list(base_dir)) == count\n\n    def test_policy_failed_removes_only_passed_dir(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n            def test_2(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            # Check only the failed one remains\n            assert len(test_dir) == 1\n            assert test_dir[0].name == \"test_20\"\n\n    def test_policy_failed_removes_basedir_when_all_passed(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            # This symlink will be deleted by cleanup_numbered_dir **after**\n            # the test finishes because it's triggered by atexit.\n            # So it has to be ignored here.\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            # Check the base dir itself is gone\n            assert len(list(base_dir)) == 0\n\n    # issue #10502\n    def test_policy_failed_removes_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n\n        # Check if the whole directory is removed\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            assert base_dir == []\n\n    # issue #10502\n    def test_policy_all_keeps_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"all\"\n        \"\"\"\n        )\n        pytester.inline_run(p)\n\n        # Check if the whole directory is kept\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            assert len(test_dir) == 1\n\n\ntestdata = [\n    (\"mypath\", True),\n    (\"/mypath1\", False),\n    (\"./mypath1\", True),\n    (\"../mypath3\", False),\n    (\"../../mypath4\", False),\n    (\"mypath5/..\", False),\n    (\"mypath6/../mypath6\", True),\n    (\"mypath7/../mypath7/..\", False),\n]\n\n\n@pytest.mark.parametrize(\"basename, is_ok\", testdata)\ndef test_mktemp(pytester: Pytester, basename: str, is_ok: bool) -> None:\n    mytemp = pytester.mkdir(\"mytemp\")\n    p = pytester.makepyfile(\n        f\"\"\"\n        def test_abs_path(tmp_path_factory):\n            tmp_path_factory.mktemp('{basename}', numbered=False)\n        \"\"\"\n    )\n\n    result = pytester.runpytest(p, f\"--basetemp={mytemp}\")\n    if is_ok:\n        assert result.ret == 0\n        assert mytemp.joinpath(basename).exists()\n    else:\n        assert result.ret == 1\n        result.stdout.fnmatch_lines(\"*ValueError*\")\n\n\ndef test_tmp_path_always_is_realpath(pytester: Pytester, monkeypatch) -> None:\n    # the reason why tmp_path should be a realpath is that\n    # when you cd to it and do \"os.getcwd()\" you will anyway\n    # get the realpath.  Using the symlinked path can thus\n    # easily result in path-inequality\n    # XXX if that proves to be a problem, consider using\n    # os.environ[\"PWD\"]\n    realtemp = pytester.mkdir(\"myrealtemp\")\n    linktemp = pytester.path.joinpath(\"symlinktemp\")\n    attempt_symlink_to(linktemp, str(realtemp))\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(linktemp))\n    pytester.makepyfile(\n        \"\"\"\n        def test_1(tmp_path):\n            assert tmp_path.resolve() == tmp_path\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_too_long_on_parametrization(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [\"1\"*1000])\n        def test_some(arg, tmp_path):\n            tmp_path.joinpath(\"hello\").touch()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_factory(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.fixture(scope='session')\n        def session_dir(tmp_path_factory):\n            return tmp_path_factory.mktemp('data', numbered=False)\n        def test_some(session_dir):\n            assert session_dir.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_fallback_tox_env(pytester: Pytester, monkeypatch) -> None:\n    \"\"\"Test that tmp_path works even if environment variables required by getpass\n    module are missing (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.fixture\ndef break_getuser(monkeypatch):\n    monkeypatch.setattr(\"os.getuid\", lambda: -1)\n    # taken from python 2.7/3.4\n    for envvar in (\"LOGNAME\", \"USER\", \"LNAME\", \"USERNAME\"):\n        monkeypatch.delenv(envvar, raising=False)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_tmp_path_fallback_uid_not_found(pytester: Pytester) -> None:\n    \"\"\"Test that tmp_path works even if the current process's user id does not\n    correspond to a valid user.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_get_user_uid_not_found():\n    \"\"\"Test that get_user() function works even if the current process's\n    user id does not correspond to a valid user (e.g. running pytest in a\n    Docker container with 'docker run -u'.\n    \"\"\"\n    assert get_user() is None\n\n\n@pytest.mark.skipif(not sys.platform.startswith(\"win\"), reason=\"win only\")\ndef test_get_user(monkeypatch):\n    \"\"\"Test that get_user() function works even if environment variables\n    required by getpass module are missing from the environment on Windows\n    (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    assert get_user() is None\n\n\nclass TestNumberedDir:\n    PREFIX = \"fun-\"\n\n    def test_make(self, tmp_path):\n        for i in range(10):\n            d = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n            assert d.name.startswith(self.PREFIX)\n            assert d.name.endswith(str(i))\n\n        symlink = tmp_path.joinpath(self.PREFIX + \"current\")\n        if symlink.exists():\n            # unix\n            assert symlink.is_symlink()\n            assert symlink.resolve() == d.resolve()\n\n    def test_cleanup_lock_create(self, tmp_path):\n        d = tmp_path.joinpath(\"test\")\n        d.mkdir()\n        lockfile = create_cleanup_lock(d)\n        with pytest.raises(OSError, match=r\"cannot create lockfile in .*\"):\n            create_cleanup_lock(d)\n\n        lockfile.unlink()\n\n    def test_lock_register_cleanup_removal(self, tmp_path: Path) -> None:\n        lock = create_cleanup_lock(tmp_path)\n\n        registry: list[Callable[..., None]] = []\n        register_cleanup_lock_removal(lock, register=registry.append)\n\n        (cleanup_func,) = registry\n\n        assert lock.is_file()\n\n        cleanup_func(original_pid=\"intentionally_different\")\n\n        assert lock.is_file()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n    def _do_cleanup(self, tmp_path: Path, keep: int = 2) -> None:\n        self.test_make(tmp_path)\n        cleanup_numbered_dir(\n            root=tmp_path,\n            prefix=self.PREFIX,\n            keep=keep,\n            consider_lock_dead_if_created_before=0,\n        )\n\n    def test_cleanup_keep(self, tmp_path):\n        self._do_cleanup(tmp_path)\n        a, b = (x for x in tmp_path.iterdir() if not x.is_symlink())\n        print(a, b)\n\n    def test_cleanup_keep_0(self, tmp_path: Path):\n        self._do_cleanup(tmp_path, 0)\n        dir_num = len(list(tmp_path.iterdir()))\n        assert dir_num == 0\n\n    def test_cleanup_locked(self, tmp_path):\n        p = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n\n        create_cleanup_lock(p)\n\n        assert not pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime - 1\n        )\n        assert pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime + 1\n        )\n\n    def test_cleanup_ignores_symlink(self, tmp_path):\n        the_symlink = tmp_path / (self.PREFIX + \"current\")\n        attempt_symlink_to(the_symlink, tmp_path / (self.PREFIX + \"5\"))\n        self._do_cleanup(tmp_path)\n\n    def test_removal_accepts_lock(self, tmp_path):\n        dir = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n        create_cleanup_lock(dir)\n        maybe_delete_a_numbered_dir(dir)\n        assert dir.is_dir()\n\n\ndef _raise_oserror(*args: object, **kwargs: object) -> None:\n    raise OSError(\"simulated failure\")\n\n\nclass TestRmRf:\n    def test_rm_rf(self, tmp_path):\n        adir = tmp_path / \"adir\"\n        adir.mkdir()\n        rm_rf(adir)\n\n        assert not adir.exists()\n\n        adir.mkdir()\n        afile = adir / \"afile\"\n        afile.write_bytes(b\"aa\")\n\n        rm_rf(adir)\n        assert not adir.exists()\n\n    def test_rm_rf_with_read_only_file(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories with read-only files in them (#5524)\"\"\"\n        fn = tmp_path / \"dir/foo.txt\"\n        fn.parent.mkdir()\n\n        fn.touch()\n\n        self.chmod_r(fn)\n\n        rm_rf(fn.parent)\n\n        assert not fn.parent.is_dir()\n\n    def chmod_r(self, path):\n        mode = os.stat(str(path)).st_mode\n        os.chmod(str(path), mode & ~stat.S_IWRITE)\n\n    def test_rm_rf_with_read_only_directory(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove read-only directories (#5524)\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        (adir / \"foo.txt\").touch()\n        self.chmod_r(adir)\n\n        rm_rf(adir)\n\n        assert not adir.is_dir()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_rm_rf_with_no_exec_permission_directories(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories without S_IXUSR (#7940).\n\n        This is the exact scenario from the original issue: nested directories\n        and files with all permissions stripped.\n        \"\"\"\n        p = tmp_path / \"foo\" / \"bar\" / \"baz\"\n        p.parent.mkdir(parents=True)\n        p.touch(mode=0)\n        for parent in p.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(mode=0)\n\n        rm_rf(tmp_path / \"foo\")\n\n        assert not (tmp_path / \"foo\").exists()\n\n    def test_on_rm_rf_error(self, tmp_path: Path) -> None:\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        # unknown exception\n        with pytest.warns(pytest.PytestWarning):\n            exc_info1 = (RuntimeError, RuntimeError(), None)\n            on_rm_rf_error(os.unlink, str(fn), exc_info1, start_path=tmp_path)\n            assert fn.is_file()\n\n        # we ignore FileNotFoundError\n        exc_info2 = (FileNotFoundError, FileNotFoundError(), None)\n        assert not on_rm_rf_error(None, str(fn), exc_info2, start_path=tmp_path)\n\n        # unknown function\n        with pytest.warns(\n            pytest.PytestWarning,\n            match=r\"^\\(rm_rf\\) unknown function None when removing .*foo.txt:\\n<class 'PermissionError'>: \",\n        ):\n            exc_info3 = (PermissionError, PermissionError(), None)\n            on_rm_rf_error(None, str(fn), exc_info3, start_path=tmp_path)\n            assert fn.is_file()\n\n        # os.unlink PermissionError is handled (chmod + retry)\n        exc_info5 = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info5, start_path=tmp_path)\n        assert not fn.is_file()\n\n    def test_on_rm_rf_error_os_open_handles_file(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a file is handled by fixing\n        permissions and removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n            assert not fn.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_handles_directory(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a directory is handled by fixing\n        permissions and recursively removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        (adir / \"child\").mkdir()\n        (adir / \"child\" / \"file.txt\").touch()\n        os.chmod(str(adir), stat.S_IRUSR | stat.S_IWUSR)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n            assert not adir.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_parent_perms(self, tmp_path: Path) -> None:\n        \"\"\"When the PermissionError is caused by the *parent* directory lacking\n        S_IXUSR, fixing the parent is sufficient even if the child already has\n        correct permissions.\"\"\"\n        parent = tmp_path / \"parent\"\n        parent.mkdir()\n        child = parent / \"child\"\n        child.mkdir()\n        (child / \"file.txt\").touch()\n        # Child has full perms, but parent lacks execute -> os.open(child) fails.\n        os.chmod(str(parent), stat.S_IRUSR | stat.S_IWUSR)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            result = on_rm_rf_error(os.open, str(child), exc_info, start_path=tmp_path)\n            assert result is True\n            assert not child.exists()\n            assert not [x.message for x in w]\n\n    def test_chmod_rwx_returns_false_on_nonexistent_path(self, tmp_path: Path) -> None:\n        \"\"\"_chmod_rwx returns False when the path doesn't exist (OSError).\"\"\"\n        nonexistent = tmp_path / \"does_not_exist\"\n        assert _chmod_rwx(str(nonexistent)) is False\n\n    def test_chmod_rwx_returns_false_when_chmod_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when os.chmod raises OSError.\n\n        A real FS layout that makes chmod fail while the path remains\n        (immutable bit, RO mount, foreign ownership) is not portable in CI,\n        so pin this branch with a monkeypatch.\n        \"\"\"\n        fn = tmp_path / \"file.txt\"\n        fn.touch(mode=0)  # needs bits so we reach os.chmod\n        monkeypatch.setattr(os, \"chmod\", _raise_oserror)\n        assert _chmod_rwx(str(fn)) is False\n\n    def test_chmod_rwx_returns_false_when_already_sufficient(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n        d = tmp_path / \"dir\"\n        d.mkdir(mode=stat.S_IRWXU)\n        assert _chmod_rwx(str(d)) is False\n\n        f = tmp_path / \"file\"\n        f.touch(mode=stat.S_IRUSR | stat.S_IWUSR)\n        assert _chmod_rwx(str(f)) is False\n\n    def test_on_rm_rf_error_os_open_returns_false_when_chmod_ineffective(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"os.open handler returns False when neither parent nor path chmod\n        changes anything (recursion guard).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir(mode=stat.S_IRWXU)\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n        assert result is False\n        assert adir.exists()\n\n    def test_on_rm_rf_error_os_open_unlink_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"os.open handler returns False when chmod succeeds but os.unlink\n        still raises OSError (e.g. sandbox or other mechanism).\"\"\"\n        fn = tmp_path / \"stubborn.txt\"\n        fn.touch(mode=0)\n\n        monkeypatch.setattr(os, \"unlink\", _raise_oserror)\n\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n        assert result is False\n        assert fn.exists()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_chmod_retry_walks_parents(self, tmp_path: Path) -> None:\n        \"\"\"The os.rmdir/os.unlink handler walks up through multiple parent\n        directories to fix permissions before retrying.\"\"\"\n        deep = tmp_path / \"a\" / \"b\" / \"c\"\n        deep.mkdir(parents=True)\n        fn = deep / \"file.txt\"\n        fn.touch()\n        # Remove write from intermediate dirs (keep exec so traversal works,\n        # but os.unlink needs write on the parent).\n        for parent in fn.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(\n                stat.S_IRUSR\n                | stat.S_IXUSR\n                | stat.S_IRGRP\n                | stat.S_IXGRP\n                | stat.S_IROTH\n                | stat.S_IXOTH\n            )\n\n        exc_info = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info, start_path=tmp_path)\n        assert not fn.exists()\n\n\ndef attempt_symlink_to(path, to_path):\n    \"\"\"Try to make a symlink from \"path\" to \"to_path\", skipping in case this platform\n    does not support it or we don't have sufficient privileges (common on Windows).\"\"\"\n    try:\n        Path(path).symlink_to(Path(to_path))\n    except OSError:\n        pytest.skip(\"could not create symbolic link\")\n\n\ndef test_basetemp_with_read_only_files(pytester: Pytester) -> None:\n    \"\"\"Integration test for #5524\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import os\n        import stat\n\n        def test(tmp_path):\n            fn = tmp_path / 'foo.txt'\n            fn.write_text('hello', encoding='utf-8')\n            mode = os.stat(str(fn)).st_mode\n            os.chmod(str(fn), mode & ~stat.S_IREAD)\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n    # running a second time and ensure we don't crash\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n\n\ndef test_tmp_path_factory_handles_invalid_dir_characters(\n    tmp_path_factory: TempPathFactory, monkeypatch: MonkeyPatch\n) -> None:\n    monkeypatch.setattr(\"getpass.getuser\", lambda: \"os/<:*?;>agnostic\")\n    # _basetemp / _given_basetemp are cached / set in parallel runs, patch them\n    monkeypatch.setattr(tmp_path_factory, \"_basetemp\", None)\n    monkeypatch.setattr(tmp_path_factory, \"_given_basetemp\", None)\n    p = tmp_path_factory.getbasetemp()\n    assert \"pytest-of-unknown\" in str(p)\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_create_directory_with_safe_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that pytest creates directories under /tmp with private permissions.\"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # No world-readable permissions.\n    assert (basetemp.stat().st_mode & 0o077) == 0\n    # Parent too (pytest-of-foo).\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_fixes_up_world_readable_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory already exists with\n    world-readable permissions, it is fixed.\n\n    pytest used to mkdir with such permissions, that's why we fix it up.\n    \"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # Before - simulate bad perms.\n    os.chmod(basetemp.parent, 0o777)\n    assert (basetemp.parent.stat().st_mode & 0o077) != 0\n\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # After - fixed.\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(\n    not hasattr(os, \"getuid\") or os.stat not in os.supports_follow_symlinks,\n    reason=\"checks unix permissions and symlinks\",\n)\ndef test_tmp_path_factory_doesnt_follow_symlinks(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory is a symbolic link,\n    it is rejected (#13669, CVE-2025-71176).\"\"\"\n    attacker_controlled = tmp_path / \"attacker_controlled\"\n    attacker_controlled.mkdir()\n\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n\n    # First just get the pytest-of-user path.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    pytest_of_user = tmp_factory.getbasetemp().parent\n    # Just for safety in the test, before we nuke it.\n    assert \"pytest-of-\" in str(pytest_of_user)\n    shutil.rmtree(pytest_of_user)\n\n    pytest_of_user.symlink_to(attacker_controlled)\n\n    # This now tries to use the directory when it's a symlink.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    with pytest.raises(OSError, match=r\"temporary directory .* is a symbolic link\"):\n        tmp_factory.getbasetemp()\n\n\ndef test_get_user_handles_getpass_oserror(monkeypatch: MonkeyPatch) -> None:\n    \"\"\"Regression test: get_user() should return None when getpass.getuser()\n    raises OSError (Python 3.13+ behavior, #13835).\"\"\"\n    import getpass\n\n    def _raise_oserror():\n        raise OSError(\"No username set in the environment\")\n\n    monkeypatch.setattr(getpass, \"getuser\", _raise_oserror)\n    assert get_user() is None\n"
+  },
+  "test_files_before": {
+    "testing/test_tmpdir.py": "# mypy: allow-untyped-defs\nfrom __future__ import annotations\n\nfrom collections.abc import Callable\nimport dataclasses\nimport os\nfrom pathlib import Path\nimport shutil\nimport stat\nimport sys\nfrom typing import cast\nimport warnings\n\nfrom _pytest import pathlib\nfrom _pytest.config import Config\nfrom _pytest.monkeypatch import MonkeyPatch\nfrom _pytest.pathlib import _chmod_rwx\nfrom _pytest.pathlib import cleanup_numbered_dir\nfrom _pytest.pathlib import create_cleanup_lock\nfrom _pytest.pathlib import make_numbered_dir\nfrom _pytest.pathlib import maybe_delete_a_numbered_dir\nfrom _pytest.pathlib import on_rm_rf_error\nfrom _pytest.pathlib import register_cleanup_lock_removal\nfrom _pytest.pathlib import rm_rf\nfrom _pytest.pytester import Pytester\nfrom _pytest.tmpdir import get_user\nfrom _pytest.tmpdir import TempPathFactory\nimport pytest\n\n\ndef test_tmp_path_fixture(pytester: Pytester) -> None:\n    p = pytester.copy_example(\"tmpdir/tmp_path_fixture.py\")\n    results = pytester.runpytest(p)\n    results.stdout.fnmatch_lines([\"*1 passed*\"])\n\n\n@dataclasses.dataclass\nclass FakeConfig:\n    basetemp: str | Path\n\n    @property\n    def trace(self):\n        return self\n\n    def get(self, key):\n        return lambda *k: None\n\n    def getini(self, name):\n        if name == \"tmp_path_retention_count\":\n            return 3\n        elif name == \"tmp_path_retention_policy\":\n            return \"all\"\n        else:\n            assert False\n\n    @property\n    def option(self):\n        return self\n\n\nclass TestTmpPathHandler:\n    def test_mktemp(self, tmp_path: Path) -> None:\n        config = cast(Config, FakeConfig(tmp_path))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        tmp = t.mktemp(\"world\")\n        assert str(tmp.relative_to(t.getbasetemp())) == \"world0\"\n        tmp = t.mktemp(\"this\")\n        assert str(tmp.relative_to(t.getbasetemp())).startswith(\"this\")\n        tmp2 = t.mktemp(\"this\")\n        assert str(tmp2.relative_to(t.getbasetemp())).startswith(\"this\")\n        assert tmp2 != tmp\n\n    def test_tmppath_relative_basetemp_absolute(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"#4425\"\"\"\n        monkeypatch.chdir(tmp_path)\n        config = cast(Config, FakeConfig(\"hello\"))\n        t = TempPathFactory.from_config(config, _ispytest=True)\n        assert t.getbasetemp().resolve() == (tmp_path / \"hello\").resolve()\n\n\nclass TestConfigTmpPath:\n    def test_getbasetemp_custom_removes_old(self, pytester: Pytester) -> None:\n        mytemp = pytester.path.joinpath(\"xyz\")\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                pass\n        \"\"\"\n        )\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        mytemp.joinpath(\"hello\").touch()\n\n        pytester.runpytest(p, f\"--basetemp={mytemp}\")\n        assert mytemp.exists()\n        assert not mytemp.joinpath(\"hello\").exists()\n\n    def test_policy_none_delete_all(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"none\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            # Check the base dir itself is gone without depending on test results\n            assert base_dir == []\n\n    @pytest.mark.parametrize(\"policy\", ['\"failed\"', '\"all\"'])\n    @pytest.mark.parametrize(\"count\", [0, 1, 3])\n    def test_retention_count(self, pytester: Pytester, policy, count) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        p_failed = pytester.makepyfile(\n            another_file_name=\"\"\"\n            def test_1(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n\n        pytester.makepyprojecttoml(\n            f\"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = {policy}\n            tmp_path_retention_count = {count}\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n        pytester.inline_run(p)\n        pytester.inline_run(p_failed)\n\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            assert len(list(base_dir)) == count\n\n    def test_policy_failed_removes_only_passed_dir(self, pytester: Pytester) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n            def test_2(tmp_path):\n                assert 0 == 1\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            # Check only the failed one remains\n            assert len(test_dir) == 1\n            assert test_dir[0].name == \"test_20\"\n\n    def test_policy_failed_removes_basedir_when_all_passed(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            def test_1(tmp_path):\n                assert 0 == 0\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            # This symlink will be deleted by cleanup_numbered_dir **after**\n            # the test finishes because it's triggered by atexit.\n            # So it has to be ignored here.\n            base_dir = filter(lambda x: not x.is_symlink(), child.iterdir())\n            # Check the base dir itself is gone\n            assert len(list(base_dir)) == 0\n\n    # issue #10502\n    def test_policy_failed_removes_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"failed\"\n        \"\"\"\n        )\n\n        pytester.inline_run(p)\n\n        # Check if the whole directory is removed\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(child.iterdir())\n            assert base_dir == []\n\n    # issue #10502\n    def test_policy_all_keeps_dir_when_skipped_from_fixture(\n        self, pytester: Pytester\n    ) -> None:\n        p = pytester.makepyfile(\n            \"\"\"\n            import pytest\n\n            @pytest.fixture\n            def fixt(tmp_path):\n                pytest.skip()\n\n            def test_fixt(fixt):\n                pass\n        \"\"\"\n        )\n        pytester.makepyprojecttoml(\n            \"\"\"\n            [tool.pytest.ini_options]\n            tmp_path_retention_policy = \"all\"\n        \"\"\"\n        )\n        pytester.inline_run(p)\n\n        # Check if the whole directory is kept\n        root = pytester._test_tmproot\n        for child in root.iterdir():\n            base_dir = list(\n                filter(lambda x: x.is_dir() and not x.is_symlink(), child.iterdir())\n            )\n            assert len(base_dir) == 1\n            test_dir = list(\n                filter(\n                    lambda x: x.is_dir() and not x.is_symlink(), base_dir[0].iterdir()\n                )\n            )\n            assert len(test_dir) == 1\n\n\ntestdata = [\n    (\"mypath\", True),\n    (\"/mypath1\", False),\n    (\"./mypath1\", True),\n    (\"../mypath3\", False),\n    (\"../../mypath4\", False),\n    (\"mypath5/..\", False),\n    (\"mypath6/../mypath6\", True),\n    (\"mypath7/../mypath7/..\", False),\n]\n\n\n@pytest.mark.parametrize(\"basename, is_ok\", testdata)\ndef test_mktemp(pytester: Pytester, basename: str, is_ok: bool) -> None:\n    mytemp = pytester.mkdir(\"mytemp\")\n    p = pytester.makepyfile(\n        f\"\"\"\n        def test_abs_path(tmp_path_factory):\n            tmp_path_factory.mktemp('{basename}', numbered=False)\n        \"\"\"\n    )\n\n    result = pytester.runpytest(p, f\"--basetemp={mytemp}\")\n    if is_ok:\n        assert result.ret == 0\n        assert mytemp.joinpath(basename).exists()\n    else:\n        assert result.ret == 1\n        result.stdout.fnmatch_lines(\"*ValueError*\")\n\n\ndef test_tmp_path_always_is_realpath(pytester: Pytester, monkeypatch) -> None:\n    # the reason why tmp_path should be a realpath is that\n    # when you cd to it and do \"os.getcwd()\" you will anyway\n    # get the realpath.  Using the symlinked path can thus\n    # easily result in path-inequality\n    # XXX if that proves to be a problem, consider using\n    # os.environ[\"PWD\"]\n    realtemp = pytester.mkdir(\"myrealtemp\")\n    linktemp = pytester.path.joinpath(\"symlinktemp\")\n    attempt_symlink_to(linktemp, str(realtemp))\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(linktemp))\n    pytester.makepyfile(\n        \"\"\"\n        def test_1(tmp_path):\n            assert tmp_path.resolve() == tmp_path\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_too_long_on_parametrization(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.mark.parametrize(\"arg\", [\"1\"*1000])\n        def test_some(arg, tmp_path):\n            tmp_path.joinpath(\"hello\").touch()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_factory(pytester: Pytester) -> None:\n    pytester.makepyfile(\n        \"\"\"\n        import pytest\n        @pytest.fixture(scope='session')\n        def session_dir(tmp_path_factory):\n            return tmp_path_factory.mktemp('data', numbered=False)\n        def test_some(session_dir):\n            assert session_dir.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\ndef test_tmp_path_fallback_tox_env(pytester: Pytester, monkeypatch) -> None:\n    \"\"\"Test that tmp_path works even if environment variables required by getpass\n    module are missing (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.fixture\ndef break_getuser(monkeypatch):\n    monkeypatch.setattr(\"os.getuid\", lambda: -1)\n    # taken from python 2.7/3.4\n    for envvar in (\"LOGNAME\", \"USER\", \"LNAME\", \"USERNAME\"):\n        monkeypatch.delenv(envvar, raising=False)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_tmp_path_fallback_uid_not_found(pytester: Pytester) -> None:\n    \"\"\"Test that tmp_path works even if the current process's user id does not\n    correspond to a valid user.\n    \"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        def test_some(tmp_path):\n            assert tmp_path.is_dir()\n    \"\"\"\n    )\n    reprec = pytester.inline_run()\n    reprec.assertoutcome(passed=1)\n\n\n@pytest.mark.usefixtures(\"break_getuser\")\n@pytest.mark.skipif(sys.platform.startswith(\"win\"), reason=\"no os.getuid on windows\")\ndef test_get_user_uid_not_found():\n    \"\"\"Test that get_user() function works even if the current process's\n    user id does not correspond to a valid user (e.g. running pytest in a\n    Docker container with 'docker run -u'.\n    \"\"\"\n    assert get_user() is None\n\n\n@pytest.mark.skipif(not sys.platform.startswith(\"win\"), reason=\"win only\")\ndef test_get_user(monkeypatch):\n    \"\"\"Test that get_user() function works even if environment variables\n    required by getpass module are missing from the environment on Windows\n    (#1010).\n    \"\"\"\n    monkeypatch.delenv(\"USER\", raising=False)\n    monkeypatch.delenv(\"USERNAME\", raising=False)\n    assert get_user() is None\n\n\nclass TestNumberedDir:\n    PREFIX = \"fun-\"\n\n    def test_make(self, tmp_path):\n        for i in range(10):\n            d = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n            assert d.name.startswith(self.PREFIX)\n            assert d.name.endswith(str(i))\n\n        symlink = tmp_path.joinpath(self.PREFIX + \"current\")\n        if symlink.exists():\n            # unix\n            assert symlink.is_symlink()\n            assert symlink.resolve() == d.resolve()\n\n    def test_cleanup_lock_create(self, tmp_path):\n        d = tmp_path.joinpath(\"test\")\n        d.mkdir()\n        lockfile = create_cleanup_lock(d)\n        with pytest.raises(OSError, match=r\"cannot create lockfile in .*\"):\n            create_cleanup_lock(d)\n\n        lockfile.unlink()\n\n    def test_lock_register_cleanup_removal(self, tmp_path: Path) -> None:\n        lock = create_cleanup_lock(tmp_path)\n\n        registry: list[Callable[..., None]] = []\n        register_cleanup_lock_removal(lock, register=registry.append)\n\n        (cleanup_func,) = registry\n\n        assert lock.is_file()\n\n        cleanup_func(original_pid=\"intentionally_different\")\n\n        assert lock.is_file()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n        cleanup_func()\n\n        assert not lock.exists()\n\n    def _do_cleanup(self, tmp_path: Path, keep: int = 2) -> None:\n        self.test_make(tmp_path)\n        cleanup_numbered_dir(\n            root=tmp_path,\n            prefix=self.PREFIX,\n            keep=keep,\n            consider_lock_dead_if_created_before=0,\n        )\n\n    def test_cleanup_keep(self, tmp_path):\n        self._do_cleanup(tmp_path)\n        a, b = (x for x in tmp_path.iterdir() if not x.is_symlink())\n        print(a, b)\n\n    def test_cleanup_keep_0(self, tmp_path: Path):\n        self._do_cleanup(tmp_path, 0)\n        dir_num = len(list(tmp_path.iterdir()))\n        assert dir_num == 0\n\n    def test_cleanup_locked(self, tmp_path):\n        p = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n\n        create_cleanup_lock(p)\n\n        assert not pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime - 1\n        )\n        assert pathlib.ensure_deletable(\n            p, consider_lock_dead_if_created_before=p.stat().st_mtime + 1\n        )\n\n    def test_cleanup_ignores_symlink(self, tmp_path):\n        the_symlink = tmp_path / (self.PREFIX + \"current\")\n        attempt_symlink_to(the_symlink, tmp_path / (self.PREFIX + \"5\"))\n        self._do_cleanup(tmp_path)\n\n    def test_removal_accepts_lock(self, tmp_path):\n        dir = make_numbered_dir(root=tmp_path, prefix=self.PREFIX)\n        create_cleanup_lock(dir)\n        maybe_delete_a_numbered_dir(dir)\n        assert dir.is_dir()\n\n\ndef _raise_oserror(*args: object, **kwargs: object) -> None:\n    raise OSError(\"simulated failure\")\n\n\nclass TestRmRf:\n    def test_rm_rf(self, tmp_path):\n        adir = tmp_path / \"adir\"\n        adir.mkdir()\n        rm_rf(adir)\n\n        assert not adir.exists()\n\n        adir.mkdir()\n        afile = adir / \"afile\"\n        afile.write_bytes(b\"aa\")\n\n        rm_rf(adir)\n        assert not adir.exists()\n\n    def test_rm_rf_with_read_only_file(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories with read-only files in them (#5524)\"\"\"\n        fn = tmp_path / \"dir/foo.txt\"\n        fn.parent.mkdir()\n\n        fn.touch()\n\n        self.chmod_r(fn)\n\n        rm_rf(fn.parent)\n\n        assert not fn.parent.is_dir()\n\n    def chmod_r(self, path):\n        mode = os.stat(str(path)).st_mode\n        os.chmod(str(path), mode & ~stat.S_IWRITE)\n\n    def test_rm_rf_with_read_only_directory(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove read-only directories (#5524)\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        (adir / \"foo.txt\").touch()\n        self.chmod_r(adir)\n\n        rm_rf(adir)\n\n        assert not adir.is_dir()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_rm_rf_with_no_exec_permission_directories(self, tmp_path):\n        \"\"\"Ensure rm_rf can remove directories without S_IXUSR (#7940).\n\n        This is the exact scenario from the original issue: nested directories\n        and files with all permissions stripped.\n        \"\"\"\n        p = tmp_path / \"foo\" / \"bar\" / \"baz\"\n        p.parent.mkdir(parents=True)\n        p.touch(mode=0)\n        for parent in p.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(mode=0)\n\n        rm_rf(tmp_path / \"foo\")\n\n        assert not (tmp_path / \"foo\").exists()\n\n    def test_on_rm_rf_error(self, tmp_path: Path) -> None:\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        # unknown exception\n        with pytest.warns(pytest.PytestWarning):\n            exc_info1 = (RuntimeError, RuntimeError(), None)\n            on_rm_rf_error(os.unlink, str(fn), exc_info1, start_path=tmp_path)\n            assert fn.is_file()\n\n        # we ignore FileNotFoundError\n        exc_info2 = (FileNotFoundError, FileNotFoundError(), None)\n        assert not on_rm_rf_error(None, str(fn), exc_info2, start_path=tmp_path)\n\n        # unknown function\n        with pytest.warns(\n            pytest.PytestWarning,\n            match=r\"^\\(rm_rf\\) unknown function None when removing .*foo.txt:\\n<class 'PermissionError'>: \",\n        ):\n            exc_info3 = (PermissionError, PermissionError(), None)\n            on_rm_rf_error(None, str(fn), exc_info3, start_path=tmp_path)\n            assert fn.is_file()\n\n        # os.unlink PermissionError is handled (chmod + retry)\n        exc_info5 = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info5, start_path=tmp_path)\n        assert not fn.is_file()\n\n    def test_on_rm_rf_error_os_open_handles_file(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a file is handled by fixing\n        permissions and removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        fn = adir / \"foo.txt\"\n        fn.touch()\n        self.chmod_r(fn)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n            assert not fn.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_handles_directory(self, tmp_path: Path) -> None:\n        \"\"\"os.open PermissionError on a directory is handled by fixing\n        permissions and recursively removing it (#7940).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir()\n        (adir / \"child\").mkdir()\n        (adir / \"child\" / \"file.txt\").touch()\n        os.chmod(str(adir), 0o600)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n            assert not adir.exists()\n            assert not [x.message for x in w]\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_os_open_parent_perms(self, tmp_path: Path) -> None:\n        \"\"\"When the PermissionError is caused by the *parent* directory lacking\n        S_IXUSR, fixing the parent is sufficient even if the child already has\n        correct permissions.\"\"\"\n        parent = tmp_path / \"parent\"\n        parent.mkdir()\n        child = parent / \"child\"\n        child.mkdir()\n        (child / \"file.txt\").touch()\n        # Child has full perms, but parent lacks execute -> os.open(child) fails.\n        os.chmod(str(parent), 0o600)\n\n        with warnings.catch_warnings(record=True) as w:\n            exc_info = PermissionError()\n            result = on_rm_rf_error(os.open, str(child), exc_info, start_path=tmp_path)\n            assert result is True\n            assert not child.exists()\n            assert not [x.message for x in w]\n\n    def test_chmod_rwx_returns_false_on_nonexistent_path(self, tmp_path: Path) -> None:\n        \"\"\"_chmod_rwx returns False when the path doesn't exist (OSError).\"\"\"\n        nonexistent = tmp_path / \"does_not_exist\"\n        assert _chmod_rwx(str(nonexistent)) is False\n\n    def test_chmod_rwx_returns_false_when_already_sufficient(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"_chmod_rwx returns False when permissions are already sufficient.\"\"\"\n        d = tmp_path / \"dir\"\n        d.mkdir(mode=0o700)\n        assert _chmod_rwx(str(d)) is False\n\n        f = tmp_path / \"file\"\n        f.touch(mode=0o600)\n        assert _chmod_rwx(str(f)) is False\n\n    def test_on_rm_rf_error_os_open_returns_false_when_chmod_ineffective(\n        self, tmp_path: Path\n    ) -> None:\n        \"\"\"os.open handler returns False when neither parent nor path chmod\n        changes anything (recursion guard).\"\"\"\n        adir = tmp_path / \"dir\"\n        adir.mkdir(mode=0o700)\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(adir), exc_info, start_path=tmp_path)\n        assert result is False\n        assert adir.exists()\n\n    def test_on_rm_rf_error_os_open_unlink_fails(\n        self, tmp_path: Path, monkeypatch: MonkeyPatch\n    ) -> None:\n        \"\"\"os.open handler returns False when chmod succeeds but os.unlink\n        still raises OSError (e.g. sandbox or other mechanism).\"\"\"\n        fn = tmp_path / \"stubborn.txt\"\n        fn.touch(mode=0)\n\n        monkeypatch.setattr(os, \"unlink\", _raise_oserror)\n\n        exc_info = PermissionError()\n        result = on_rm_rf_error(os.open, str(fn), exc_info, start_path=tmp_path)\n        assert result is False\n        assert fn.exists()\n\n    @pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"unix permissions\")\n    def test_on_rm_rf_error_chmod_retry_walks_parents(self, tmp_path: Path) -> None:\n        \"\"\"The os.rmdir/os.unlink handler walks up through multiple parent\n        directories to fix permissions before retrying.\"\"\"\n        deep = tmp_path / \"a\" / \"b\" / \"c\"\n        deep.mkdir(parents=True)\n        fn = deep / \"file.txt\"\n        fn.touch()\n        # Remove write from intermediate dirs (keep exec so traversal works,\n        # but os.unlink needs write on the parent).\n        for parent in fn.parents:  # pragma: no branch\n            if parent == tmp_path:\n                break\n            parent.chmod(0o555)\n\n        exc_info = PermissionError()\n        on_rm_rf_error(os.unlink, str(fn), exc_info, start_path=tmp_path)\n        assert not fn.exists()\n\n\ndef attempt_symlink_to(path, to_path):\n    \"\"\"Try to make a symlink from \"path\" to \"to_path\", skipping in case this platform\n    does not support it or we don't have sufficient privileges (common on Windows).\"\"\"\n    try:\n        Path(path).symlink_to(Path(to_path))\n    except OSError:\n        pytest.skip(\"could not create symbolic link\")\n\n\ndef test_basetemp_with_read_only_files(pytester: Pytester) -> None:\n    \"\"\"Integration test for #5524\"\"\"\n    pytester.makepyfile(\n        \"\"\"\n        import os\n        import stat\n\n        def test(tmp_path):\n            fn = tmp_path / 'foo.txt'\n            fn.write_text('hello', encoding='utf-8')\n            mode = os.stat(str(fn)).st_mode\n            os.chmod(str(fn), mode & ~stat.S_IREAD)\n    \"\"\"\n    )\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n    # running a second time and ensure we don't crash\n    result = pytester.runpytest(\"--basetemp=tmp\")\n    assert result.ret == 0\n\n\ndef test_tmp_path_factory_handles_invalid_dir_characters(\n    tmp_path_factory: TempPathFactory, monkeypatch: MonkeyPatch\n) -> None:\n    monkeypatch.setattr(\"getpass.getuser\", lambda: \"os/<:*?;>agnostic\")\n    # _basetemp / _given_basetemp are cached / set in parallel runs, patch them\n    monkeypatch.setattr(tmp_path_factory, \"_basetemp\", None)\n    monkeypatch.setattr(tmp_path_factory, \"_given_basetemp\", None)\n    p = tmp_path_factory.getbasetemp()\n    assert \"pytest-of-unknown\" in str(p)\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_create_directory_with_safe_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that pytest creates directories under /tmp with private permissions.\"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # No world-readable permissions.\n    assert (basetemp.stat().st_mode & 0o077) == 0\n    # Parent too (pytest-of-foo).\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(not hasattr(os, \"getuid\"), reason=\"checks unix permissions\")\ndef test_tmp_path_factory_fixes_up_world_readable_permissions(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory already exists with\n    world-readable permissions, it is fixed.\n\n    pytest used to mkdir with such permissions, that's why we fix it up.\n    \"\"\"\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # Before - simulate bad perms.\n    os.chmod(basetemp.parent, 0o777)\n    assert (basetemp.parent.stat().st_mode & 0o077) != 0\n\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    basetemp = tmp_factory.getbasetemp()\n\n    # After - fixed.\n    assert (basetemp.parent.stat().st_mode & 0o077) == 0\n\n\n@pytest.mark.skipif(\n    not hasattr(os, \"getuid\") or os.stat not in os.supports_follow_symlinks,\n    reason=\"checks unix permissions and symlinks\",\n)\ndef test_tmp_path_factory_doesnt_follow_symlinks(\n    tmp_path: Path, monkeypatch: MonkeyPatch\n) -> None:\n    \"\"\"Verify that if a /tmp/pytest-of-foo directory is a symbolic link,\n    it is rejected (#13669, CVE-2025-71176).\"\"\"\n    attacker_controlled = tmp_path / \"attacker_controlled\"\n    attacker_controlled.mkdir()\n\n    # Use the test's tmp_path as the system temproot (/tmp).\n    monkeypatch.setenv(\"PYTEST_DEBUG_TEMPROOT\", str(tmp_path))\n\n    # First just get the pytest-of-user path.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    pytest_of_user = tmp_factory.getbasetemp().parent\n    # Just for safety in the test, before we nuke it.\n    assert \"pytest-of-\" in str(pytest_of_user)\n    shutil.rmtree(pytest_of_user)\n\n    pytest_of_user.symlink_to(attacker_controlled)\n\n    # This now tries to use the directory when it's a symlink.\n    tmp_factory = TempPathFactory(None, 3, \"all\", lambda *args: None, _ispytest=True)\n    with pytest.raises(OSError, match=r\"temporary directory .* is a symbolic link\"):\n        tmp_factory.getbasetemp()\n\n\ndef test_get_user_handles_getpass_oserror(monkeypatch: MonkeyPatch) -> None:\n    \"\"\"Regression test: get_user() should return None when getpass.getuser()\n    raises OSError (Python 3.13+ behavior, #13835).\"\"\"\n    import getpass\n\n    def _raise_oserror():\n        raise OSError(\"No username set in the environment\")\n\n    monkeypatch.setattr(getpass, \"getuser\", _raise_oserror)\n    assert get_user() is None\n"
+  },
+  "ingested_at": "2026-10-11T10:28:25.691850Z"
+}

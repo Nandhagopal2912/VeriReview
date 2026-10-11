@@ -5,19 +5,19 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Replace the skip_if_no_matplotlib helper method with skip / filterwarnings handling that needs no method (class decorators suggested)",
-        "status": "satisfied"
+        "description": "Replace the skip_if_no_matplotlib helper with class-level decorators on BasePlottingTests (td.skip_if_no(\"matplotlib\") plus the pyparsing filterwarnings mark).",
+        "status": "not_satisfied"
       }
     ],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "pandas/tests/extension/base/plotting.py: skip_if_no_matplotlib is removed; tests run inside mpl_cleanup_context(), which importorskips matplotlib",
-    "confidence": "low",
-    "notes": "The suggested class decorators did not work (author showed the error, reviewer accepted); the method was later removed another way. Satisfied in intent, not in the suggested form. Human check advised."
+    "verdict": "NOT_SATISFIED",
+    "evidence": "pandas/tests/extension/base/plotting.py:123 (after code): class BasePlottingTests: has no decorators; the helper method and the warnings/Version imports are removed; tests use mpl_cleanup_context()",
+    "confidence": "medium",
+    "notes": "Reviewer asked to replace skip_if_no_matplotlib with class-level td.skip_if_no and filterwarnings decorators. The author reported that this fails in the minimum-versions environment and the reviewer accepted (\"Gotcha, thanks for checking\"). The final code has no class decorators; the helper is removed and tests use mpl_cleanup_context instead. Where the matplotlib skip and pyparsing warning filter now live is not visible in the diff."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

@@ -5,19 +5,24 @@
     "requirements": [
       {
         "category": "testing",
-        "description": "Set the include_bool flag for boolean dtypes in the base plotting test instead of in the masked-array override",
+        "description": "Remove the bool-specific include_bool handling from the masked-dtype test_plot_on_y_axis override.",
         "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Handle the boolean/include_bool case in the shared base test instead of the masked test.",
+        "status": "uncertain"
       }
     ],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "pandas/tests/extension/test_masked.py: the include_bool kwargs block is gone; at the same PR head, base/plotting.py _plot sets include_bool for bool dtypes (lines 99-101, visible in the sibling case ...3759896069)",
+    "verdict": "UNCERTAIN",
+    "evidence": "pandas/tests/extension/test_masked.py:359-383 (after code): include_bool/is_bool_dtype special case removed from the masked test; replaced by new plot_data-based overrides. Base test not in the diff.",
     "confidence": "medium",
-    "notes": "Phrased as a question, agreed by the author ('will change it'). The base file is not in this case's own test files; judged from the PR head."
+    "notes": "Reviewer asked whether the bool include_bool handling belongs in the base test; the author said they'd change it. The include_bool/is_bool_dtype special case is gone from test_masked.py, but the base test file isn't in the diff, so I can't confirm it was moved there. The masked file now has new x/y-axis overrides expecting TypeError with NA values, which is different handling rather than a move."
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

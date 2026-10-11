@@ -4,20 +4,20 @@
     "include": true,
     "requirements": [
       {
-        "category": "other",
-        "description": "Replace the test docstring with 'Regression test for .../pull/13573.' (suggestion)",
-        "status": "satisfied"
+        "category": "testing",
+        "description": "Add a regression test for Pydantic PR #13573.",
+        "status": "not_satisfied"
       }
     ],
     "ambiguous": false,
-    "verdict": "SATISFIED",
-    "evidence": "tests/types/test_list.py:295: the suggested docstring",
+    "verdict": "NOT_SATISFIED",
+    "evidence": "tests/types/test_list.py:295",
     "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "claude"
+    "Jordan"
   ],
   "agreed": true,
-  "label_source": "model"
+  "label_source": "human"
 }

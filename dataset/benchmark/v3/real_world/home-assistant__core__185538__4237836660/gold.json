@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185538__4237836660",
+    "include": true,
+    "requirements": [
+      {
+        "category": "error_handling",
+        "description": "Omit the raw error string (translation_placeholders={\"error\": str(error)}) from the translated command_error exception",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "entity.py:125-128 (after): HomeAssistantError(translation_domain=DOMAIN, translation_key=\"command_error\") now has no translation_placeholders argument; the diff removes the line translation_placeholders={\"error\": str(error)}.",
+    "confidence": "medium",
+    "notes": "Reviewer asked as a question (\"is it truly needed or can we omit\"); the one commit after the comment removes the placeholder, so it was treated as a request. Medium confidence because strings.json isn't in the sheet: if the command_error translation text still contains {error}, it would show the raw placeholder. "
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

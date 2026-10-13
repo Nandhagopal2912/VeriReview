@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14284__3254882507",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Explain what triggered the unrelated style changes, particularly the reformatting of pytester.makepyfile() and pytester.makeini() calls.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

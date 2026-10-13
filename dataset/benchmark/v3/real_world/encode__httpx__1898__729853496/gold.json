@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__1898__729853496",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Change the FileTypes comment from \"# file (or text)\" to \"# file (or bytes)\".",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_types.py:86 (after code): # file (or bytes)",
+    "confidence": "high",
+    "notes": "Suggestion applied verbatim at _types.py:86 (comment changed from \"file (or text)\" to \"file (or bytes)\"). It is the only change in the diff; no test changes, expected for a comment edit."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

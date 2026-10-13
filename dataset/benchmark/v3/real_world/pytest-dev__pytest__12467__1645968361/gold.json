@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__12467__1645968361",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "The author’s reply claims that Sphinx cannot interpret the type annotations, which explains why changes might be needed in multiple files.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

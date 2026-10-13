@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1998__666206573",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Wrap the affected docstring lines to match the 72-character documentation style.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/core.py:2416–2439",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

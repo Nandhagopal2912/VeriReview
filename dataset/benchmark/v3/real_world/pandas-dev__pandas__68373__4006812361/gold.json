@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__68373__4006812361",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Edit docstring for readability",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "scripts/issue_assignment/messages.py:121",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

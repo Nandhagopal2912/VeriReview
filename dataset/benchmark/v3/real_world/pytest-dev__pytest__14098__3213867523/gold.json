@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14098__3213867523",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "The reviewer raised a backward-compatibility concern: previously, passing a nodeid preserved node-specific autouse fixture visibility, but the new implementation appeared to register those fixtures at session scope. The reviewer wanted the existing nodeid-based visibility behavior preserved.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

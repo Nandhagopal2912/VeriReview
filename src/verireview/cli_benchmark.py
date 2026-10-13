@@ -163,6 +163,11 @@ def add_parsers(sub: "argparse._SubParsersAction[argparse.ArgumentParser]") -> N
     p.add_argument("--resamples", type=int, default=2000)
     p.add_argument("--dataset", type=Path, default=DATASET)
     p.add_argument("--out", type=Path)
+    p.add_argument(
+        "--benchmark-version",
+        choices=sorted(VERSIONS),
+        help="whose real-world labels to score against (default: the report's own version)",
+    )
 
     p = sub.add_parser("benchmark-freeze", help="write the frozen test-split manifest")
     p.add_argument("--dataset", type=Path, default=DATASET)
@@ -178,7 +183,6 @@ def _add_version_arguments(sub: "argparse._SubParsersAction[argparse.ArgumentPar
         "build-gold",
         "benchmark-freeze",
         "eval-benchmark",
-        "rescore-report",
     ):
         sub.choices[name].add_argument(
             "--benchmark-version",
@@ -287,7 +291,14 @@ def _rescore_report(args: argparse.Namespace) -> int:
     if system is None:
         print(f"error: no system {args.system!r} in {args.report}", file=sys.stderr)
         return 2
-    root = args.dataset / get_version(args.benchmark_version).real_world
+    version = args.benchmark_version or report.manifest_version
+    if version is None:
+        print(
+            "error: the report names no benchmark version; pass --benchmark-version",
+            file=sys.stderr,
+        )
+        return 2
+    root = args.dataset / get_version(version).real_world
     labelled = [rw for rw in iter_real_world(root) if rw.gold is not None] if root.is_dir() else []
     current = {
         rw.case_id: (rw.gold.label.verdict if rw.gold.label.include else None)
@@ -308,7 +319,7 @@ def _rescore_report(args: argparse.Namespace) -> int:
     sources = ", ".join(f"{k} {v}" for k, v in sorted(result.label_sources.items())) or "none"
     print(
         f"{args.system} of {args.report.name} against the current real-world labels "
-        f"({args.benchmark_version}: {sources}); stored predictions, no verifier run"
+        f"({version}: {sources}); stored predictions, no verifier run"
     )
     for name, group in (("pooled", pooled), ("real-world", real_world)):
         for label, part in (

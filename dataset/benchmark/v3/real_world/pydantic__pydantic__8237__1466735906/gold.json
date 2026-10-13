@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__8237__1466735906",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "update the docstrings to reflect the fact that you can pass a `str` or `deprecated` instance",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

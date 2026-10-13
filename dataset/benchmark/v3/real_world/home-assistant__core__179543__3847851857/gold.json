@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__179543__3847851857",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Make the flagged test (...probes_for_missing_or_unknown_api_hint) continue the flow until it ends in CREATE_ENTRY or ABORT, instead of stopping at FORM",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Apply the rule to all flow tests: every flow test ends in CREATE_ENTRY or ABORT",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/airgradient/test_config_flow.py:432-439 — the flagged test now calls async_configure and asserts CREATE_ENTRY. :400-408 — test_zeroconf_flow_v1_hint also finishes with CREATE_ENTRY. I checked every flow test in the final file, and each one's last flow-type assertion is CREATE_ENTRY or ABORT. For example, :75, :140, :185, :209, :259, :287, :314, :341, :370, :458, :478, :507, :521, :547, :572, :612 and :642.",
+    "confidence": "high",
+    "notes": "besides the flagged test, the author also fixed test_zeroconf_flow_v1_hint, which had the same problem, and added a new error-path test. The fixture refactor is not part of the request. The base_drift_possible flag only matters if other tests in the file changed upstream, and I saw none in the final file that stop at FORM."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

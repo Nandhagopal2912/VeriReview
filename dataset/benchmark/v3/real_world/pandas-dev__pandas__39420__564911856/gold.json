@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__39420__564911856",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Inline the categorical-value conversion logic into the existing code path instead of using a separate helper function.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/computation/pytables.py",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

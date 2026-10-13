@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__12953__2973266441",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "The reviewer suggests replacing the existing comment with: # This may change once CPython fixes it (possibly in 3.15), in which case we should conditionally",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

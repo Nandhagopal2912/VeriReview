@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185547__4234653701",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "home-assistant__core__185547__4234653701 home-assistant/core · homeassistant/components/imap/services.py:96 · 1 commit(s) after the comment · flags: resolution_time_unknown  Review thread Review comment by reviewer You can inline this function. Reply by author Done Code before the comment (commented line highlighted)             translation_domain=DOMAIN, translation_key=\"invalid_auth\"         ) from exc     except InvalidFolder as exc:         raise ServiceValidationError(             translation_domain=DOMAIN, translation_key=\"invalid_folder\"         ) from exc     except (TimeoutError, AioImapException) as exc:         raise ServiceValidationError(             translation_domain=DOMAIN,             translation_key=\"imap_server_fail\",             translation_placeholders={\"error\": str(exc)},         ) from exc     return client   @asynccontextmanager async def async_get_imap_client(hass: HomeAssistant, entry_id: str) -> IMAP4_SSL:     \"\"\"Get IMAP client and connect, as managed context.\"\"\"     client = await _async_get_imap_client(hass, entry_id)     try:         yield client     finally:         await async_close_imap_client(client)   async def async_close_imap_client(client: IMAP4_SSL) -> None:     \"\"\"Close IMAP client.\"\"\"     if client:         with suppress(BaseException):             await client.close()         with suppress(BaseException):             client.protocol.transport.close()   @callback def raise_on_error(response: Response, translation_key: str) -> None:     \"\"\"Get error message from response.\"\"\"     if response.result != \"OK\":         error: str = response.lines[0].decode(\"utf-8\")         raise ServiceValidationError(             translation_domain=DOMAIN,             translation_key=translation_key,             translation_placeholders={\"error\": error},         )",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "services.py:85-92 (after): the close logic (if client: suppress(BaseException) await client.close(); suppress(BaseException) client.protocol.transport.close()) now sits in the finally block of async_get_imap_client; \"def async_close_imap_client\" no longer exists in the file and no calls to it remain in services.py. The diff also folds _async_get_imap_client into async_get_imap_client.",
+    "confidence": "medium",
+    "notes": "Comment anchors on the async_close_imap_client definition (before line 96). The author replied \"Done\" and the single following commit removes it and inlines the same close behavior. The same commit also merged _async_get_imap_client into async_get_imap_client; that extra inlining also fits the comment. No test changes in the sheet. Could not check other modules for imports of async_close_imap_client. Judged from the sheet's diff and after-file only."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

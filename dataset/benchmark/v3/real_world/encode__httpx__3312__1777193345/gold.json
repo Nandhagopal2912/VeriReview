@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3312__1777193345",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Move the incorrect-value test to tests/client/test_headers.py, testing via httpx.Headers(...) instead of the internal normalize_header_value",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Move the valid-value test (test_normalize_header_value) to tests/client/test_headers.py and test it via httpx.Headers(...)",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "PARTIALLY_SATISFIED",
+    "evidence": "R1: tests/client/test_headers.py has a new test_header_with_incorrect_value (about lines 180-186, from the hunk @@ -177), using httpx.Headers({\"foo\": None}).\nR2: tests/test_utils.py lines 303-319 are removed, and no valid-value test appears in tests/client/test_headers.py.",
+    "confidence": "medium",
+    "notes": "the new test checks the same error message through the public Headers constructor, which is what the reviewer wanted. The import removal suggests normalize_header_value stops being tested directly. Only the error-path test was ported"
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

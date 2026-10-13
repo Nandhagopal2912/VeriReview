@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1829__606684197",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Defer formatting of the default version message until it is needed, and check whether other default arguments require the same treatment.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/decorators.py:316–318",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

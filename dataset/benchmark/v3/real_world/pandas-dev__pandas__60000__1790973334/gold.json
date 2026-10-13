@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__60000__1790973334",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Add note to docstring if dummy_na is False, NA values are encoded as all zero.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/core/reshape/encoding.py:72",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

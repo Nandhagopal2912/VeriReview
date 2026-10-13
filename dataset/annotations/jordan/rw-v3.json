@@ -1,0 +1,1075 @@
+{
+  "annotator": "Jordan",
+  "batch": "rw-v3",
+  "sheet_version": "phase9-sheet-1",
+  "annotations": [
+    {
+      "case_id": "encode__httpx__1522__599878626",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Change the handle_request return annotation in BaseTransport from Iterator[bytes] to Iterable[bytes].",
+          "status": "satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Apply the same Iterator → Iterable annotation change in the mock, asgi and wsgi transports.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "httpx/_transports/base.py:28 (after code): typing.Iterable[bytes] in the return tuple; :25 and about :119-122 (async) changed the same way; mock/asgi/wsgi transports not in the diff",
+      "confidence": "medium",
+      "notes": "Suggestion applied verbatim at base.py:28; the diff also changes the sync stream parameter and the async handle_async_request types to Iterable/AsyncIterable. The reviewer's follow-up (\"more of these in mock/asgi/wsgi transports\") concerns other files that are not in this diff, so it can't be verified."
+    },
+    {
+      "case_id": "encode__httpx__1522__600373075",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Make the typing import style in asgi.py consistent so the AsyncIterable annotation matches how other typing names are referenced.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_transports/asgi.py:1 (import typing, the from typing import ... line removed); :8, :13, :62, :65, :75-80 all typing.-qualified; :77 stream: typing.AsyncIterable[bytes]",
+      "confidence": "medium",
+      "notes": "Reviewer's nit asked for bare AsyncIterable via the from-typing import, to match the file's style. The author resolved the inconsistency the opposite way, switching the whole file to import typing and typing.-qualified names (asgi.py:1, 8, 13, 62, 65, 75-80, 77 for stream). The literal suggestion was not applied and the reviewer did not reply, but the file is now uniform."
+    },
+    {
+      "case_id": "encode__httpx__1898__729853496",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Change the FileTypes comment from \"# file (or text)\" to \"# file (or bytes)\".",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_types.py:86 (after code): # file (or bytes)",
+      "confidence": "high",
+      "notes": "Suggestion applied verbatim at _types.py:86 (comment changed from \"file (or text)\" to \"file (or bytes)\"). It is the only change in the diff; no test changes, expected for a comment edit."
+    },
+    {
+      "case_id": "encode__httpx__2351__958385038",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove the unused \"from setuptools import setup\" import, since the setup() call below sys.exit(1) can never run.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "setup.py:3 (after code): from setuptools import setup is still present; the diff is empty",
+      "confidence": "medium",
+      "notes": "The reviewer remarked, in hedged wording, that the setuptools import technically isn't required because the code after sys.exit(1) never runs. Whether this is a request is unclear, and removing the import while leaving the setup() call would leave an undefined name in code kept for GitHub's static metadata parsing."
+    },
+    {
+      "case_id": "encode__httpx__2423__1045653671",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Make LineDecoder treat all str.splitlines line boundaries as line endings instead of only \\n.",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Add or extend tests so the other splitlines line endings are covered.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "PARTIALLY_SATISFIED",
+      "evidence": "httpx/_decoders.py:271 (NEWLINE_CHARS), :284 (text[-1] in NEWLINE_CHARS), :287 and :298; tests/test_decoders.py diff has no new cases for the extra line endings",
+      "confidence": "medium",
+      "notes": "Reviewer said endswith(\"\\n\") isn't enough because splitlines accepts other line endings, and that tests probably don't cover them. The decoder now defines NEWLINE_CHARS with the full splitlines set (271) and checks the last character against it (284); a trailing_cr flag handles CR across chunks. The test diff only changes the existing CR assertion and anyio markers; no new tests for the other line endings appear in the diff."
+    },
+    {
+      "case_id": "encode__httpx__3045__1444454071",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Put HA1 first inside digest_data in the qop is None branch (curl style)",
+          "status": "satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Put HA1 first inside digest_data in the else (qop) branch",
+          "status": "satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Compute \"response\" directly from digest(...) of the joined digest_data, dropping the intermediate key_digest",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_auth.py:283-287 (HA1 in both digest_data lists) and httpx/_auth.py:294 (\"response\": digest(b\":\".join(digest_data))). The key_digest line is removed.",
+      "confidence": "medium",
+      "notes": "the author said in the thread that they agreed to make the change and added comments (# Following RFC 2069 and # Following RFC 2617/7616). The new tests verify the results against the RFC examples. The history was rewritten, so the commit order is ambiguous."
+    },
+    {
+      "case_id": "encode__httpx__3050__1451676418",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Don't raise an error when app= is passed. Emit a deprecation warning instead`",
+          "status": "satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Keep app= working for existing users (not a breaking change)",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Keep the docs for the app paramete",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Keep the type hint for the app parameter",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_client.py:675-680 (the Client warning), 1421-1426 (the AsyncClient warning), 730-731 and 1476-1477 (the app still works through the transports), and 609/1354 (the docs restored).",
+      "confidence": "medium",
+      "notes": "Notes: the reviewer's last comment (referencing #3071) prefers a direct drop in v1.0. The merged code kept the deprecation warning, which matches the first comment. The warning has no removal version. The async client still uses allow_env_proxies = trust_env and transport is None without app is None, unlike the sync client. The reviewer didn't ask about that."
+    },
+    {
+      "case_id": "encode__httpx__3250__1692499301",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Find the first non-printable ASCII character lazily with a generator, without materializing a list",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_urlparse.py:163 now uses next(char for char in url if char.isascii() and not char.isprintable()). The same fix is applied at httpx/_urlparse.py:213-215.",
+      "confidence": "high",
+      "notes": "the author's reply says it \"can be done lazily by materializing a generator\", which is loosely worded. The code uses next() over a generator expression, which is not materialized. The any(...) guard on line 162 means next() always finds a match, so there is no StopIteration risk."
+    },
+    {
+      "case_id": "encode__httpx__3312__1777193345",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Move the incorrect-value test to tests/client/test_headers.py, testing via httpx.Headers(...) instead of the internal normalize_header_value",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Move the valid-value test (test_normalize_header_value) to tests/client/test_headers.py and test it via httpx.Headers(...)",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "PARTIALLY_SATISFIED",
+      "evidence": "R1: tests/client/test_headers.py has a new test_header_with_incorrect_value (about lines 180-186, from the hunk @@ -177), using httpx.Headers({\"foo\": None}).\nR2: tests/test_utils.py lines 303-319 are removed, and no valid-value test appears in tests/client/test_headers.py.",
+      "confidence": "medium",
+      "notes": "the new test checks the same error message through the public Headers constructor, which is what the reviewer wanted. The import removal suggests normalize_header_value stops being tested directly. Only the error-path test was ported"
+    },
+    {
+      "case_id": "encode__httpx__3335__1791997641",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move the \"similar to ssl.create_default_context(), except with certifi\" comment down, below the if not verify: early return (nearer the certifi loading), since certifi isn't loaded when verify=False",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "httpx/_config.py:35-36 still holds the certifi comment above if not verify: (line 37), unchanged. The certifi load is at :52. The diff only removes unused code (DEFAULT_CIPHERS, logger) and adds a different comment at the top of __init__.",
+      "confidence": "high",
+      "notes": "the author's changes in the later commits are unrelated to the request (removing the cipher list and logger, adding an ssl.SSLContext defaults comment). The new comment explains stdlib defaults, so it is not a relocation of the commented text. If a reply or follow-up commit outside this window moved the comment, it isn't visible here, which is why the resolution_time_unknown flag applies."
+    },
+    {
+      "case_id": "encode__httpx__3335__1795331591",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Expose zstd in the module's __all__ in _compat.py, like brotli",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "httpx/_compat.py:38 is now __all__ = [\"brotli\", \"zstd\"]",
+      "confidence": "high",
+      "notes": "the diff also removes one blank line before __all__, so there is only one blank line between the try block and __all__ now. That is cosmetic. No tests were added, and none were requested."
+    },
+    {
+      "case_id": "home-assistant__core__173260__3559731642",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Migrate existing entities' unique ID key impedance → impedance_low",
+          "status": "not_satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Migrate existing entities' unique ID key impedance_low → impedance_high",
+          "status": "not_satisfied"
+        },
+        {
+          "category": "api_behavior",
+          "description": "Implement this as a config entry minor version migration",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "homeassistant/components/xiaomi_ble/__init__.py has no key rename and no async_migrate_entry or minor version handling. The lines that once handled impedance at 122-172 are removed, along with the call site.",
+      "confidence": "medium",
+      "notes": "the author deleted the whole disable-legacy-entity migration rather than switching it to a rename. This may reflect a decision that migration isn't needed (for example if the library change alone is enough), but nothing in this window says so. No tests were added or changed."
+    },
+    {
+      "case_id": "home-assistant__core__179543__3847851857",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Make the flagged test (...probes_for_missing_or_unknown_api_hint) continue the flow until it ends in CREATE_ENTRY or ABORT, instead of stopping at FORM",
+          "status": "satisfied"
+        },
+        {
+          "category": "testing",
+          "description": "Apply the rule to all flow tests: every flow test ends in CREATE_ENTRY or ABORT",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/airgradient/test_config_flow.py:432-439 — the flagged test now calls async_configure and asserts CREATE_ENTRY. :400-408 — test_zeroconf_flow_v1_hint also finishes with CREATE_ENTRY. I checked every flow test in the final file, and each one's last flow-type assertion is CREATE_ENTRY or ABORT. For example, :75, :140, :185, :209, :259, :287, :314, :341, :370, :458, :478, :507, :521, :547, :572, :612 and :642.",
+      "confidence": "high",
+      "notes": "besides the flagged test, the author also fixed test_zeroconf_flow_v1_hint, which had the same problem, and added a new error-path test. The fixture refactor is not part of the request. The base_drift_possible flag only matters if other tests in the file changed upstream, and I saw none in the final file that stop at FORM."
+    },
+    {
+      "case_id": "home-assistant__core__185219__4234805647",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add a separate wrapper for the non-async (callback-thread) case instead of one method that detects the running loop",
+          "status": "satisfied"
+        },
+        {
+          "category": "other",
+          "description": "Keep a separate handler for the async/event-loop case",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "helpers.py:202-212 (after): new_connection_status() is now a thin sync wrapper that only calls hass.loop.call_soon_threadsafe(self.async_new_connection_status, status); async_new_connection_status() is the separate event-loop handler. The asyncio.get_running_loop() branching and the asyncio import are gone.",
+      "confidence": "medium",
+      "notes": "Author's first reply claimed fe64e7a726e but hadn't pushed it; the final fix is 4de6151571e. Final code matches the reviewer's ask. Tests were updated, but the reviewer didn't ask for tests, so no testing requirement. Could not open the commit or run tests; judged from the sheet's diff and after-file only. The final diff also drops the \"_status_listener is self\" check and test_stale_connection_status_listener, which isn't part of this comment's request, so I didn't score it."
+    },
+    {
+      "case_id": "home-assistant__core__185219__4238270613",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Remove the duplicated _valid check from new_connection_status() and keep it only in async_new_connection_status()",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "helpers.py:204 (after): new_connection_status() still starts with \"if self._valid:\" before call_soon_threadsafe. The check is also still in async_new_connection_status() at :211, so it remains duplicated. The diff only changes the async handler (drops the \"_status_listener is self\" condition) and never touches line 204.",
+      "confidence": "high",
+      "notes": "Author says the _valid check was removed from new_connection_status() and the tests updated, but the final code still has it. The new tests (test_connection_status_not_scheduled_after_listener_invalidation) assert call_soon_threadsafe is NOT called after invalidation, so they rely on the check staying in the wrapper. "
+    },
+    {
+      "case_id": "home-assistant__core__185538__4234351606",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Wrap the decorator’s inner handler with functools.wraps(func) so the decorated method keeps its name and metadata",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "entity.py:113 (after): \"@wraps(func)\" sits directly above \"async def handler(...)\" inside exception_handler(); \"from functools import wraps\" is added to the imports (diff, line 4).",
+      "confidence": "high",
+      "notes": "Reviewer asked as a question; author agreed and added it. No test was needed for this. The diff also removes translation_placeholders={\"error\": str(error)} from the command_error HomeAssistantError and adds an unrelated assertion in test_init.py. Neither relates to this comment and both look like base drift or later changes (flags: base_drift_possible, resolution_time_unknown), so I didn't score them. Judged from the sheet's diff and after-file only."
+    },
+    {
+      "case_id": "home-assistant__core__185538__4237836660",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Omit the raw error string (translation_placeholders={\"error\": str(error)}) from the translated command_error exception",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "entity.py:125-128 (after): HomeAssistantError(translation_domain=DOMAIN, translation_key=\"command_error\") now has no translation_placeholders argument; the diff removes the line translation_placeholders={\"error\": str(error)}.",
+      "confidence": "medium",
+      "notes": "Reviewer asked as a question (\"is it truly needed or can we omit\"); the one commit after the comment removes the placeholder, so it was treated as a request. Medium confidence because strings.json isn't in the sheet: if the command_error translation text still contains {error}, it would show the raw placeholder. "
+    },
+    {
+      "case_id": "home-assistant__core__185547__4234653701",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "home-assistant__core__185547__4234653701 home-assistant/core · homeassistant/components/imap/services.py:96 · 1 commit(s) after the comment · flags: resolution_time_unknown  Review thread Review comment by reviewer You can inline this function. Reply by author Done Code before the comment (commented line highlighted)             translation_domain=DOMAIN, translation_key=\"invalid_auth\"         ) from exc     except InvalidFolder as exc:         raise ServiceValidationError(             translation_domain=DOMAIN, translation_key=\"invalid_folder\"         ) from exc     except (TimeoutError, AioImapException) as exc:         raise ServiceValidationError(             translation_domain=DOMAIN,             translation_key=\"imap_server_fail\",             translation_placeholders={\"error\": str(exc)},         ) from exc     return client   @asynccontextmanager async def async_get_imap_client(hass: HomeAssistant, entry_id: str) -> IMAP4_SSL:     \"\"\"Get IMAP client and connect, as managed context.\"\"\"     client = await _async_get_imap_client(hass, entry_id)     try:         yield client     finally:         await async_close_imap_client(client)   async def async_close_imap_client(client: IMAP4_SSL) -> None:     \"\"\"Close IMAP client.\"\"\"     if client:         with suppress(BaseException):             await client.close()         with suppress(BaseException):             client.protocol.transport.close()   @callback def raise_on_error(response: Response, translation_key: str) -> None:     \"\"\"Get error message from response.\"\"\"     if response.result != \"OK\":         error: str = response.lines[0].decode(\"utf-8\")         raise ServiceValidationError(             translation_domain=DOMAIN,             translation_key=translation_key,             translation_placeholders={\"error\": error},         )",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "services.py:85-92 (after): the close logic (if client: suppress(BaseException) await client.close(); suppress(BaseException) client.protocol.transport.close()) now sits in the finally block of async_get_imap_client; \"def async_close_imap_client\" no longer exists in the file and no calls to it remain in services.py. The diff also folds _async_get_imap_client into async_get_imap_client.",
+      "confidence": "medium",
+      "notes": "Comment anchors on the async_close_imap_client definition (before line 96). The author replied \"Done\" and the single following commit removes it and inlines the same close behavior. The same commit also merged _async_get_imap_client into async_get_imap_client; that extra inlining also fits the comment. No test changes in the sheet. Could not check other modules for imports of async_close_imap_client. Judged from the sheet's diff and after-file only."
+    },
+    {
+      "case_id": "home-assistant__core__185721__4239161122",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Check for a conflict with a background task, then use wait_background_tasks=True when waiting in the test helper",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/sofar/test_tuning.py:42 (after): \"await hass.async_block_till_done(wait_background_tasks=True)\" replaces \"await hass.async_block_till_done()\" in _poll_after_grid_failed (the commented line). The same change is also made at tests/components/sofar/test_init.py:655.",
+      "confidence": "medium",
+      "notes": "The comment has two parts: check for a background-task conflict, then use wait_background_tasks=True. The first is an investigation that can't be seen in the diff, and the author's reply doesn't say what was found; only the second is verifiable, and it is done. Author also applied the same change in test_init.py, which fits the comment's intent and wasn't scored separately. Judged from the sheet's diff only; tests not run."
+    },
+    {
+      "case_id": "home-assistant__core__99832__1320560834",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add tests that cover migrating the unique ID from both old formats (v1 pre-2023.9.0 and v2 from 2023.9.0) to the new address-based format",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/components/airthings_ble/test_sensor.py (new file, ~213 lines): test_migration_from_v1_to_v3_unique_id (~:26) and test_migration_from_v2_to_v3_unique_id (~:66) each register an old-format entity, set up the entry, and assert the unique_id became \"<address>_<sensor>\". Extra tests cover v1+v2 together and all three IDs present. Supporting fixtures and helpers are in tests/components/airthings_ble/__init__.py.",
+      "confidence": "high",
+      "notes": "Reviewer asked for a test of migrating from both ID formats; the final diff adds one test per format plus two combination tests. Line numbers are approximate (counted from the diff). The same diff also refactors migrate() into async_migrate() and changes device lookup to Bluetooth connections only; that's beyond this comment, so I didn't score it (flags: base_drift_possible, resolution_time_unknown). Tests not run. One thing I noticed but did not score: the tests and async_migrate both pass DOMAIN and \"sensor\" to the entity-registry calls in what looks like the swapped order, consistently, so the tests agree with the code either way."
+    },
+    {
+      "case_id": "home-assistant__core__99832__1321640950",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Determine whether adding device identifiers is necessary, or rely on existing connections if they are sufficient to identify the device.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "The review comment is phrased as a question (\"Do we need to...\") rather than requesting a concrete code change.\nNo explicit requirement is stated, and without the final code it is impossible to determine whether identifiers were removed, retained intentionally, or discussed elsewhere.",
+      "confidence": "high",
+      "notes": "The reviewer is questioning a design decision rather than requesting a specific, verifiable change. Because the comment does not define an actionable requirement, it cannot be reliably converted into a satisfiable requirement for annotation."
+    },
+    {
+      "case_id": "home-assistant__core__99832__1321641672",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Fetch the device using its connections instead of another lookup mechanism (e.g., identifiers), if possible.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": "the reviewer suggests an alternative implementation (\"You should be able to fetch by connections\") but does not explicitly require a code change or explain whether the current implementation is incorrect. Without a visible follow-up commit implementing or rejecting the suggestion, the requirement cannot be evaluated as satisfied or not satisfied."
+    },
+    {
+      "case_id": "pallets__click__1318__328428760",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use Unicode-aware case folding instead of .lower() when normalizing choices, if required for the supported Python versions.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": true,
+      "verdict": "UNCERTAIN",
+      "evidence": "nothing added",
+      "confidence": "high",
+      "notes": "he reviewer suggests replacing .lower() with .casefold() but later acknowledges that implementing Python 2-compatible case folding may not be worthwhile. The author reports that Python 2's .upper().lower() does not solve the example either. No code changes were made in the supplied diff, so the requested behavior was not implemented here."
+    },
+    {
+      "case_id": "pallets__click__1329__289588924",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reformat the docstring to follow the requested style: use imperative mood, put the remaining description in a separate paragraph, and avoid unnecessary or incorrectly formatted inline code.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "click/core.py:606–620",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1329__289654247",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Test that ParameterSource.validate() rejects an invalid value.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "tests/test_context.py:314–317",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1623__452392953",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Use `super().to_info_dict()' throughout the code",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "/src/click/core.py:938",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1785__577100634",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Remove process_value() function",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "click/core.py:2530–2533",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1829__606678592",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Replace f-strings with `str.format`",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "b/src/click/core.py:1284",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1829__606684197",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Defer formatting of the default version message until it is needed, and check whether other default arguments require the same treatment.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/decorators.py:316–318",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__1829__606709507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Simplify the string concatenation when raising RuntimeError",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/_unicodefun.py:84",
+      "confidence": "medium",
+      "notes": "The author replaces the f-string with \"\".join((message, extra)). Although this differs from the suggested message + extra, both concatenate the two strings, addressing the reviewer's concern about unnecessary f-string formatting."
+    },
+    {
+      "case_id": "pallets__click__1998__666206573",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Wrap the affected docstring lines to match the 72-character documentation style.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py:2416–2439",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2009__670571673",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Keep empty lines formatting around blocks.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/decorators.py:351",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__3079__2374756744",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Ensure UNSET values are converted to None at the correct stage, after parameter handling, so users don't see the internal sentinel and same-name parameters are handled correctly.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "src/click/core.py",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__39420__564911856",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Inline the categorical-value conversion logic into the existing code path instead of using a separate helper function.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/computation/pytables.py",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__60000__1790973334",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Add note to docstring if dummy_na is False, NA values are encoded as all zero.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/reshape/encoding.py:72",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__66771__3797400493",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Normalize/resolve the frequency appropriately so a string or period alias does not reach the conversion logic in an unsupported form.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/plotting/_matplotlib/core.py:1926",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__66956__3890588533",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Trim docstring",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "pandas/core/computation/check.py:10",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68373__4006812361",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Edit docstring for readability",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "scripts/issue_assignment/messages.py:121",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68927__4031958171",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68927__4076310778",
+      "include": false,
+      "exclusion_reason": "no_requirement",
+      "requirements": [],
+      "ambiguous": false,
+      "verdict": null,
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12748__2749820275",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "drop the additions from pydantic-core/tests/serializers/test_model.py.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12748__2749822816",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "asks for a test where exclude_if returns False, so the computed field remains serialized.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12758__2754080369",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "A regression test ensuring that the invalid string is omitted.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12897__2904338459",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Amend the existing test above to also test model_validate_strings after the model_validate_json assertion",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12951__2974407554",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "suggested changing the multiline docstring into a single-line docstring.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__12953__2973266441",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "The reviewer suggests replacing the existing comment with: # This may change once CPython fixes it (possibly in 3.15), in which case we should conditionally",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13133__3219986254",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "suggests changing TypeError would have been failed to TypeError would have been raised",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__8237__1424565507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "The reviewer wants DEPRECATED_TYPES to include deprecated only when it is a type, preventing errors with typing_extensions versions below 4.9.0. They also want it to remain a tuple so tuple() can be removed from is_deprecated_instance",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__8237__1466735906",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "update the docstrings to reflect the fact that you can pass a `str` or `deprecated` instance",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__8237__1501955124",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "The reviewer gives positive feedback on the comprehensive tests",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__10753__1111569517",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "the reviewer’s concern that users might not understand the implication for test execution and reporting.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__12467__1645968361",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "The author’s reply claims that Sphinx cannot interpret the type annotations, which explains why changes might be needed in multiple files.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__13073__1894624039",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "The reviewer’s suggested change is a docstring for test_paramset_empty_no_idfunc.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14098__3213867523",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "The reviewer raised a backward-compatibility concern: previously, passing a nodeid preserved node-specific autouse fixture visibility, but the new implementation appeared to register those fixtures at session scope. The reviewer wanted the existing nodeid-based visibility behavior preserved.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14126__2702685361",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Make argv a required argument instead of optional, explicitly pass sys.argv where needed, and change its type annotation to Sequence[str] because the argument is not modified.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14126__2702686403",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Remove an unnecessary code comment because the surrounding implementation is already self-explanatory.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14284__3254882507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Explain what triggered the unrelated style changes, particularly the reformatting of pytester.makepyfile() and pytester.makeini() calls.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14331__3005321550",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Prevent infinite recursion during directory deletion when chmod fails to resolve the underlying deletion problem, such as restrictions imposed by sandboxing or other non-permission mechanisms.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14331__3299512490",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Replace the numeric permission literal 0o700 with the more descriptive constant stat.S_IRWXU in the d.mkdir() call.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__8508__821001092",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Reconsider using pformat for displaying a flat list of warning messages and suggested using newline-separated bullet points to improve readability.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    }
+  ]
+}

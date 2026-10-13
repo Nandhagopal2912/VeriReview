@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14331__3005321550",
+    "include": true,
+    "requirements": [
+      {
+        "category": "error_handling",
+        "description": "Prevent infinite recursion during directory deletion when chmod fails to resolve the underlying deletion problem, such as restrictions imposed by sandboxing or other non-permission mechanisms.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

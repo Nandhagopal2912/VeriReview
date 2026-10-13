@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14331__3299512490",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Replace the numeric permission literal 0o700 with the more descriptive constant stat.S_IRWXU in the d.mkdir() call.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

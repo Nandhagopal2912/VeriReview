@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1623__452392953",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use `super().to_info_dict()' throughout the code",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "/src/click/core.py:938",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

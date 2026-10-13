@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1785__577100634",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Remove process_value() function",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "click/core.py:2530–2533",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

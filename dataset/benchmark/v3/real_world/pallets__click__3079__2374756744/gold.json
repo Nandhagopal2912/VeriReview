@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__3079__2374756744",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Ensure UNSET values are converted to None at the correct stage, after parameter handling, so users don't see the internal sentinel and same-name parameters are handled correctly.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/core.py",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

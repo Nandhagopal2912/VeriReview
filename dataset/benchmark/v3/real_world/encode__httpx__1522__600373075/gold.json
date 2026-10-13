@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__1522__600373075",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Make the typing import style in asgi.py consistent so the AsyncIterable annotation matches how other typing names are referenced.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_transports/asgi.py:1 (import typing, the from typing import ... line removed); :8, :13, :62, :65, :75-80 all typing.-qualified; :77 stream: typing.AsyncIterable[bytes]",
+    "confidence": "medium",
+    "notes": "Reviewer's nit asked for bare AsyncIterable via the from-typing import, to match the file's style. The author resolved the inconsistency the opposite way, switching the whole file to import typing and typing.-qualified names (asgi.py:1, 8, 13, 62, 65, 75-80, 77 for stream). The literal suggestion was not applied and the reviewer did not reply, but the file is now uniform."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

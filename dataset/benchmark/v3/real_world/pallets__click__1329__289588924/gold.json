@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1329__289588924",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Reformat the docstring to follow the requested style: use imperative mood, put the remaining description in a separate paragraph, and avoid unnecessary or incorrectly formatted inline code.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "click/core.py:606–620",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

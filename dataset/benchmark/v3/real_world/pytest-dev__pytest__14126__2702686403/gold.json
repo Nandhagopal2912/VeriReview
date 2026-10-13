@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14126__2702686403",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove an unnecessary code comment because the surrounding implementation is already self-explanatory.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

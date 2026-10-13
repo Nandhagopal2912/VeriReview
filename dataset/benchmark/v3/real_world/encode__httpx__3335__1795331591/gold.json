@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3335__1795331591",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Expose zstd in the module's __all__ in _compat.py, like brotli",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_compat.py:38 is now __all__ = [\"brotli\", \"zstd\"]",
+    "confidence": "high",
+    "notes": "the diff also removes one blank line before __all__, so there is only one blank line between the try block and __all__ now. That is cosmetic. No tests were added, and none were requested."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

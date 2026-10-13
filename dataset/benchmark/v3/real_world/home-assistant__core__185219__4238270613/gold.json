@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185219__4238270613",
+    "include": true,
+    "requirements": [
+      {
+        "category": "validation",
+        "description": "Remove the duplicated _valid check from new_connection_status() and keep it only in async_new_connection_status()",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "helpers.py:204 (after): new_connection_status() still starts with \"if self._valid:\" before call_soon_threadsafe. The check is also still in async_new_connection_status() at :211, so it remains duplicated. The diff only changes the async handler (drops the \"_status_listener is self\" condition) and never touches line 204.",
+    "confidence": "high",
+    "notes": "Author says the _valid check was removed from new_connection_status() and the tests updated, but the final code still has it. The new tests (test_connection_status_not_scheduled_after_listener_invalidation) assert call_soon_threadsafe is NOT called after invalidation, so they rely on the check staying in the wrapper. "
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

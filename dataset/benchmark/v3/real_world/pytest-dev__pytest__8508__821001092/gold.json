@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__8508__821001092",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Reconsider using pformat for displaying a flat list of warning messages and suggested using newline-separated bullet points to improve readability.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

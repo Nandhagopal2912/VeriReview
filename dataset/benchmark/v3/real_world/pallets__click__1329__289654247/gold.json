@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1329__289654247",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Test that ParameterSource.validate() rejects an invalid value.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/test_context.py:314–317",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

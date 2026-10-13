@@ -1,0 +1,38 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3050__1451676418",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Don't raise an error when app= is passed. Emit a deprecation warning instead`",
+        "status": "satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Keep app= working for existing users (not a breaking change)",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Keep the docs for the app paramete",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Keep the type hint for the app parameter",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_client.py:675-680 (the Client warning), 1421-1426 (the AsyncClient warning), 730-731 and 1476-1477 (the app still works through the transports), and 609/1354 (the docs restored).",
+    "confidence": "medium",
+    "notes": "Notes: the reviewer's last comment (referencing #3071) prefers a direct drop in v1.0. The merged code kept the deprecation warning, which matches the first comment. The warning has no removal version. The async client still uses allow_env_proxies = trust_env and transport is None without app is None, unlike the sync client. The reviewer didn't ask about that."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

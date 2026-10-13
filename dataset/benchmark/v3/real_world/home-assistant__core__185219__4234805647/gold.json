@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185219__4234805647",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Add a separate wrapper for the non-async (callback-thread) case instead of one method that detects the running loop",
+        "status": "satisfied"
+      },
+      {
+        "category": "other",
+        "description": "Keep a separate handler for the async/event-loop case",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "helpers.py:202-212 (after): new_connection_status() is now a thin sync wrapper that only calls hass.loop.call_soon_threadsafe(self.async_new_connection_status, status); async_new_connection_status() is the separate event-loop handler. The asyncio.get_running_loop() branching and the asyncio import are gone.",
+    "confidence": "medium",
+    "notes": "Author's first reply claimed fe64e7a726e but hadn't pushed it; the final fix is 4de6151571e. Final code matches the reviewer's ask. Tests were updated, but the reviewer didn't ask for tests, so no testing requirement. Could not open the commit or run tests; judged from the sheet's diff and after-file only. The final diff also drops the \"_status_listener is self\" check and test_stale_connection_status_listener, which isn't part of this comment's request, so I didn't score it."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

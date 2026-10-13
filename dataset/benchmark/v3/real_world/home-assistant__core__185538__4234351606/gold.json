@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185538__4234351606",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Wrap the decorator’s inner handler with functools.wraps(func) so the decorated method keeps its name and metadata",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "entity.py:113 (after): \"@wraps(func)\" sits directly above \"async def handler(...)\" inside exception_handler(); \"from functools import wraps\" is added to the imports (diff, line 4).",
+    "confidence": "high",
+    "notes": "Reviewer asked as a question; author agreed and added it. No test was needed for this. The diff also removes translation_placeholders={\"error\": str(error)} from the command_error HomeAssistantError and adds an unrelated assertion in test_init.py. Neither relates to this comment and both look like base drift or later changes (flags: base_drift_possible, resolution_time_unknown), so I didn't score them. Judged from the sheet's diff and after-file only."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

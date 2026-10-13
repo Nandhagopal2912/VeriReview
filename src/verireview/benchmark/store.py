@@ -92,9 +92,9 @@ V2 = BenchmarkVersion(
     real_world="benchmark/v2/real_world",
     manifest="benchmark/v2/manifest.json",
 )
-# v3 (Phase 10.2): the v2 test split becomes dev data, but only once v3's own test split is
-# frozen (its manifest exists); ``eval-benchmark`` refuses v3 before that. Until then v2 stays the
-# current version and a used, locked test split.
+# v3 (Phase 10.2), frozen 2026-10-13 (benchmark/v3/FREEZE_LOG.md): the v2 test split is dev data
+# from then on. ``eval-benchmark`` refuses any version whose manifest is missing, so a later
+# version cannot be evaluated before its own test split is frozen.
 V3 = BenchmarkVersion(
     "v3",
     (
@@ -114,7 +114,7 @@ V3 = BenchmarkVersion(
     manifest="benchmark/v3/manifest.json",
 )
 VERSIONS = {v.name: v for v in (V1, V2, V3)}
-CURRENT_VERSION = "v2"  # v3 takes over when its test split is frozen
+CURRENT_VERSION = "v3"
 CASE_SETS = V1.case_sets  # v1 layout, kept for existing callers
 REAL_WORLD = V1.real_world
 LICENSES = "benchmark/LICENSES"

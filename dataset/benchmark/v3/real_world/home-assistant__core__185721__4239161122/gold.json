@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__185721__4239161122",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Check for a conflict with a background task, then use wait_background_tasks=True when waiting in the test helper",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/sofar/test_tuning.py:42 (after): \"await hass.async_block_till_done(wait_background_tasks=True)\" replaces \"await hass.async_block_till_done()\" in _poll_after_grid_failed (the commented line). The same change is also made at tests/components/sofar/test_init.py:655.",
+    "confidence": "medium",
+    "notes": "The comment has two parts: check for a background-task conflict, then use wait_background_tasks=True. The first is an investigation that can't be seen in the diff, and the author's reply doesn't say what was found; only the second is verifiable, and it is done. Author also applied the same change in test_init.py, which fits the comment's intent and wasn't scored separately. Judged from the sheet's diff only; tests not run."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

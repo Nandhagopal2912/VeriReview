@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__14126__2702685361",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Make argv a required argument instead of optional, explicitly pass sys.argv where needed, and change its type annotation to Sequence[str] because the argument is not modified.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

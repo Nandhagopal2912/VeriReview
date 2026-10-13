@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__99832__1321641672",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Fetch the device using its connections instead of another lookup mechanism (e.g., identifiers), if possible.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "",
+    "confidence": "high",
+    "notes": "the reviewer suggests an alternative implementation (\"You should be able to fetch by connections\") but does not explicitly require a code change or explain whether the current implementation is incorrect. Without a visible follow-up commit implementing or rejecting the suggestion, the requirement cannot be evaluated as satisfied or not satisfied."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

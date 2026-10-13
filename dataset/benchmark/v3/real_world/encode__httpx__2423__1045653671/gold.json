@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2423__1045653671",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Make LineDecoder treat all str.splitlines line boundaries as line endings instead of only \\n.",
+        "status": "satisfied"
+      },
+      {
+        "category": "testing",
+        "description": "Add or extend tests so the other splitlines line endings are covered.",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "PARTIALLY_SATISFIED",
+    "evidence": "httpx/_decoders.py:271 (NEWLINE_CHARS), :284 (text[-1] in NEWLINE_CHARS), :287 and :298; tests/test_decoders.py diff has no new cases for the extra line endings",
+    "confidence": "medium",
+    "notes": "Reviewer said endswith(\"\\n\") isn't enough because splitlines accepts other line endings, and that tests probably don't cover them. The decoder now defines NEWLINE_CHARS with the full splitlines set (271) and checks the last character against it (284); a trailing_cr flag handles CR across chunks. The test diff only changes the existing CR assertion and anyio markers; no new tests for the other line endings appear in the diff."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

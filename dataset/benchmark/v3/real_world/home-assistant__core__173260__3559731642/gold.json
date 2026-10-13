@@ -1,0 +1,33 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__173260__3559731642",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Migrate existing entities' unique ID key impedance → impedance_low",
+        "status": "not_satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Migrate existing entities' unique ID key impedance_low → impedance_high",
+        "status": "not_satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Implement this as a config entry minor version migration",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "homeassistant/components/xiaomi_ble/__init__.py has no key rename and no async_migrate_entry or minor version handling. The lines that once handled impedance at 122-172 are removed, along with the call site.",
+    "confidence": "medium",
+    "notes": "the author deleted the whole disable-legacy-entity migration rather than switching it to a rename. This may reflect a decision that migration isn't needed (for example if the library change alone is enough), but nothing in this window says so. No tests were added or changed."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

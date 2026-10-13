@@ -1,11 +1,12 @@
-# Phase 10.2: Human Labels for v2, and Building Benchmark v3
+# Phase 10.2: Human Labels for v2, and Benchmark v3 Frozen
 
 Two things, in this order:
 
 1. The provisional Claude labels of the v2 real-world test cases were replaced by a human
    annotator's labels, and the recorded v2 run was re-scored against them (no new run).
-2. Benchmark v3 is being built, so that the v2 test split can become dev data and the rules can
-   be improved on it. **No rule was changed in this phase.**
+2. Benchmark v3 was built and **frozen** (2026-10-13), so that the v2 test split is dev data now
+   and the rules can be improved on it. **No rule was changed in this phase, and no verifier has
+   run on any v3 test case.**
 
 Owner decisions (2026-10-11): record the one annotator's labels as the v2 real-world gold; collect
 new real-world cases from the six approved repositories; the annotators label them.
@@ -103,19 +104,22 @@ The order is the one of v2 (`dataset/benchmark/v2/FREEZE_LOG.md`): the new test 
 **before** any rule changes, and only then does the v2 test split become dev data.
 
 - **Layout** (`benchmark/store.py`, `V3`): the v2 sets are dev; the test sets live in
-  `dataset/benchmark/v3/`. v2 stays the current version until v3 is frozen, and
-  `eval-benchmark --benchmark-version v3` refuses to run before `v3/manifest.json` exists
-  (`tests/benchmark/test_benchmark_v3.py`).
+  `dataset/benchmark/v3/`. While v3 was being built, v2 stayed the current version, and
+  `eval-benchmark` refused v3 because it had no manifest. That guard stays for any later version
+  (`test_a_version_without_a_manifest_cannot_be_evaluated`).
 - **Real-world collection:** the rule was written into `dataset/benchmark/v3/FREEZE_LOG.md`
   before any case was collected: fresh pull requests only (none used in v1 or v2), all in the test
   split, 10 per repository with a fixed top-up rule, and at most 3 threads per pull request
   (`collect-cases --max-per-pull 3`, new: in v2 one pull request supplied 7 of the 60 cases).
   Result: **60 cases from 45 pull requests** (httpx 11, home-assistant 11, click 11, pandas 7,
   pydantic 10, pytest 10; pandas ran short because of its very large files).
-- **Labels:** by the human annotators. `annotation-sheet --batch rw-v3 --benchmark-version v3`
-  writes the page with all 60; `--cases FILE` (new) writes a page with chosen cases, used for a
-  two-annotator split (20 shared, 20 + 20). Nothing has run on these cases, and nothing will
-  before they are labelled and frozen.
+- **Labels:** one human annotator (Jordan) labelled all 60 blind on the page from
+  `annotation-sheet --batch rw-v3 --benchmark-version v3`; the raw export is
+  `dataset/annotations/jordan/rw-v3.json`. 58 included, 2 excluded; 42 satisfied, 2 partially
+  satisfied, 5 not satisfied, 9 uncertain; 32 of the 58 main requests are `other`. No verifier
+  had run on the cases. As for v2, this is **one annotator**: not adjudicated. (`--cases FILE`,
+  new, writes a page with chosen cases, for a two-annotator split; it was prepared and not
+  needed.)
 - **A second opinion on v2** (optional): `rw-v2-second.html`, 36 cases: the 21 where the human
   and the model labels disagree plus 15 drawn at random (seed 20261011) from the other 39. The
   random 15 give an unbiased look at human–human agreement; the 21 settle the disputes.
@@ -127,9 +131,35 @@ The order is the one of v2 (`dataset/benchmark/v2/FREEZE_LOG.md`): the new test 
   injection, dead code, wrong value, wrong target, text that only mentions the fix, unusual but
   valid idioms, partial fixes). Same caveat as before: they come from the rules' author.
 
-Still to do before the freeze: the human labels for the 60 new real-world cases; then
-`benchmark-freeze --benchmark-version v3`. After that: rule changes on dev data, and one blind v3
-run under a pre-registered protocol.
+### The freeze (2026-10-13)
+
+`benchmark-freeze --benchmark-version v3` wrote `dataset/benchmark/v3/manifest.json`; the hashes
+are pinned in `tests/benchmark/test_benchmark_v3.py` (the two authored sets, the real-world cases
+with their labels, and the cases alone). `CURRENT_VERSION` is `v3`. Real output of
+`verireview benchmark-stats`:
+
+```text
+benchmark v3
+case sets:        dev-fixtures 29, dev-heldout 24, v1-controlled 60, v1-adversarial 40, v1-real-world 50, v2-controlled 60, v2-adversarial 30, v2-real-world 52, controlled 60, adversarial 30, real-world 58
+source/split:     controlled/dev 173, adversarial/dev 70, real_world/dev 102, controlled/test 60, adversarial/test 30, real_world/test 58
+test by category: naming 19, validation 21, testing 27, error_handling 20, api_behavior 29
+test by verdict:  SATISFIED 72, PARTIALLY_SATISFIED 17, NOT_SATISFIED 40, UNCERTAIN 19
+real-world:       collected 60 (dev 0, test 60), gold 60 (human 60, of which one annotator 60; provisional model 0; included 58, excluded 2)
+```
+
+| | Test (frozen, unused) | Dev (may be studied and tuned on) |
+|---|---|---|
+| Controlled | 60 | 173 |
+| Adversarial | 30 | 70 |
+| Real-world | 58 (human labels, one annotator) | 102 (52 human labels, one annotator; 50 provisional model labels) |
+| **Total** | **148** | **345** |
+
+Naming has 19 test cases against a target of 20 (real-world requests are mostly `other`);
+recorded, not padded.
+
+**What comes next (a new phase):** an error analysis of the dev data, including the v2 cases with
+their human labels; rule changes on dev data only; a pre-registered protocol; and **one** blind
+run of the v3 test split, the current rules against the new ones.
 
 ## Commands
 
@@ -141,11 +171,23 @@ uv run verireview mine-candidates OWNER/REPO --max-prs 250 --out dataset/raw/can
 uv run verireview collect-cases FILES… --n 10 --seed 20261011 --test-fraction 1.0 --max-per-pull 3 --benchmark-version v3
 uv run verireview annotation-sheet --batch rw-v3 --benchmark-version v3
 uv run verireview annotation-sheet --batch rw-v3-shared --benchmark-version v3 --cases dataset/raw/sheets/rw-v3-shared.ids.txt
+uv run verireview build-gold dataset/annotations/jordan/rw-v3.json --single-source human --benchmark-version v3
+uv run verireview benchmark-freeze --benchmark-version v3
 ```
+
+`rescore-report` scores against the labels of the report's own benchmark version (a v2 report
+against the v2 labels), whatever the current version is.
 
 ## Limitations
 
-- **One annotator for v2.** No adjudication, no human–human agreement. The v1 real-world cases
-  (now dev data) still have provisional model labels.
-- **Small numbers.** Seven bad real-world resolutions among 49 cases; one false acceptance.
-- **The v2 test split is still locked.** Nothing here used it to change a rule.
+- **One annotator, for v2 and for v3.** No adjudication, and no human–human agreement can be
+  measured. The same person labelled both. The v1 real-world cases (dev data) still have
+  provisional model labels.
+- **Few bad real-world cases.** v3 has 5 not-satisfied and 2 partially satisfied real-world cases
+  among 58, so a real-world false-acceptance rate will again rest on about 7 cases.
+- **The authored test cases come from the rules' author** (written blind, same recipe).
+- **The labelling page pre-selects "validation" and "satisfied"** for a new requirement, which can
+  nudge an annotator. In the v3 export only 2 of 58 included cases sit at exactly those values, so
+  there is no sign that defaults were left untouched, but the page should start empty next time.
+- **Nothing was improved yet.** This phase changed labels and built the test set; the verifier's
+  rules are those of Phase 10.1.

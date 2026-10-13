@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3335__1791997641",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Move the \"similar to ssl.create_default_context(), except with certifi\" comment down, below the if not verify: early return (nearer the certifi loading), since certifi isn't loaded when verify=False",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "NOT_SATISFIED",
+    "evidence": "httpx/_config.py:35-36 still holds the certifi comment above if not verify: (line 37), unchanged. The certifi load is at :52. The diff only removes unused code (DEFAULT_CIPHERS, logger) and adds a different comment at the top of __init__.",
+    "confidence": "high",
+    "notes": "the author's changes in the later commits are unrelated to the request (removing the cipher list and logger, adding an ssl.SSLContext defaults comment). The new comment explains stdlib defaults, so it is not a relocation of the commented text. If a reply or follow-up commit outside this window moved the comment, it isn't visible here, which is why the resolution_time_unknown flag applies."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

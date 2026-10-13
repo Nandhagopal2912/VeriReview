@@ -1,0 +1,28 @@
+{
+  "label": {
+    "case_id": "encode__httpx__1522__599878626",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Change the handle_request return annotation in BaseTransport from Iterator[bytes] to Iterable[bytes].",
+        "status": "satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Apply the same Iterator → Iterable annotation change in the mock, asgi and wsgi transports.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "httpx/_transports/base.py:28 (after code): typing.Iterable[bytes] in the return tuple; :25 and about :119-122 (async) changed the same way; mock/asgi/wsgi transports not in the diff",
+    "confidence": "medium",
+    "notes": "Suggestion applied verbatim at base.py:28; the diff also changes the sync stream parameter and the async handle_async_request types to Iterable/AsyncIterable. The reviewer's follow-up (\"more of these in mock/asgi/wsgi transports\") concerns other files that are not in this diff, so it can't be verified."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

@@ -1,7 +1,7 @@
 # Benchmark v3 freeze log (Phase 10.2)
 
-Order of events, recorded as they happen. **v3 is not frozen yet**: until `manifest.json` exists
-in this directory, v2 remains the locked test split and no rule may change.
+Order of events, recorded as they happen. **v3 was frozen on 2026-10-13** (entry 7), before any rule
+change. From then on the v2 test split is dev data.
 
 1. **2026-10-11**: the v2 real-world labels were replaced by one human annotator's labels and the
    recorded v2 run was re-scored without running again (`../v2/FREEZE_LOG.md`, entry 6). No rule
@@ -52,10 +52,28 @@ in this directory, v2 remains the locked test split and no rule may change.
      compares the two). New scenarios; as in v2, the adversarial cases are six resolutions of one
      request per category.
 
-Still to do, in this order: the human labels for the 60 real-world cases (`build-gold
---benchmark-version v3`); then `benchmark-freeze --benchmark-version v3` and v3 becomes the
-current version. Only then: rule changes on dev data (v2 included), and one blind v3 run under a
-pre-registered protocol.
+6. **2026-10-13**: the 60 `real_world` cases were labelled by one human annotator (Jordan), blind,
+   on the page `rw-v3.html`; raw export `dataset/annotations/jordan/rw-v3.json` (unedited). No
+   verifier had run on the cases. `build-gold … --single-source human --benchmark-version v3`:
+   - 58 included, 2 excluded (no requirement);
+   - verdicts: 42 satisfied, 2 partially satisfied, 5 not satisfied, 9 uncertain;
+   - main request: other 32, api_behavior 11, testing 9, validation 3, error_handling 2, naming 1.
+   - This is one annotator: not adjudicated, and no human–human agreement can be measured.
+7. **2026-10-13**: **frozen** with `benchmark-freeze --benchmark-version v3` (`manifest.json`),
+   pinned in `tests/benchmark/test_benchmark_v3.py`:
+   - controlled and adversarial: the hashes of entry 5, unchanged;
+   - `real_world_test_hash` (cases and labels)
+     `42a5a98edbf11ca474e2067efe09d3a771979452ebaf4c21c5959931e0048d59`;
+   - the cases without their labels
+     `84b1c8e1a7d5a2b51c80af7b97321ccd35de03a3389fe918580148e703b59e45`.
+   - The test split has **148 cases**: 60 controlled, 30 adversarial, 58 real-world (72 satisfied,
+     17 partially satisfied, 40 not satisfied, 19 uncertain). Per-category targets of 20 test
+     cases: naming has 19 (real-world requests are mostly `other`); recorded, not padded.
+   - The dev split has 345 cases (everything of v1 and v2). `CURRENT_VERSION` is `v3`.
+   - **No rule had changed, and no verifier had run on any v3 test case.**
+
+Next, in this order: rule changes on dev data only; a pre-registered protocol; one blind run of
+the v3 test split, old rules against new.
 
 Caveat, as for v2: the controlled and adversarial cases were written by the same author as the
 rules, who had seen the v2 results (though not an error analysis of the human-labelled v2 cases,

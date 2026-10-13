@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pydantic__pydantic__8237__1424565507",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "The reviewer wants DEPRECATED_TYPES to include deprecated only when it is a type, preventing errors with typing_extensions versions below 4.9.0. They also want it to remain a tuple so tuple() can be removed from is_deprecated_instance",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "UNCERTAIN",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

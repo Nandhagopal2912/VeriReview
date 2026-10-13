@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__66771__3797400493",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Normalize/resolve the frequency appropriately so a string or period alias does not reach the conversion logic in an unsupported form.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "pandas/plotting/_matplotlib/core.py:1926",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__99832__1321640950",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Determine whether adding device identifiers is necessary, or rely on existing connections if they are sufficient to identify the device.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": true,
+    "verdict": "UNCERTAIN",
+    "evidence": "The review comment is phrased as a question (\"Do we need to...\") rather than requesting a concrete code change.\nNo explicit requirement is stated, and without the final code it is impossible to determine whether identifiers were removed, retained intentionally, or discussed elsewhere.",
+    "confidence": "high",
+    "notes": "The reviewer is questioning a design decision rather than requesting a specific, verifiable change. Because the comment does not define an actionable requirement, it cannot be reliably converted into a satisfiable requirement for annotation."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

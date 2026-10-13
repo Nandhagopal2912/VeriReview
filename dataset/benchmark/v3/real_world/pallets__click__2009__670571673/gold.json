@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__2009__670571673",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Keep empty lines formatting around blocks.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "src/click/decorators.py:351",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

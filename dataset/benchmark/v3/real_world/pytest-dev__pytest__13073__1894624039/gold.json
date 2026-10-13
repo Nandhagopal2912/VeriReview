@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pytest-dev__pytest__13073__1894624039",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "The reviewer’s suggested change is a docstring for test_paramset_empty_no_idfunc.",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

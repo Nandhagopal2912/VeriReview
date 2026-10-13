@@ -1,0 +1,33 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3045__1444454071",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Put HA1 first inside digest_data in the qop is None branch (curl style)",
+        "status": "satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Put HA1 first inside digest_data in the else (qop) branch",
+        "status": "satisfied"
+      },
+      {
+        "category": "api_behavior",
+        "description": "Compute \"response\" directly from digest(...) of the joined digest_data, dropping the intermediate key_digest",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_auth.py:283-287 (HA1 in both digest_data lists) and httpx/_auth.py:294 (\"response\": digest(b\":\".join(digest_data))). The key_digest line is removed.",
+    "confidence": "medium",
+    "notes": "the author said in the thread that they agreed to make the change and added comments (# Following RFC 2069 and # Following RFC 2617/7616). The new tests verify the results against the RFC examples. The history was rewritten, so the commit order is ambiguous."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

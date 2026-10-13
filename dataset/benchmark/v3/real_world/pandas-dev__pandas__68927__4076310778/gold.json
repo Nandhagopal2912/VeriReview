@@ -1,0 +1,17 @@
+{
+  "label": {
+    "case_id": "pandas-dev__pandas__68927__4076310778",
+    "include": false,
+    "exclusion_reason": "no_requirement",
+    "requirements": [],
+    "ambiguous": false,
+    "evidence": "",
+    "confidence": "medium",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1829__606678592",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Replace f-strings with `str.format`",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "b/src/click/core.py:1284",
+    "confidence": "high",
+    "notes": ""
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

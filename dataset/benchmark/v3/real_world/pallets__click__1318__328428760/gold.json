@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "pallets__click__1318__328428760",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Use Unicode-aware case folding instead of .lower() when normalizing choices, if required for the supported Python versions.",
+        "status": "uncertain"
+      }
+    ],
+    "ambiguous": true,
+    "verdict": "UNCERTAIN",
+    "evidence": "nothing added",
+    "confidence": "high",
+    "notes": "he reviewer suggests replacing .lower() with .casefold() but later acknowledges that implementing Python 2-compatible case folding may not be worthwhile. The author reports that Python 2's .upper().lower() does not solve the example either. No code changes were made in the supplied diff, so the requested behavior was not implemented here."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "home-assistant__core__99832__1320560834",
+    "include": true,
+    "requirements": [
+      {
+        "category": "testing",
+        "description": "Add tests that cover migrating the unique ID from both old formats (v1 pre-2023.9.0 and v2 from 2023.9.0) to the new address-based format",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "tests/components/airthings_ble/test_sensor.py (new file, ~213 lines): test_migration_from_v1_to_v3_unique_id (~:26) and test_migration_from_v2_to_v3_unique_id (~:66) each register an old-format entity, set up the entry, and assert the unique_id became \"<address>_<sensor>\". Extra tests cover v1+v2 together and all three IDs present. Supporting fixtures and helpers are in tests/components/airthings_ble/__init__.py.",
+    "confidence": "high",
+    "notes": "Reviewer asked for a test of migrating from both ID formats; the final diff adds one test per format plus two combination tests. Line numbers are approximate (counted from the diff). The same diff also refactors migrate() into async_migrate() and changes device lookup to Bluetooth connections only; that's beyond this comment, so I didn't score it (flags: base_drift_possible, resolution_time_unknown). Tests not run. One thing I noticed but did not score: the tests and async_migrate both pass DOMAIN and \"sensor\" to the entity-registry calls in what looks like the swapped order, consistently, so the tests agree with the code either way."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

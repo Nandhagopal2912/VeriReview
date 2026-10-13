@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__3250__1692499301",
+    "include": true,
+    "requirements": [
+      {
+        "category": "api_behavior",
+        "description": "Find the first non-printable ASCII character lazily with a generator, without materializing a list",
+        "status": "satisfied"
+      }
+    ],
+    "ambiguous": false,
+    "verdict": "SATISFIED",
+    "evidence": "httpx/_urlparse.py:163 now uses next(char for char in url if char.isascii() and not char.isprintable()). The same fix is applied at httpx/_urlparse.py:213-215.",
+    "confidence": "high",
+    "notes": "the author's reply says it \"can be done lazily by materializing a generator\", which is loosely worded. The code uses next() over a generator expression, which is not materialized. The any(...) guard on line 162 means next() always finds a match, so there is no StopIteration risk."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

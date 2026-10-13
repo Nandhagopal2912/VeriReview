@@ -1,0 +1,23 @@
+{
+  "label": {
+    "case_id": "encode__httpx__2351__958385038",
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Remove the unused \"from setuptools import setup\" import, since the setup() call below sys.exit(1) can never run.",
+        "status": "not_satisfied"
+      }
+    ],
+    "ambiguous": true,
+    "verdict": "UNCERTAIN",
+    "evidence": "setup.py:3 (after code): from setuptools import setup is still present; the diff is empty",
+    "confidence": "medium",
+    "notes": "The reviewer remarked, in hedged wording, that the setuptools import technically isn't required because the code after sys.exit(1) never runs. Whether this is a request is unclear, and removing the import while leaving the setup() call would leave an undefined name in code kept for GitHub's static metadata parsing."
+  },
+  "annotators": [
+    "Jordan"
+  ],
+  "agreed": true,
+  "label_source": "human"
+}

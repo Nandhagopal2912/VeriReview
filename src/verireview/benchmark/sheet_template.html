@@ -101,14 +101,16 @@ function problems(label) {
   return out;
 }
 function finished(label) { return label && label.done && problems(label).length === 0; }
+// A decision needs an explicit choice (none is pre-selected) and a reason; a custom label must be complete.
+function decided(d) { return !!(d && d.chosen && d.reason && d.reason.trim().length >= 3 && (d.chosen !== "custom" || problems(d.label).length === 0)); }
 
 function renderNav() {
   const nav = document.getElementById("nav");
   nav.replaceChildren(...DATA.cases.map((c, i) => {
-    const done = ADJ ? !!(state.decisions[c.case_id] && state.decisions[c.case_id].reason) : finished(state.labels[c.case_id]);
+    const done = ADJ ? decided(state.decisions[c.case_id]) : finished(state.labels[c.case_id]);
     return el("button", { class: (i === current ? "active " : "") + (done ? "done" : ""), onclick: () => { current = i; render(); } }, c.case_id);
   }));
-  const n = DATA.cases.filter(c => ADJ ? state.decisions[c.case_id] && state.decisions[c.case_id].reason : finished(state.labels[c.case_id])).length;
+  const n = DATA.cases.filter(c => ADJ ? decided(state.decisions[c.case_id]) : finished(state.labels[c.case_id])).length;
   document.getElementById("progress").textContent = n + " / " + DATA.cases.length + " done";
 }
 
@@ -180,12 +182,12 @@ function render() {
   if (ADJ) {
     const a = DATA.pair.a.annotations.find(x => x.case_id === c.case_id);
     const b = DATA.pair.b.annotations.find(x => x.case_id === c.case_id);
-    const d = state.decisions[c.case_id] || (state.decisions[c.case_id] = { case_id: c.case_id, chosen: "a", label: null, reason: "" });
+    const d = state.decisions[c.case_id] || (state.decisions[c.case_id] = { case_id: c.case_id, chosen: "", label: null, reason: "" });
     const redraw = keep => { save(); renderNav(); if (!keep) render(); };
     parts.push(el("h3", {}, "Labels"), el("div", { class: "side" },
       el("div", {}, el("b", {}, "A: " + DATA.pair.a.annotator), summary(a)),
       el("div", {}, el("b", {}, "B: " + DATA.pair.b.annotator), summary(b))));
-    parts.push(el("h3", {}, "Decision"), el("p", {}, "Use ", select(["a","b","custom"], d.chosen, v => { d.chosen = v; d.label = v === "custom" ? JSON.parse(JSON.stringify(a || blankLabel(c.case_id))) : null; redraw(); })));
+    parts.push(el("h3", {}, "Decision"), el("p", {}, "Use ", select(["a","b","custom"], d.chosen, v => { d.chosen = v; d.label = v === "custom" ? JSON.parse(JSON.stringify(a || blankLabel(c.case_id))) : null; redraw(); }, "— choose —")));
     if (d.chosen === "custom") parts.push(labelForm(d.label, (l, keep) => redraw(keep)));
     parts.push(el("label", {}, "Reason (required)", el("textarea", { oninput: e => { d.reason = e.target.value; redraw(true); } }, d.reason)));
   } else {
@@ -204,7 +206,7 @@ function exportPayload() {
   const who = document.getElementById("who").value.trim();
   if (!who) throw new Error("Enter your name first.");
   if (ADJ) {
-    const decisions = Object.values(state.decisions).filter(d => d.reason && d.reason.trim().length >= 3).map(d => {
+    const decisions = Object.values(state.decisions).filter(decided).map(d => {
       const out = { case_id: d.case_id, chosen: d.chosen, reason: d.reason.trim() };
       if (d.chosen === "custom") out.label = cleanLabel(d.label);
       return out;

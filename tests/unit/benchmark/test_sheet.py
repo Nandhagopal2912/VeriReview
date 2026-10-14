@@ -90,3 +90,11 @@ def test_nothing_is_pre_selected_for_the_annotator() -> None:
     assert 'confidence: ""' in html
     assert 'category: "validation"' not in html
     assert 'status: "satisfied"' not in html
+
+
+def test_adjudication_does_not_pre_select_an_annotator() -> None:
+    # Defaulting every decision to annotator A would favour A's labels.
+    html = render_sheet([sheet_case("c", make_case("x = 1\n", "x = 2\n", 1))], "b")
+
+    assert 'chosen: "", label: null, reason: ""' in html
+    assert 'chosen: "a"' not in html

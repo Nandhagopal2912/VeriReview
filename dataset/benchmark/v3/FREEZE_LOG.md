@@ -72,8 +72,13 @@ change. From then on the v2 test split is dev data.
    - The dev split has 345 cases (everything of v1 and v2). `CURRENT_VERSION` is `v3`.
    - **No rule had changed, and no verifier had run on any v3 test case.**
 
-Next, in this order: rule changes on dev data only; a pre-registered protocol; one blind run of
-the v3 test split, old rules against new.
+8. **2026-10-14** (Phase 10.3): rule and extraction changes were made on dev data only (345
+   cases). Then the protocol was pre-registered: `docs/phase10_3_protocol.md`, sha256
+   `e3e12c93436c…`, with rules source hash `211a02c7d119…`.
+9. **2026-10-14**: v3 test evaluated **once**, old rules (commit `a71e55c`) against new
+   (`experiments/phase10_3_test_old_rules.json`, `experiments/phase10_3_test.json`, paired:
+   `experiments/phase10_3_test_paired.json`). From now on the v3 test cases have been looked at.
+   Further rule changes need a v4 test set, frozen before the changes; v3 then becomes dev data.
 
 Caveat, as for v2: the controlled and adversarial cases were written by the same author as the
 rules, who had seen the v2 results (though not an error analysis of the human-labelled v2 cases,

@@ -37,7 +37,7 @@ def row(
         comment_id=comment_id,
         head_sha=C4,
         inputs_sha256="0" * 64,
-        pipeline_version="mvp-2",
+        pipeline_version="mvp-3",
         verdict=verdict,
         confidence="MEDIUM",
         action="HUMAN_REVIEW",

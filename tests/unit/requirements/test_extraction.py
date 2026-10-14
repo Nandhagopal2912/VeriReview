@@ -121,6 +121,8 @@ def test_hedged_statement_is_a_suggestion() -> None:
         ("Could you rename `cfg` to `config`?", False),  # polite request, not a question
         ("Rename `usr` to `username`.", False),
         ("Creating a resource should return `201 Created`, not 200.", False),
+        ("Handle failures more gracefully.", True),  # how, not what (Phase 10.3)
+        ("Handle the `KeyError` in `load` gracefully by returning None.", False),
     ],
 )
 def test_ambiguity(comment: str, ambiguous: bool) -> None:
@@ -128,6 +130,28 @@ def test_ambiguity(comment: str, ambiguous: bool) -> None:
 
     assert ((req.ambiguity or 0.0) >= AMBIGUITY_THRESHOLD) is ambiguous
     assert bool(req.ambiguity_reasons) is ((req.ambiguity or 0.0) > 0)
+
+
+@pytest.mark.parametrize(
+    ("comment", "request_made"),
+    [
+        ("No longer used", True),
+        ("This duplicates the line above.", True),
+        ("`retries` can be removed now.", True),
+        ("This is not used.", False),  # "use it" or "remove it": not a request either way
+        ("Nice, this is much cleaner now.", False),
+    ],
+)
+def test_removal_statement_is_a_request(comment: str, request_made: bool) -> None:
+    req = extract_requirements(comment)
+
+    assert req.actionable is request_made
+
+
+def test_removal_statement_does_not_add_to_other_requests() -> None:
+    req = extract_requirements("Rename `cfg` to `config`. The old helper is no longer used.")
+
+    assert [r.category.value for r in req.requirements] == ["naming"]
 
 
 def test_targets_prefer_identifiers_in_the_code() -> None:

@@ -95,7 +95,7 @@ def test_resolved_thread_ends_as_one_neutral_check_with_an_audit_row(
     [job] = jobs(session, delivery)
     assert (job.status, job.attempts) == ("done", 1)
     [audit] = audits(session)
-    assert (audit.comment_id, audit.head_sha, audit.pipeline_version) == (5001, C4, "mvp-2")
+    assert (audit.comment_id, audit.head_sha, audit.pipeline_version) == (5001, C4, "mvp-3")
     assert len(audit.inputs_sha256) == 64 and audit.result["verdict"] == audit.verdict
 
     [run] = fake.check_runs.values()

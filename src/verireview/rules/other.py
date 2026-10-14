@@ -9,10 +9,15 @@ checkable shapes are verified; anything else stays inconclusive (human review):
               lines are still there unchanged and the suggestion is not; otherwise (changed in
               another way) inconclusive. An empty block means "delete these lines".
 - removal     "remove / drop / delete this (comment, line, check…)" or "remove `x`": the
-              commented lines, or the named identifier, are gone.
+              commented lines, or the named identifier, are gone. Phase 10.3: also a statement
+              that the code is superfluous ("No longer used", "can be left out"), which
+              extraction turns into a request only when the comment has no other one.
 - docstring   "add a docstring": the target function has a docstring it did not have (or a
               changed one).
 - use         "use `A` instead of `B`": `A` is now used in the target and `B` no longer is.
+- comment     "add `# GH#63221`" (Phase 10.3): that exact comment, given in backticks, is in the
+              file now and was not before. A comment described in words ("add a comment
+              explaining …") is not checkable and stays inconclusive.
 
 Lines are compared without whitespace, so re-indentation and a formatter splitting one line
 over several (with a trailing comma) still match; a suggestion that only changes indentation is
@@ -24,6 +29,7 @@ import re
 from tree_sitter import Node
 
 from verireview.contracts import Requirement
+from verireview.requirements import lexicon as lx
 from verireview.rules.base import (
     RuleContext,
     RuleOutcome,
@@ -50,6 +56,7 @@ _USE_INSTEAD = re.compile(
     r"\buse\s+`([^`]+)`.*?\b(?:instead of|rather than|over|not)\s+`([^`]+)`", re.I
 )
 _CLOSERS = re.compile(r",\s*([)\]}])")
+_ADD_COMMENT = re.compile(r"^(?:add|put|include|write|leave)\b.*?`(#[^`]*\w[^`]*)`", re.I)
 
 
 def other_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
@@ -60,6 +67,10 @@ def other_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
         return _use_instead(requirement, ctx, use.group(1), use.group(2))
     if removal := _REMOVE.match(text):
         return _removal(requirement, ctx, removal.group(1))
+    if lx.REMOVAL_STATEMENT.search(text):
+        return _removal(requirement, ctx, text if quoted_identifiers(text) else "this")
+    if comment := _ADD_COMMENT.match(text):
+        return _literal_comment(requirement, ctx, comment.group(1))
     return inconclusive(requirement, "No verification rule exists for this kind of request.")
 
 
@@ -192,6 +203,54 @@ def _outcome(
         detail,
         [located(requirement, kind, ok, detail, ctx.file, line, version=version)],
     )
+
+
+# ---------------------------------------------------------------- literal comment
+
+
+def _literal_comment(requirement: Requirement, ctx: RuleContext, comment: str) -> RuleOutcome:
+    wanted = " ".join(comment.split())
+    before = [i for i, line in enumerate(_comments(ctx.case.before_code), 1) if wanted in line]
+    after = [i for i, line in enumerate(_comments(ctx.case.after_code), 1) if wanted in line]
+    if len(after) > len(before):
+        return RuleOutcome(
+            RuleStatus.SATISFIED,
+            f"`{wanted}` was added.",
+            [
+                located(
+                    requirement,
+                    "comment.added",
+                    True,
+                    f"The requested comment `{wanted}` is in the code now.",
+                    ctx.file,
+                    after[0],
+                )
+            ],
+        )
+    if not after:
+        return RuleOutcome(
+            RuleStatus.NOT_SATISFIED,
+            f"`{wanted}` is not in the code.",
+            [
+                unlocated(
+                    requirement,
+                    "comment.missing",
+                    False,
+                    f"No comment in the file contains `{wanted}`.",
+                    "absence has no location",
+                )
+            ],
+        )
+    return inconclusive(requirement, f"`{wanted}` was already in the file before the change.")
+
+
+def _comments(code: str | None) -> list[str]:
+    """Each line's comment part (from the first `#`), whitespace collapsed; "" if none.
+
+    A `#` inside a string counts as well; the requested text must still match exactly.
+    """
+    lines = (code or "").split("\n")
+    return [" ".join(line[line.index("#") :].split()) if "#" in line else "" for line in lines]
 
 
 # ---------------------------------------------------------------- removal

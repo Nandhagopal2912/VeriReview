@@ -24,21 +24,21 @@ so nothing can fail or block today.
 
 | | |
 |---|---|
-| **Current phase** | **Phase 10.2 done: benchmark v3 is frozen.** 148 new test cases (60 controlled and 30 adversarial written blind, 58 real-world from 45 fresh pull requests with one human annotator's labels), frozen before any rule change and not yet run. The v2 test split is dev data now. The rules themselves are unchanged since Phase 10.1 ([details](docs/phase10_2_human_labels_v3.md)) |
+| **Current phase** | **Phase 10.3 done: rules improved on dev, v3 test run once, old rules against new.** Safe but narrow: on 148 fresh cases only 2 verdicts changed (both former acceptances, now uncertain), nothing got worse. Accuracy 0.561 → 0.568 (not a clear gain), false acceptance 0.105 → 0.088 (not higher, as required). On dev the same changes fixed 11 cases and broke none: fixes for single patterns seen in dev rarely fire on new cases ([details](docs/phase10_3_rules_v3.md)) |
 | **Phase 13** | **Read-only dashboard.** Server-rendered pages in the API (no JavaScript) for repositories, pull requests, each verification (thread, requirements, evidence, explanation, code before/after, diff, inputs hash) and history. Off unless an operator token is set; stored code is purged after a retention period (90 days) |
 | **Phase 12** | **Staged enforcement, built and inert.** Repositories move observe → advisory → human review (with a *Confirm reviewed* button) → enforcement, one step at a time, recorded. A check can only fail when four locks are open (global switch, repository opt-in, an eligible category, branch protection). **No category is eligible**: on the v2 test even naming's clean 0/10 has a 26% upper bound, and the gate needs ≤ 5% ([ADR-003](docs/adr/003-enforcement-gate.md)) |
 | **Phase 11** | **GitHub advisory mode.** A GitHub App receives signed webhooks, verifies each resolved review thread in a background worker, audits it, and posts one **neutral** check per pull request. **Run live on a private test repository (2026-10-08):** all checks worked end to end after 7 fixes found by the live run (Re-run sends `check_suite`, re-check on every push, worker resilience, logging, a separate test database) ([live run](docs/phase11_github_advisory.md#live-run-2026-10-08)) |
 | **Advisory mode** | HMAC-verified webhooks (forged → 401), idempotent queue (redelivery → processed once), per-repository least-privilege App tokens, audit trail with inputs hash, check conclusion pinned to `neutral` |
-| **Blind test v2 (full VeriReview)** | **accuracy 0.65** [0.58, 0.73] · **false acceptance 0.15** [0.06, 0.26] · false blocking 0.04 · 147 cases |
-| **Against the Phase 10 rules, same cases** | accuracy **+0.23** [+0.16, +0.31] · false acceptance **−0.15** [−0.25, −0.07] (paired bootstrap) |
-| **What that means** | Clearly better, but still not safe enough to gate merges: 8 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
-| **Real-world** | decides 25 of 57 fresh real-world cases (was 5), 23 of them correctly, nearly all through the new suggestion-block check. That was scored on provisional Claude labels; see the next row |
-| **Human labels (Phase 10.2)** | One human annotator relabelled the 60 v2 real-world cases blind. The recorded run, re-scored without running again: on the 49 cases both label sets include, accuracy 0.43 → 0.45, right when decided 19 of 21 either way, but **bad resolutions accepted 0 of 3 → 1 of 7**: the model labels hid one false acceptance. Human against model labels: kappa 0.60. One annotator only: not adjudicated ([details](docs/phase10_2_human_labels_v3.md)) |
-| **Next phase** | Awaiting approval: improve the rules on dev data (which now includes the v2 cases with human labels), then one pre-registered blind run of the v3 test split, old rules against new. Roadmap Phase 8b (semantic evidence in the verdict) stays unjustified by the data (ADR-002). Longer term: the data that could ever open the enforcement gate (≥ 59 bad and 59 good cases per category) |
+| **Blind test v3 (full VeriReview, Phase 10.3)** | **accuracy 0.57** [0.49, 0.64] · **false acceptance 0.09** [0.02, 0.17] (5 of 57) · false blocking 0.11 · right when decided 0.80 · 148 cases |
+| **Against the Phase 10.1 rules, same cases** | accuracy +0.007 [0.00, +0.02] · false acceptance −0.018 [−0.06, 0.00] (paired bootstrap): no clear gain, no harm |
+| **What that means** | Still not safe enough to gate merges: 5 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
+| **Real-world (v3, one human annotator)** | decides 13 of 58 fresh cases, 8 correctly, **no bad fix accepted**; the other 45 go to human review. Unchanged by the Phase 10.3 rules |
+| **Earlier: blind test v2 (Phase 10.1)** | accuracy 0.65, false acceptance 0.15 on 147 cases; +0.23 accuracy over the Phase 10 rules. Re-scored with one human annotator's labels in Phase 10.2: the model labels had hidden one false acceptance ([details](docs/phase10_2_human_labels_v3.md)) |
+| **Next phase** | Awaiting the owner's direction. The v3 test split has been used; any further rule change needs a **v4** test set frozen first. The lesson of 10.3 is that single-pattern fixes do not generalise, so the useful next steps are data: a second annotator (kappa), more human-labelled real-world cases, and the data that could ever open the enforcement gate (≥ 59 bad and 59 good cases per category). Phase 8b (semantic evidence in the verdict) stays unjustified (ADR-002) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
-| **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the rule work |
+| **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the Phase 10.1 and 10.3 rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
-| **Tests** | 1,223 unit + 39 integration + 2 model tests (integration on a separate test database), strict mypy, CI on every push |
+| **Tests** | 1,264 unit + 39 integration + 2 model tests (integration on a separate test database), strict mypy, CI on every push |
 
 ---
 
@@ -173,7 +173,8 @@ uv run --group nlp verireview eval-semantic    # downloads microsoft/unixcoder-b
 
 Pipelines: `mvp` (default), `phase7-semantic` (needs the `nlp` group), and the earlier
 `phase2-locality` … `phase5-rules` for comparison. The rules changed in place in Phase 10.1
-(versions `mvp-2`, `phase5-rules-2`). The Phase 10 rules are reproducible from commit `1b530fa`.
+(versions `mvp-2`, `phase5-rules-2`) and Phase 10.3 (`mvp-3`, `phase5-rules-3`). The Phase 10
+rules are reproducible from commit `1b530fa`, the Phase 10.1 rules from commit `a71e55c`.
 
 Run with `uv run verireview …` (or `python -m uv run verireview …`). Set
 `VERIREVIEW_GITHUB_TOKEN` (fine-grained, read-only) for thread resolution state and higher rate
@@ -200,6 +201,49 @@ curl -X POST localhost:8000/verify/github -H "content-type: application/json" \
 ---
 
 ## Evaluation results
+
+### Blind test v3 (Phase 10.3)
+
+The rules were improved on dev data only (345 cases, including the v2 cases with one human
+annotator's labels). **Benchmark v3** (60 controlled, 30 adversarial and 58 fresh real-world test
+cases with one human annotator's labels) had been frozen before any rule changed. It was evaluated
+once, with a pre-registered protocol ([protocol](docs/phase10_3_protocol.md),
+[results](docs/phase10_3_rules_v3.md)). The Phase 10.1 rules (commit `a71e55c`) and the new ones
+ran on exactly the same cases.
+
+| v3 test (148 cases) | Accuracy | Macro-F1 | False acceptance ↓ | False blocking ↓ | Coverage |
+|---|---|---|---|---|---|
+| A lexical overlap | 0.318 | 0.158 | 0.018 | 0.889 | 1.00 |
+| B embeddings (MiniLM) | 0.304 | 0.142 | 0.000 | 0.931 | 1.00 |
+| B′ UniXcoder, code view | 0.507 | 0.245 | 0.825 | 0.097 | 1.00 |
+| L change near comment | 0.480 | 0.174 | 0.982 | 0.014 | 0.99 |
+| S AST structure | 0.561 | 0.302 | 0.702 | 0.069 | 0.99 |
+| R requirements + AST | 0.480 | 0.368 | 0.614 | 0.042 | 0.70 |
+| F-old: full VeriReview, **Phase 10.1 rules** | 0.561 [0.48, 0.64] | 0.596 | 0.105 [0.03, 0.19] | 0.111 | 0.58 |
+| **F: full VeriReview, Phase 10.3 rules** | **0.568** [0.49, 0.64] | **0.602** | **0.088** [0.02, 0.17] | 0.111 | 0.57 |
+| F with gold requirements | 0.608 [0.53, 0.68] | 0.635 | 0.053 | 0.153 | 0.62 |
+
+- **Old against new rules on the same cases** (paired bootstrap): accuracy +0.007 [0.00, +0.02],
+  false acceptance −0.018 [−0.06, 0.00]. Only 2 of 148 verdicts changed. Both were acceptances
+  that are now "uncertain", caught by the new test-scenario check. The pre-registered safety
+  question is met, but the improvement question is not.
+- **The dev–test gap grew:** dev 0.771 against test 0.568 (Phase 10.1: 0.798 against 0.653). On
+  dev the same changes fixed 11 cases. Each fix targets one pattern, and the fresh cases mostly
+  had other patterns.
+- **Real-world (one annotator):** 13 of 58 decided, 8 correctly, no bad fix accepted. Most of the
+  rest are `other` requests with no rule (human review).
+- **F accepts far fewer bad fixes than the code-model and structural baselines** (B′, L, S, R:
+  FAR −0.53 to −0.90, all intervals excluding 0). S matches its accuracy only by accepting
+  almost everything. A and B have a lower FAR only because they reject almost everything
+  (FBR 0.89–0.93).
+- **The 5 remaining false acceptances**, analysed without changing anything:
+  - "raise `ValueError`, not `KeyError`" read as a validation request;
+  - a rename done in one function only, when the whole module was asked for;
+  - a second request ("return a bool") judged by the rename;
+  - an "expired token" test that uses a future expiry;
+  - a check under `if TYPE_CHECKING:`.
+- **Caveat:** the controlled and adversarial cases were written by the rules' author. The fresh
+  real-world cases are the independent part, with one annotator's labels.
 
 ### Blind test v2 (Phase 10.1)
 
@@ -278,10 +322,15 @@ Phase 10 rules; the v1 test split has since become dev data.
 
 All pipelines are evaluated on the same pinned datasets (hashes recorded in `experiments/`).
 
+**Phase 10.3 dev split (345 cases, v3 layout):** fixtures, held-out fixtures, all of v1 and v2.
+Full VeriReview scores accuracy 0.771 [0.73, 0.81], FAR 0.007, FBR 0.018, coverage 0.71
+(`experiments/phase10_3_dev.json`). The Phase 10.1 rules scored 0.739 and FAR 0.061 on the same
+cases (11 fixed, 0 broken). These are training numbers.
+
 **Phase 10.1 dev split (203 cases, v2 layout):** fixtures, held-out fixtures and all of v1. Full
-VeriReview scores accuracy 0.798 [0.74, 0.85], FAR 0.000, FBR 0.010, coverage 0.72
+VeriReview scored accuracy 0.798 [0.74, 0.85], FAR 0.000, FBR 0.010, coverage 0.72
 (`experiments/phase10_1_dev.json`). The Phase 10 rules scored 0.537 and FAR 0.156 on the same
-cases. These are training numbers.
+cases.
 
 **Verdicts, dev fixtures (29):** used while building the rules, so these are *training* numbers.
 
@@ -300,6 +349,7 @@ cases. These are training numbers.
 | Phase 5, **blind** | 0.625 | **0.000** | 0.429 |
 | After Phase 5.1 hardening (**not blind**; fixes disclosed in [docs/phase5_rules.md](docs/phase5_rules.md)) | 0.875 | **0.000** | 0.071 |
 | After Phase 10.1 rule work (not blind) | 0.917 | **0.000** | 0.071 |
+| After Phase 10.3 rule work (not blind; identical verdicts) | 0.917 | **0.000** | 0.071 |
 
 **Requirement extraction:**
 
@@ -371,7 +421,8 @@ When the v2 test ran, the labels were provisional (Claude, blind: 50 satisfied, 
 Manifest `dataset/benchmark/v2/manifest.json`, pinned in `tests/benchmark/test_benchmark_v2.py`.
 
 **Benchmark v3 (Phase 10.2)** was frozen on 2026-10-13, again before any rule change
-([freeze log](dataset/benchmark/v3/FREEZE_LOG.md)). It has not been run:
+([freeze log](dataset/benchmark/v3/FREEZE_LOG.md)). Its test split was run once, in Phase 10.3
+(results above). It has been looked at since, so the next rule changes need a v4 test set:
 
 | Set | Split | Cases |
 |---|---|---|
@@ -436,6 +487,7 @@ sites of every dev and held-out fixture ([details](docs/phase7_code_model.md#3-p
 | 10 | ✅ | Blind evaluation: pre-registered ablation, bootstrap intervals, error analysis, security model | [protocol](docs/phase10_protocol.md), [results](docs/phase10_evaluation.md) |
 | 10.1 | ✅ | Rule and extraction fixes from the Phase 10 error analysis, suggestion-block and `other` rules, benchmark v2 frozen first, one blind v2 run old vs new | [protocol](docs/phase10_1_protocol.md), [results](docs/phase10_1_rules_v2.md) |
 | 10.2 | ✅ | Human labels for the v2 real-world cases (one annotator), the recorded run re-scored without running again; **benchmark v3 frozen** before any rule change: 60 controlled + 30 adversarial written blind, 58 real-world with human labels. No rule changed | [phase10_2](docs/phase10_2_human_labels_v3.md) |
+| 10.3 | ✅ | Rule fixes on dev (unreachable code, discarded HTTP exceptions, check polarity, checks behind flags, uncollected tests, unshown test scenarios, removal statements, literal comments); one blind v3 run old vs new: safe (FAR 0.105 → 0.088) but narrow (2 of 148 verdicts changed) | [protocol](docs/phase10_3_protocol.md), [results](docs/phase10_3_rules_v3.md) |
 | 11 | ✅ | GitHub advisory mode: App auth, signed webhooks, job queue, worker, audit trail, neutral Check Run; live run on a test repository, re-check on every push | [phase11](docs/phase11_github_advisory.md) |
 | 13 | ✅ | Read-only dashboard: server-rendered, no JavaScript, operator token (off by default), stored cases with retention | [phase13](docs/phase13_dashboard.md) |
 | 12 | ✅ | Staged enforcement: per-repository stages, human-review confirmations, statistical category gate, four locks. Built and **inert**: no category is eligible | [phase12](docs/phase12_staged_enforcement.md), [ADR-003](docs/adr/003-enforcement-gate.md) |
@@ -538,25 +590,28 @@ content is treated as untrusted data.
   thread is always re-read from GitHub rather than trusted from the webhook body
   ([security model](docs/security_model.md)). The live App path has run on one private test
   repository (2026-10-08), not on a team's real repositories or under load.
-- **Not accurate enough to gate merges.** On the blind v2 test, 15% of bad resolutions were
-  accepted and 4% of good ones called unsatisfied. Use the output as an advisory flag.
-- **Confidence is rule-based, not calibrated.** On v2 test, MEDIUM verdicts were right 84% of the
-  time and LOW 36%. HIGH is never emitted.
-- **Human labels from one annotator, for part of the data.** The v2 real-world cases have one
-  human annotator's labels (not adjudicated, no human–human agreement). The controlled and
+- **Not accurate enough to gate merges.** On the blind v3 test, 9% of bad resolutions were
+  accepted and 11% of good ones called unsatisfied. Use the output as an advisory flag.
+- **Confidence is rule-based, not calibrated.** On v3 test, MEDIUM verdicts were right 82% of the
+  time and LOW 26%. HIGH is never emitted.
+- **Rule fixes generalise poorly.** Phase 10.3 fixed 11 dev cases and changed 2 of 148 fresh
+  ones. Hand-written fixes for patterns seen in dev rarely cover the next set of real reviews.
+- **Human labels from one annotator, for part of the data.** The v2 and v3 real-world cases have
+  one human annotator's labels (not adjudicated, no human–human agreement). The controlled and
   adversarial cases come from the rules' author (written blind), and the v1 real-world labels are
-  still Claude's. The v1 and v2 test splits have both been used once and are dev data; the next
-  rule changes are measured on the new blind set (v3, frozen, one annotator's real-world labels).
+  still Claude's. The v1, v2 and v3 test splits have each been used once. Further rule changes
+  need a new blind set (v4), frozen first.
 - **Scope:** most real review requests are refactoring, docs or style (`other`). Only suggestion
-  blocks and a few request shapes (remove this, add a docstring, use A instead of B) are verified;
-  the rest end as UNCERTAIN (human review), by design.
+  blocks and a few request shapes are verified: remove this (also "no longer used"), add a
+  docstring, use A instead of B, add an exact comment. The rest end as UNCERTAIN (human review),
+  by design.
 - **Rules are structural, not semantic:** no control-flow analysis. Helpers are followed one level
   deep, and only within the same file.
 - **Python only**, one commented file per case.
 - **Models never decide.** Similarity baselines are measured for comparison only, and code-model
   evidence is neutral: at every usable threshold both would accept invalid fixes.
 - **Prompt-injection tested, not proven.** Planted instructions changed no outcome in 2,576
-  variants (before and after the Phase 10.1 rule work), and no blind-test error came from an injection. That covers the tested texts and sites,
+  variants (before and after the Phase 10.1 and 10.3 rule work), and no blind-test error came from an injection. That covers the tested texts and sites,
   not every possible attack. No LLM is used. See the [security model](docs/security_model.md).
 
 ## Documentation
@@ -568,6 +623,7 @@ content is treated as untrusted data.
   [6](docs/phase6_nlp_baselines.md) · [7](docs/phase7_code_model.md) · [9](docs/phase9_benchmark.md) ·
   [10 protocol](docs/phase10_protocol.md) · [10 results](docs/phase10_evaluation.md) ·
   [10.1 protocol](docs/phase10_1_protocol.md) · [10.1 results](docs/phase10_1_rules_v2.md) · [10.2 human labels, v3](docs/phase10_2_human_labels_v3.md) ·
+  [10.3 protocol](docs/phase10_3_protocol.md) · [10.3 results](docs/phase10_3_rules_v3.md) ·
   [11 advisory mode](docs/phase11_github_advisory.md) · [12 staged enforcement](docs/phase12_staged_enforcement.md) ·
   [13 dashboard](docs/phase13_dashboard.md)
 - Security model: [docs/security_model.md](docs/security_model.md)

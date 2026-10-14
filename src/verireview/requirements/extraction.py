@@ -121,6 +121,8 @@ def extract_requirements(
         if utterance.actionable:
             drafts += _sentence_drafts(sentence, masked)
     drafts += [_suggestion_draft(block, ctx) for block in prepared.suggestions]
+    if not drafts:
+        drafts = _removal_statement(utterances)
 
     if not drafts:
         return ReviewRequirement(
@@ -203,6 +205,18 @@ def classify_sentence(sentence: str, masked: Masked) -> Utterance:
         kind = UtteranceType.SUGGESTION if hedged else UtteranceType.REQUIREMENT
         return Utterance(text=text, type=kind, actionable=True)
     return Utterance(text=text, type=UtteranceType.EXPLANATION, actionable=False)
+
+
+def _removal_statement(utterances: list[Utterance]) -> list[_Draft]:
+    """A comment without a request that calls the commented code superfluous ("No longer used")
+    asks for its removal: the first such sentence becomes the requirement (made actionable)."""
+    for i, utterance in enumerate(utterances):
+        if not utterance.actionable and lx.REMOVAL_STATEMENT.search(utterance.text):
+            utterances[i] = Utterance(
+                text=utterance.text, type=UtteranceType.REQUIREMENT, actionable=True
+            )
+            return [_Draft(utterance.text.strip(), Category.OTHER)]
+    return []
 
 
 def _sentence_drafts(sentence: str, masked: Masked) -> list[_Draft]:
@@ -491,6 +505,11 @@ def ambiguity(
             "no identifiable code target",
         ),
         (lx.VAGUE.search(plain) is not None, lx.WEIGHT_VAGUE, "vague wording"),
+        (
+            lx.VAGUE_MANNER.search(plain) is not None,
+            lx.WEIGHT_VAGUE_MANNER,
+            "says how ('more gracefully'), not what",
+        ),
         (
             lx.UNVERIFIABLE.search(plain) is not None,
             lx.WEIGHT_UNVERIFIABLE,

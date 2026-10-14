@@ -1,0 +1,90 @@
+{
+  "pooled": {
+    "accuracy": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_acceptance_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_blocking_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "coverage": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    }
+  },
+  "adversarial": {
+    "accuracy": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_acceptance_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_blocking_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "coverage": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    }
+  },
+  "controlled": {
+    "accuracy": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_acceptance_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_blocking_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "coverage": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    }
+  },
+  "real_world": {
+    "accuracy": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_acceptance_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "false_blocking_rate": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    },
+    "coverage": {
+      "estimate": 0.0,
+      "low": 0.0,
+      "high": 0.0
+    }
+  }
+}

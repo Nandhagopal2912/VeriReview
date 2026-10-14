@@ -204,10 +204,19 @@ def _log_values(text: str, ctx: RuleContext) -> list[str]:
     return [c for c in dict.fromkeys(candidates) if c in known]
 
 
+_QUOTED_CALL = re.compile(r"`([A-Za-z_][\w.]*)\([^`]*\)`")
+
+
 def _named_calls(ctx: RuleContext) -> list[str]:
-    """Calls the comment names (`requests.get`) that exist in the code: what must be protected."""
+    """Calls the comment names that exist in the code: what must be protected.
+
+    A dotted name (`requests.get`), or any name written as a call (`open()`): "`open()` raises
+    FileNotFoundError; handle that" is not satisfied by a handler around another statement.
+    """
     callees = {c.callee for c in ctx.after.facts.calls} | {c.callee for c in ctx.before.facts.calls}
-    return [q for q in quoted_identifiers(ctx.comment) if "." in q and q in callees]
+    dotted = [q for q in quoted_identifiers(ctx.comment) if "." in q and q in callees]
+    written_as_call = [q for q in _QUOTED_CALL.findall(ctx.comment) if q in callees]
+    return list(dict.fromkeys(dotted + written_as_call))
 
 
 def _delegated_context(ctx: RuleContext) -> tuple[str, int] | None:

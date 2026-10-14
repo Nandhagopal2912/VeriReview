@@ -117,6 +117,22 @@ CHIT_CHAT = re.compile(
 RENAME_ARROW = re.compile(r"`([A-Za-z_]\w*)`\s*(?:->|→|=>)\s*`([A-Za-z_]\w*)`")
 RENAME_PAIR = re.compile(r"`([A-Za-z_][\w.]*)`\s+(?:to|->|→|=>)\s+`([A-Za-z_][\w.]*)`", re.I)
 
+# "No longer used", "can be left out", "this duplicates the line above": a statement that the
+# commented code is superfluous, which asks for its removal (Phase 10.3, real-world dev). Only
+# used when the comment has no other request. A bare "is not used" is left out: it may mean
+# "use it" as well as "remove it".
+REMOVAL_STATEMENT = re.compile(
+    r"\bno longer (?:used|needed|necessary|required|relevant)\b|"
+    r"\b(?:is|are|looks|seems)\s+(?:now\s+)?(?:unused|unnecessary|redundant|superfluous|"
+    r"dead code|not needed|not necessary)\b|"
+    r"\b(?:can|could|should)\s+(?:just\s+|probably\s+|safely\s+)?be\s+"
+    r"(?:left out|removed|dropped|deleted|omitted)\b|"
+    r"\b(?:we|you)\s+(?:can|could|should)\s+(?:just\s+|probably\s+)?(?:drop|remove|delete)\s+"
+    r"(?:this|that|it|these|those)\b|"
+    r"\bduplicates?\s+the\s+(?:line|one|code)\s+(?:above|below)\b",
+    re.I,
+)
+
 # ---------------------------------------------------------------- category cues
 
 TESTING = re.compile(
@@ -175,6 +191,10 @@ UNVERIFIABLE = re.compile(
     re.I,
 )
 
+# "Handle failures more gracefully", "more robustly": how, not what. With no code target
+# named, such a request cannot be verified (annotation guide 5.4; dev case v2c-errors-11).
+VAGUE_MANNER = re.compile(r"\bmore\s+\w+ly\b|\bgracefully\b", re.I)
+
 # Ambiguity weights (sum clamped to 1.0). A case is UNCERTAIN at or above the threshold.
 # A genuine (non-polite) question alone reaches the threshold: the reviewer asked, not
 # requested, so what would satisfy them is undetermined (dev fixture errors-005).
@@ -182,6 +202,7 @@ WEIGHT_QUESTION = 0.5
 WEIGHT_HEDGE = 0.35
 WEIGHT_NO_TARGET = 0.2
 WEIGHT_VAGUE = 0.15
+WEIGHT_VAGUE_MANNER = 0.3  # with no target (0.2) this reaches the threshold
 WEIGHT_UNVERIFIABLE = 0.2
 AMBIGUITY_THRESHOLD = 0.5
 

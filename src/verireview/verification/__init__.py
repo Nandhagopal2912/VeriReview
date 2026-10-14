@@ -27,9 +27,11 @@ STRUCTURAL_VERSION = "phase3-structure-1"
 REQUIREMENTS_VERSION = "phase4-requirements-1"
 # Phase 10.1 changed the rules and extraction in place: the "-2" versions. The Phase 10 ("-1")
 # rules are reproducible from commit 1b530fa (used as "old F" in the v2 evaluation).
-RULES_VERSION = "phase5-rules-2"
-MVP_VERSION = "mvp-2"
-SEMANTIC_VERSION = "phase7-semantic-2"
+# Phase 10.3 did the same again: the "-3" versions; the "-2" rules are commit a71e55c (the
+# v3 freeze), "old F" in the v3 evaluation.
+RULES_VERSION = "phase5-rules-3"
+MVP_VERSION = "mvp-3"
+SEMANTIC_VERSION = "phase7-semantic-3"
 
 
 def preliminary_pipeline() -> Pipeline:

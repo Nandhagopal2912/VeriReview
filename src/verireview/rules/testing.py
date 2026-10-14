@@ -6,6 +6,14 @@
    "negative", "timeout", explicit numbers…) and checked against the test *body*: its literal
    inputs and identifiers. A test merely *named* `test_timeout_case` does not count.
 ADR-001: an unchanged existing test already covering the case → satisfied, already present.
+
+Phase 10.3 (from the v2 cases, now dev data):
+- A new test only counts if a test runner would collect its file (`test*.py` / `*_test.py`, the
+  pytest and unittest defaults). A test in `tests/port_checks.py` cannot be confirmed to run:
+  inconclusive.
+- A scenario in plain words that no check can read ("a birthday in the future") must at least
+  be mentioned by the test (its name, identifiers or strings). A new test that calls the function
+  with ordinary input does not show the scenario is covered: inconclusive, not satisfied.
 """
 
 import re
@@ -17,6 +25,7 @@ from verireview.rules.analysis import (
     TestFunction,
     changed_test_functions,
     find_test_functions,
+    function_parameters,
     route_paths,
 )
 from verireview.rules.base import (
@@ -121,7 +130,27 @@ def testing_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
     routes = _route_prefixes(function, ctx)
 
     changed = changed_test_functions(ctx.case.test_files, ctx.case.test_files_before)
+    uncollected = [t for t in changed if not t.skipped and not _collected(t.path)]
+    changed = [t for t in changed if t.skipped or _collected(t.path)]
     runnable = [t for t in changed if not t.skipped]
+    if not runnable and uncollected:
+        t = uncollected[0]
+        return RuleOutcome(
+            RuleStatus.INCONCLUSIVE,
+            f"`{t.qualified_name}` is in `{t.path}`, which test runners do not collect by default.",
+            [
+                located(
+                    requirement,
+                    "testing.file_not_collected",
+                    None,
+                    f"New test `{t.qualified_name}` is in `{t.path}`. pytest and unittest only "
+                    "collect `test*.py` / `*_test.py` unless the project configures otherwise, "
+                    "so whether this test ever runs cannot be told.",
+                    t.path,
+                    t.line,
+                )
+            ],
+        )
 
     if not runnable:
         if changed:
@@ -213,6 +242,33 @@ def testing_rule(requirement: Requirement, ctx: RuleContext) -> RuleOutcome:
                 summary=f"No new test targets this case ({words}).",
             )
         matching = specific
+
+    siblings = any(
+        r.id != requirement.id and r.category == requirement.category
+        for r in ctx.requirement_set.requirements
+    )
+    if not (wanted or values or raised or distinctive or siblings):
+        scenario = _own_scenario(requirement, function, ctx)
+        if scenario and not any(_mentions(t, scenario) for t in matching):
+            t = matching[0]
+            return RuleOutcome(
+                RuleStatus.INCONCLUSIVE,
+                f"`{t.qualified_name}` calls `{function}`, but nothing shows it covers the "
+                "requested scenario.",
+                [
+                    located(
+                        requirement,
+                        "testing.scenario_not_shown",
+                        None,
+                        f"New test `{t.qualified_name}` calls `{function}`, but neither its "
+                        "name nor its body mentions the requested scenario "
+                        f"({', '.join(sorted(scenario))}); whether it is covered cannot be "
+                        "checked.",
+                        t.path,
+                        t.line,
+                    )
+                ],
+            )
 
     t = matching[0]
     what = f" with a {', '.join(wanted)} input" if wanted else ""
@@ -371,6 +427,150 @@ def _distinctive_words(requirement: Requirement, ctx: RuleContext) -> set[str]:
         return set()
     others = set().union(*(_scenario_words(r.description) for r in siblings))
     return _scenario_words(requirement.description) - others
+
+
+_COLLECTED = re.compile(r"(^|/)(test[^/]*|[^/]*_test)\.py$")
+
+
+def _collected(path: str) -> bool:
+    """A file pytest (`test_*.py`, `*_test.py`) or unittest (`test*.py`) collects by default."""
+    return _COLLECTED.search(path.replace("\\", "/")) is not None
+
+
+def _own_scenario(requirement: Requirement, function: str, ctx: RuleContext) -> set[str]:
+    """Scenario words of a request like "a test for a birthday in the future".
+
+    Words of the function's own name and parameters ("a leap year" for `is_leap(year)`), of
+    backticked code and generic test words say nothing about the scenario. An empty set means
+    the request names no scenario ("add a test"). Several testing requests in one comment are
+    told apart by `_distinctive_words` instead.
+    """
+    text = re.sub(r"`[^`]*`", " ", requirement.description)
+    names = [function]
+    for scope in (ctx.after_file, ctx.before_file):
+        definition = scope.function(function)
+        if definition is not None:
+            names += function_parameters(definition)
+    own = {part[:5] for name in names for part in re.split(r"[_.]", name.lower()) if part}
+    return {w for w in _scenario_words(text) if w not in own} - _GENERIC_SCENARIO
+
+
+_GENERIC_SCENARIO = frozenset(
+    w[:5]
+    for w in (
+        "unit",
+        "unittest",
+        "regression",
+        "coverage",
+        "cover",
+        "covers",
+        "function",
+        "method",
+        "behaviour",
+        "behavior",
+        "code",
+        "here",
+        "some",
+        "more",
+        "missing",
+        "need",
+        "needs",
+        "needed",
+        "could",
+        "would",
+        "can",
+        "have",
+        "has",
+        "there",
+        "make",
+        "sure",
+        "ensure",
+        "verify",
+        "assert",
+        "asserts",
+        "path",
+        "branch",
+        "line",
+        "lines",
+        "change",
+        "changes",
+        "fix",
+        "bug",
+        "issue",
+        "work",
+        "works",
+        "correctly",
+        "properly",
+        "above",
+        "below",
+        "well",
+        "too",
+        "extend",
+        "update",
+        "write",
+        "include",
+        "explicit",
+        "explicitly",
+        "dedicated",
+        "separate",
+        "similar",
+        "like",
+        "such",
+        "maybe",
+        "probably",
+        "think",
+        "you",
+        "your",
+        "our",
+        "its",
+        "will",
+        "want",
+        "good",
+        "nice",
+        "great",
+        "not",
+        "are",
+        "was",
+        "does",
+        "doesn",
+        "don",
+        "isn",
+        "any",
+        "all",
+        "each",
+        "both",
+        "them",
+        "they",
+        "these",
+        "those",
+        "what",
+        "which",
+        "where",
+        "then",
+        "than",
+        "from",
+        "into",
+        "out",
+        "about",
+        "just",
+        "only",
+        "still",
+        "currently",
+        "now",
+        "exist",
+        "exists",
+        "existing",
+        "add",
+        "added",
+        "adding",
+        "test",
+        "tests",
+        "tested",
+        "testing",
+        "case",
+        "cases",
+    )
+)
 
 
 def _scenario_words(text: str) -> set[str]:

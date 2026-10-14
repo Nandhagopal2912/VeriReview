@@ -130,6 +130,8 @@ class Scope:
     def guards(self) -> list[Guard]:
         found: list[Guard] = []
         for node in self._walk():
+            if node.type in ("if_statement", "assert_statement") and _unreachable(node):
+                continue  # after an unconditional return/raise: it never runs
             if node.type in ("if_statement", "elif_clause"):
                 condition = node.child_by_field_name("condition")
                 body = node.child_by_field_name("consequence")
@@ -179,8 +181,8 @@ class Scope:
     def handlers(self) -> list[HandlerInfo]:
         found: list[HandlerInfo] = self._suppressors()
         for node in self._walk():
-            if node.type != "try_statement":
-                continue
+            if node.type != "try_statement" or _unreachable(node):
+                continue  # a handler after an unconditional return/raise handles nothing
             body = node.child_by_field_name("body")
             protected = extract_facts(body).calls if body is not None else ()
             for clause in (c for c in node.named_children if c.type == "except_clause"):
@@ -202,7 +204,7 @@ class Scope:
         """`with contextlib.suppress(E):` is a handler for E whose body does nothing."""
         found = []
         for node in self._walk():
-            if node.type != "with_statement":
+            if node.type != "with_statement" or _unreachable(node):
                 continue
             body = node.child_by_field_name("body")
             for callee, text, line in Scope((node,)).with_contexts():
@@ -221,7 +223,8 @@ class Scope:
         Codes may be literals (`404`), names (`HTTPStatus.NOT_FOUND`,
         `status.HTTP_404_NOT_FOUND`, `HttpResponseNotFound`), or exceptions mapped to a status
         (`raise Http404`, or an exception an `@app.errorhandler` turns into one). Code after an
-        unconditional return/raise in the same block never runs and is skipped.
+        unconditional return/raise in the same block never runs and is skipped, and so is a
+        status object built as a statement of its own (`HTTPException(404)` without `raise`).
         """
         mapped = {**_EXCEPTION_STATUS, **(exception_codes or {})}
         sites: list[StatusSite] = []
@@ -235,6 +238,8 @@ class Scope:
                 continue
             if not codes or _unreachable(node):
                 continue
+            if status_call and _discarded(node):
+                continue  # `HTTPException(404)` without `raise`: built, then thrown away
             for code in dict.fromkeys(codes):
                 sites.append(
                     StatusSite(code, start_line(node), normalized_text(node), _branch(node))
@@ -639,6 +644,16 @@ def _unreachable(node: Node) -> bool:
 
 
 _EXITS = frozenset({"return_statement", "raise_statement", "continue_statement", "break_statement"})
+_ACTING_CALLEES = ("abort",)  # called for their effect; the other status callees build a value
+
+
+def _discarded(call: Node) -> bool:
+    """The call is a statement of its own (its value is unused) and does nothing by itself:
+    `HTTPException(404)` or `JSONResponse(...)` that is neither raised nor returned."""
+    parent = call.parent
+    if parent is None or parent.type != "expression_statement":
+        return False
+    return not _callee_name(call).endswith(_ACTING_CALLEES)
 
 
 def error_handler_codes(module: "Scope") -> dict[str, int]:

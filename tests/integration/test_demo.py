@@ -121,7 +121,7 @@ def test_reseed_replaces_and_remove_touches_only_demo_rows(session: Session) -> 
         comment_id=1,
         head_sha="a" * 40,
         inputs_sha256="b" * 64,
-        pipeline_version="mvp-2",
+        pipeline_version="mvp-3",
         verdict="SATISFIED",
         confidence="MEDIUM",
         action="ALLOW",

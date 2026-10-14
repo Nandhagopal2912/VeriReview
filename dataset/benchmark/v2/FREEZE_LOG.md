@@ -48,18 +48,27 @@ Order of events, recorded as they happened:
      `no_requirement`. Nandha had seen system results before, so this is not a fully
      independent second opinion.
    - The 19 disagreements were adjudicated by the two annotators together, each with a written
-     reason (`dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second.json`):
-     11 Jordan's label, 4 Nandha's, 4 combined.
+     reason: 11 Jordan's label, 4 Nandha's, 4 combined.
+   - **One decision revised on re-check.** Claude pointed out a fact about the code: in
+     pydantic 13611 (3747171293) the single highlighted line is absent from the new code. That
+     case was "not satisfied" in the first adjudication, against the system's "satisfied". The
+     annotators re-checked it and changed it to satisfied: the whole five-line comment, including
+     that line, was removed. The revision was made knowing the system's verdict. The first
+     export was replaced and not kept. Its reason for this case is preserved in the `gold.json`
+     of commit `bca6f2a`. The export kept is
+     `dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second (1).json`; it
+     differs from the first only in this decision.
    - `build-gold … --adjudication …` wrote the 36 `gold.json` files (17 agreed, 19
      adjudicated). The other 24 cases keep Jordan's single label. Included 55 (was 52):
-     45 satisfied, 6 not satisfied, 4 uncertain. Again only `gold.json` files changed (the
+     46 satisfied, 5 not satisfied, 4 uncertain. Again only `gold.json` files changed (the
      cases hash above still holds). `real_world_test_hash` went from `7c262776…332c3b1` to
-     `9f57d62d6cac10412f1083236bdcc8b1598352d333126736789fce1f46f47998`.
+     `9f57d62d…f47998` (first adjudication), then to
+     `7fbbd8a4963f3ed7facb42910ed7666ff928b86bd1ba20e955c11a69b2cc7124` (revised).
    - The recorded run was re-scored again, not re-run
      (`experiments/phase10_2_v2_rescored_adjudicated.json`). On the 52 cases with a stored
-     prediction, real-world false acceptances are still 1, but a different case. The pydantic
-     13690 docstring case is now satisfied (the system was right). An empty-suggestion case
-     (pydantic 13611, 3747171293) is now not satisfied, while the system said satisfied.
+     prediction: 23 decided, 22 right; **0 of 4** bad resolutions accepted (under Jordan's labels
+     alone: 1 of 7). The pydantic 13690 docstring case, the earlier false acceptance, is now
+     satisfied: the system was right.
    - No rule was changed. v2 is dev data (since the v3 freeze).
 
 Caveat: the cases were written by the same author as the rules, after the v1 error analysis. The

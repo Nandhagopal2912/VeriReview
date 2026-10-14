@@ -456,8 +456,9 @@ What the real data (v1) showed:
   cases (2026-10-14). On the 15 drawn at random both humans agree on all 15 (easy cases). On the 21
   that Claude and Jordan had disputed, the two humans agree on only 5. Pooled verdict κ is 0.33,
   below the 0.6 target. The 19 disagreements were adjudicated together, with written reasons, and
-  those 36 cases now have adjudicated labels. Re-scoring the recorded v2 run against them still
-  gives 1 real-world false acceptance, but in a different case
+  those 36 cases now have adjudicated labels (one decision was revised on re-check). Re-scored
+  against them, the recorded v2 run accepted 0 of 4 bad real-world resolutions (1 of 7 under one
+  annotator's labels)
   ([details](docs/phase10_2_human_labels_v3.md#3-second-annotator-and-adjudication-added-2026-10-14)).
   Human against model labels: κ 0.60.
 

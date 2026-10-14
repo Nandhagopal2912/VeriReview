@@ -26,8 +26,9 @@ CASES = [f for name in FROZEN_V2 for f in iter_fixtures(V2 / name)]
 # 34133f451723607e597faa8b89f128a89d95219006bf5275eac344872f846dd6.
 # 2026-10-14 (FREEZE_LOG entry 7): a second annotator labelled 36 of the cases and the 19
 # disagreements were adjudicated; again only gold.json files changed. Until then the hash was
-# 7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1.
-REAL_WORLD_V2_SHA256 = "9f57d62d6cac10412f1083236bdcc8b1598352d333126736789fce1f46f47998"
+# 7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1. One decision was then
+# revised on re-check (9f57d62d6cac… → this hash).
+REAL_WORLD_V2_SHA256 = "7fbbd8a4963f3ed7facb42910ed7666ff928b86bd1ba20e955c11a69b2cc7124"
 # The cases themselves (case.json + provenance.json, no labels): unchanged since the freeze.
 REAL_WORLD_V2_CASES_SHA256 = "9dd0d8bd2f25589743501fcc9274040c8cbe0fa9721bb0295d4b32bd4660bc87"
 

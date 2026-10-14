@@ -197,8 +197,14 @@ Nandha excluded none. 5 of those were empty suggestion blocks or "not blocking" 
 **Adjudication.** The two annotators settled the 19 disagreements together, each with a written
 reason, on the adjudication page (rebuilt so that no annotator is pre-selected): 11 Jordan's
 label, 4 Nandha's, 4 combined. `build-gold` then wrote the 36 labels (17 agreed, 19 adjudicated).
-The other 24 v2 cases keep Jordan's single label. v2 real-world now includes 55 cases: 45
-satisfied, 6 not satisfied, 4 uncertain.
+The other 24 v2 cases keep Jordan's single label. v2 real-world now includes 55 cases: 46
+satisfied, 5 not satisfied, 4 uncertain.
+
+One decision was revised on re-check: pydantic 13611 (comment 3747171293). Claude pointed out that
+the single highlighted line is absent from the new code. The annotators changed the case from not
+satisfied to satisfied, because the whole five-line comment containing that line was removed. They
+did this knowing the system had said satisfied, so it is recorded as a revision, not as part of
+the blind adjudication (`v2/FREEZE_LOG.md` entry 7).
 
 **The recorded v2 run, re-scored again** (stored predictions; real output):
 
@@ -206,16 +212,13 @@ satisfied, 6 not satisfied, 4 uncertain.
 F of phase10_1_test.json against the current real-world labels (v2: human 60); stored predictions, no verifier run
   real-world as recorded                  n= 57  acc 0.456 [0.33, 0.60]  FAR 0.000 [0.00, 0.00]  FBR 0.020  cov 0.439  right-when-decided 0.920
   real-world same cases, recorded labels  n= 52  acc 0.442 [0.31, 0.58]  FAR 0.000 [0.00, 0.00]  FBR 0.022  cov 0.442  right-when-decided 0.913
-  real-world same cases, current labels   n= 52  acc 0.462 [0.33, 0.60]  FAR 0.200 [0.00, 0.67]  FBR 0.000  cov 0.442  right-when-decided 0.913
+  real-world same cases, current labels   n= 52  acc 0.481 [0.35, 0.62]  FAR 0.000 [0.00, 0.00]  FBR 0.000  cov 0.442  right-when-decided 0.957
 ```
 
-There is still 1 real-world false acceptance, but it is a different case:
-- The pydantic 13690 docstring case, a false acceptance under Jordan's labels alone, is now
-  satisfied: the system was right.
-- An empty-suggestion case (pydantic 13611, comment 3747171293) is now not satisfied, while the
-  system said satisfied. The single highlighted line (658) no longer appears in the new code. The
-  adjudicators judged that the targeted line was not removed. This one is worth a second look by
-  the adjudicators; it is recorded as decided.
+The system decided 23 of these 52 cases, 22 of them right, and accepted **0 of the 4** bad
+resolutions. Under Jordan's labels alone it had accepted 1 of 7. That one, the pydantic 13690
+docstring case, is now satisfied: the system was right. With so few bad cases, this zero is weak
+evidence (upper bound far above 5%).
 
 ## Commands
 
@@ -232,7 +235,7 @@ uv run verireview benchmark-freeze --benchmark-version v3
 # second annotator and adjudication (2026-10-14)
 uv run verireview agreement dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json
 uv run verireview adjudication-sheet dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json --batch rw-v2-second --benchmark-version v2
-uv run verireview build-gold dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json --adjudication dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second.json --benchmark-version v2
+uv run verireview build-gold dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json --adjudication "dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second (1).json" --benchmark-version v2
 uv run verireview rescore-report experiments/phase10_1_test.json --out experiments/phase10_2_v2_rescored_adjudicated.json
 ```
 

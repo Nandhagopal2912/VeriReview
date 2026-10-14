@@ -1,0 +1,619 @@
+{
+  "annotator": "Nandha",
+  "batch": "rw-v2-second",
+  "sheet_version": "phase9-sheet-2",
+  "annotations": [
+    {
+      "case_id": "encode__httpx__2854__1330167002",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Why are Python 3.8 version conditionals being removed?",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790219159",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Submitted an empty code suggestion without any explicit explanation or requested modification.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "low",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3022__1790223381",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Review thread Review comment by reviewer ```suggestion import typing ```",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "encode__httpx__3139__1518813076",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Asked why an explicit zstandard version check is necessary when the dependency specifies zstandard>=0.18.0.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024038116",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "validation",
+          "description": "Use entry.get_subentries_of_type() to process only expected subentry types and prevent compatibility issues when additional subentry types are introduced.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024046975",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested storing the client directly in the notify entity instead of storing the entire configuration entry.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024075382",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Provided an empty code suggestion and stated, \"It's not blocking,\" indicating that the feedback was optional and not required for approval.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "low",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024076236",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add an assertion to verify the unique ID in the configuration flow tests.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039619973",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Keep only operations that may raise exceptions inside the try block, moving other statements outside it",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__165993__3039629583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Questioned why automatically generated cryptographic keys were displayed in editable input fields, allowing users to modify them. Suggested displaying the keys through description placeholders instead, making them non-editable.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__174407__3452221153",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested moving most of the setup logic into the coordinator's _async_setup() method to improve separation of responsibilities.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__174407__3656594773",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Suggested reusing the grouped mock fixtures and setting their .side_effect attributes directly instead of repeatedly using patch() context managers in individual tests.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "home-assistant__core__181382__3976371899",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Move token-fetching and token-persistence coordination into the upstream cookidoo-api library rather than managing that logic throughout the Home Assistant integration.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2421__1186943308",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Prevent tests from permanently modifying the global _available_shells dictionary. Suggested using a pytest fixture to save its original contents, clear it before each test, and restore it afterward using yield.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2462__1189061605",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Questioned why os.environ was not used to retrieve the BASH_VERSION environment variable, suggesting that it might be a more appropriate approach.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2509__1186767930",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Add an explanatory comment describing what the test is checking to make its purpose clearer to future readers.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pallets__click__2940__2105687974",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Replace the manual stdin-size and position checks with next(text_input).rstrip(\"\\r\\n\"), catching StopIteration and converting it into EOFError. This would simplify end-of-input handling and support clean EOF behavior.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3005136419",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested that the relevant plotting converter registrations should be handled through plottable_ea_dtypes() rather than being explicitly registered in converter.py.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "medium",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3011187583",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Questioned whether the _is_plottable attribute was necessary if _get_plot_converter() could indicate that a dtype is not plottable. Suggested eliminating the redundant attribute and relying on the method's return value.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555873359",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "api_behavior",
+          "description": "Questioned whether including Python's object type in the scatter plot dtype filter would cause every dtype to match, unintentionally broadening the accepted data types.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555961427",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Suggested moving the plotting test logic into the shared base test rather than implementing it separately in test_masked.py.",
+          "status": "not_satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "NOT_SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3574519955",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Replace pytest.mark.xfail with pytest.raises(...) because raising TypeError when plotting unsupported categorical data is expected behavior, not a test failure. Suggested applying the same approach to similar dtype tests.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759896069",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Suggested replacing the custom skip_if_no_matplotlib() method with class-level decorators on BasePlottingTests, using @td.skip_if_no(\"matplotlib\") and @pytest.mark.filterwarnings(...) to simplify dependency checks and warning suppression.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pandas-dev__pandas__68702__4057026062",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested simplifying the newline-handling logic by splitting pvalue into lines, initializing the paragraph with the first line, and iterating over the remaining lines to insert line breaks and text.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13523__3677536114",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Submitted an empty suggestion block without specifying any code changes or actionable feedback.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13598__3747238083",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested avoiding unnecessary calls to x.normalize() and _extract_decimal_digits_info() when the original decimal value already satisfies the decimal_places constraint, because normalization could introduce unnecessary computational overhead.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747171293",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Submitted an empty suggestion block without specifying any requested modification.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747175053",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Submitted an empty suggestion block without specifying any requested changes to test_constrain_compiled_pattern_keeps_flags().",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747176318",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Submitted an empty suggestion block targeting the explanatory comment in test_constrain_compiled_pattern_keeps_flags(), without specifying a requested modification.",
+          "status": "uncertain"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "UNCERTAIN",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pydantic__pydantic__13690__3842248596",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "testing",
+          "description": "Suggested replacing the existing docstring of test_bare_mutable_sequence() with a description identifying it as a regression test for Pydantic PR #13573.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559253",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Expressed that the comment did not add much value, implicitly suggesting it could be removed, while also indicating that keeping it was acceptable.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559297",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Expressed that the explanatory comment was unnecessary or added little value, while indicating that retaining it would also be acceptable.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702561507",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested removing the marker/keyword-specific explanation from the idents() method's docstring and replacing it with the more general description: \"\"\"Return the set of all identifiers which appear in the expression.\"\"\"",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2714516856",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "other",
+          "description": "Suggested following the project's documentation convention by placing descriptive comments directly above individual RegisteredMarker members (name, signature, and description) instead of documenting them together in the class docstring.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14791__3663366753",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "error_handling",
+          "description": "Suggested converting configuration-related TypeError and ValueError exceptions into UsageError by default within Config.getini(), rather than handling these exceptions separately at individual call sites.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    },
+    {
+      "case_id": "pytest-dev__pytest__14807__3696472652",
+      "include": true,
+      "exclusion_reason": null,
+      "requirements": [
+        {
+          "category": "naming",
+          "description": "Suggested renaming CONFIG_SUFFIXES because the name sounded like a collection of suffixes rather than a mapping from file extensions to configuration loader functions. Proposed CONFIG_LOADERS_SUFFIX_FALLBACK or a similar descriptive name.",
+          "status": "satisfied"
+        }
+      ],
+      "ambiguous": false,
+      "verdict": "SATISFIED",
+      "evidence": "",
+      "confidence": "high",
+      "notes": ""
+    }
+  ]
+}

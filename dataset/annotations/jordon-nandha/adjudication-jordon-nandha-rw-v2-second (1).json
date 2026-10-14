@@ -1,0 +1,162 @@
+{
+  "adjudicator": "jordon-nandha",
+  "decisions": [
+    {
+      "case_id": "encode__httpx__2854__1330167002",
+      "chosen": "b",
+      "reason": "The reviewer explicitly asks why Python 3.8 conditionals are being removed. The participant clarifies that Python 3.7 support has been dropped, and the author confirms that sys.version_info >= (3, 8) is always true under the new minimum supported version. This directly addresses the reviewer's concern. Although the supplied code does not show the conditional removal, the request was for an explanation rather than a code modification. Therefore, the review comment is SATISFIED based on the discussion."
+    },
+    {
+      "case_id": "encode__httpx__3022__1790219159",
+      "chosen": "a",
+      "reason": "The reviewer submitted an empty code suggestion without any actionable instruction, explanation, or requested modification. Although subsequent code changes are visible, there is no identifiable requirement against which to evaluate satisfaction. Therefore, the comment should be excluded rather than labeled uncertain"
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024038116",
+      "chosen": "b",
+      "reason": "The reviewer requested using entry.get_subentries_of_type() to process only subentries of the expected type. The subsequent code explicitly replaces entry.subentries.items() with entry.get_subentries_of_type(SUBENTRY_TYPE_RECIPIENT), directly implementing the requested change. Therefore, the review comment is satisfied."
+    },
+    {
+      "case_id": "home-assistant__core__165993__3024075382",
+      "chosen": "a",
+      "reason": "The reviewer provided an empty code suggestion and stated, \"It's not blocking,\" without specifying any actionable change or concrete requirement. The subsequent code changes cannot be linked to an identifiable request. Therefore, the comment should be excluded rather than marked uncertain."
+    },
+    {
+      "case_id": "pallets__click__2421__1186943308",
+      "chosen": "a",
+      "reason": "The author implemented the reviewer's requested approach using a pytest fixture with yield. The fixture saves the original _available_shells contents, clears the dictionary before each test, and restores the saved contents afterward. It is applied to all three relevant tests, preventing shared-state interference. All reviewer requirements are fully satisfied."
+    },
+    {
+      "case_id": "pallets__click__2940__2105687974",
+      "chosen": "a",
+      "reason": "The author implemented the reviewer's suggested try/except pattern using next(text_input).rstrip(\"\\r\\n\") and converting StopIteration into EOFError. The unnecessary input-size calculations and checks were removed. The same approach was applied to both visible_input and hidden_input, fully satisfying the reviewer's request."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3005136419",
+      "chosen": "a",
+      "reason": "he reviewer suggested handling plotting converter registrations through the extension-dtype mechanism. The changes introduce plottable_ea_pairs() and remove hard-coded dtype strings from plottable_types(). However, get_pairs() still explicitly registers Timestamp and Period converters. Although the author references a separate commit moving these registrations into their respective ExtensionDtype classes, those changes are not visible in the supplied diff. Therefore, full satisfaction cannot be independently verified."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3011187583",
+      "chosen": "a",
+      "reason": "The author removed the redundant _is_plottable attribute and modified _get_plot_converter() to return an empty list by default, indicating that a dtype is not plottable. Although the reviewer proposed returning None, the empty list achieves the same intended behavior. The implementation directly addresses the reviewer's concern, so the comment is satisfied."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3555961427",
+      "chosen": "a",
+      "reason": "The reviewer suggested moving the boolean-specific plotting logic into the shared base test. The subsequent changes remove the original include_bool handling from test_masked.py, but introduce new plotting test overrides instead. Since the shared base test implementation is not included in the supplied diff, it cannot be verified whether the requested logic was moved there. Therefore, satisfaction remains uncertain rather than definitively not satisfied."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3574519955",
+      "chosen": "a",
+      "reason": "The author replaced pytest.mark.xfail with with pytest.raises(TypeError, match=\"no numeric data to plot\") in the categorical plotting test, satisfying the reviewer's primary request. However, the reviewer also suggested applying the same approach to similar tests for other dtypes. Since those test files are not included in the supplied changes, it is unclear whether that broader request was addressed. Therefore, UNCERTAIN is more appropriate than fully SATISFIED."
+    },
+    {
+      "case_id": "pandas-dev__pandas__64535__3759896069",
+      "chosen": "custom",
+      "reason": ": Although the author did not implement the suggested class-level decorators, they tested the approach and demonstrated that it fails in the minimum-versions environment because pyparsing deprecation warnings occur during decorator evaluation, before the warning filter can take effect. The reviewer explicitly acknowledged this explanation with “Gotcha, thanks for checking,” indicating acceptance of the technical limitation.\nTherefore, the review concern was resolved through discussion and validation, rather than by implementing the proposed code change. Labeling it NOT_SATISFIED would overlook the reviewer's acceptance.",
+      "label": {
+        "case_id": "pandas-dev__pandas__64535__3759896069",
+        "include": true,
+        "exclusion_reason": null,
+        "requirements": [
+          {
+            "category": "testing",
+            "description": "Replace the skip_if_no_matplotlib helper with class-level decorators on BasePlottingTests (td.skip_if_no(\"matplotlib\") plus the pyparsing filterwarnings mark).",
+            "status": "satisfied"
+          }
+        ],
+        "ambiguous": false,
+        "verdict": "SATISFIED",
+        "evidence": "pandas/tests/extension/base/plotting.py:123 (after code): class BasePlottingTests: has no decorators; the helper method and the warnings/Version imports are removed; tests use mpl_cleanup_context()",
+        "confidence": "high",
+        "notes": "Reviewer asked to replace skip_if_no_matplotlib with class-level td.skip_if_no and filterwarnings decorators. The author reported that this fails in the minimum-versions environment and the reviewer accepted (\"Gotcha, thanks for checking\"). The final code has no class decorators; the helper is removed and tests use mpl_cleanup_context instead. Where the matplotlib skip and pyparsing warning filter now live is not visible in the diff."
+      }
+    },
+    {
+      "case_id": "pydantic__pydantic__13523__3677536114",
+      "chosen": "a",
+      "reason": "The reviewer submitted an empty GitHub suggestion block targeting lines 348–359, which indicates a proposed deletion of the test_interconnected_models benchmark. However, the subsequent diff shows no changes to tests/benchmarks/test_model_schema_generation.py, so the targeted code remains unchanged. The only modification is an unrelated timeout increase in tests/test_edge_cases.py. Therefore, the suggested deletion was not implemented."
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747171293",
+      "chosen": "custom",
+      "reason": "An empty GitHub suggestion block requests removal of the selected lines. The subsequent diff explicitly removes the entire five-line comment, including # flags, same as StringConstraints., while preserving the functional statement s['pattern'] = constraint.",
+      "label": {
+        "case_id": "pydantic__pydantic__13611__3747171293",
+        "include": true,
+        "exclusion_reason": null,
+        "requirements": [
+          {
+            "category": "other",
+            "description": "to remove the comment",
+            "status": "satisfied"
+          }
+        ],
+        "ambiguous": false,
+        "verdict": "SATISFIED",
+        "evidence": "",
+        "confidence": "high",
+        "notes": ""
+      }
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747175053",
+      "chosen": "custom",
+      "reason": "The empty GitHub suggestion block targets the assertion checking that a Cyrillic 'а' is rejected by the re.ASCII pattern. An empty suggestion represents a deletion request. The subsequent diff removes both with pytest.raises(ValidationError): and the corresponding ta_ascii.validate_python('аdmin') assertion, confirming that the suggested deletion was implemented.",
+      "label": {
+        "case_id": "pydantic__pydantic__13611__3747175053",
+        "include": false,
+        "exclusion_reason": "no_requirement",
+        "requirements": [],
+        "ambiguous": false,
+        "verdict": null,
+        "evidence": "",
+        "confidence": "medium",
+        "notes": ""
+      }
+    },
+    {
+      "case_id": "pydantic__pydantic__13611__3747176318",
+      "chosen": "custom",
+      "reason": "The reviewer's empty GitHub suggestion block targets the explanatory comment in test_constrain_compiled_pattern_keeps_flags(). An empty suggestion indicates a request to delete the selected lines.\nThe subsequent diff confirms that the three-line explanatory comment was removed from tests/test_pipeline.py, directly implementing the suggested deletion.",
+      "label": {
+        "case_id": "pydantic__pydantic__13611__3747176318",
+        "include": true,
+        "exclusion_reason": null,
+        "requirements": [
+          {
+            "category": "other",
+            "description": "to remove a three line explanatory comment",
+            "status": "satisfied"
+          }
+        ],
+        "ambiguous": false,
+        "verdict": "SATISFIED",
+        "evidence": "",
+        "confidence": "medium",
+        "notes": ""
+      }
+    },
+    {
+      "case_id": "pydantic__pydantic__13690__3842248596",
+      "chosen": "b",
+      "reason": "he reviewer explicitly suggested replacing the existing docstring of test_bare_mutable_sequence() with a reference identifying it as a regression test for Pydantic PR #13573.\nThe subsequent diff confirms that the original docstring was replaced with the exact suggested text. No additional test implementation was requested.\nTherefore, SATISFIED is correct. A misinterprets the suggestion as a request to add a new regression test rather than update the existing test's documentation."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559253",
+      "chosen": "a",
+      "reason": "The reviewer expressed a personal preference that the comment did not add much value but explicitly stated, “OK if it helps.” This makes the feedback non-blocking and does not establish a concrete requirement to remove the comment.\nAlthough the subsequent diff removes the comment, that change does not establish that the reviewer requested its removal. Therefore, Excluded: no_requirement is more accurate than SATISFIED."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2702559297",
+      "chosen": "a",
+      "reason": "The reviewer expressed a subjective preference that the comment added little value but explicitly stated, “OK if it helps.” This indicates non-blocking feedback rather than a concrete request to remove the comment.\nAlthough the subsequent diff shows that the comment was removed, the reviewer did not require that change. Therefore, Excluded: no_requirement is more appropriate than SATISFIED, which would imply that an actionable review requirement had been fulfilled."
+    },
+    {
+      "case_id": "pytest-dev__pytest__14127__2714516856",
+      "chosen": "b",
+      "reason": "Reason: The reviewer explicitly suggested following pytest's documentation convention by moving the descriptions of RegisteredMarker members from the class docstring to #: comments immediately above each attribute.\nThe subsequent diff confirms that the author implemented the suggested change:\n- Simplified the class docstring to \"\"\"A marker registered in the configuration.\"\"\".\n- Added individual #: documentation comments above name, signature, and description.\n- Preserved the original descriptions.\nAlthough the reviewer described the suggestion as minor, it was an actionable request with a concrete code suggestion that was implemented.\nTherefore, SATISFIED is correct, while A's Excluded: no_requirement overlooks the explicit suggestion."
+    }
+  ]
+}

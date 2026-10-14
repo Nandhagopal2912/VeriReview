@@ -16,7 +16,8 @@
     "notes": "The reviewer recommends making invalid configuration values produce UsageError directly in getini(). The implementation removes the local exception conversion in tmpdir.py and updates configuration tests to expect UsageError for invalid values."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

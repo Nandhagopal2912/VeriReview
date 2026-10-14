@@ -16,7 +16,8 @@
     "notes": "The updated code keeps generate_key_pair() inside the block and moves the assignments to self._private_key and self._public_key outside it."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

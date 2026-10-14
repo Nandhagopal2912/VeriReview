@@ -21,8 +21,11 @@
     "notes": "Reviewer's suggested try/next/except StopIteration → EOFError pattern is applied verbatim in visible_input (355-358), and the text_input_size setup and check are removed. The author also applied the same pattern to hidden_input and made unrelated changes (stream mixer __del__, shutil import move); none affect these requirements."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The author implemented the reviewer's suggested try/except pattern using next(text_input).rstrip(\"\\r\\n\") and converting StopIteration into EOFError. The unnecessary input-size calculations and checks were removed. The same approach was applied to both visible_input and hidden_input, fully satisfying the reviewer's request.",
   "label_source": "human"
 }

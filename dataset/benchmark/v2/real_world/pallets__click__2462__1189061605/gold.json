@@ -16,7 +16,8 @@
     "notes": "Reviewer asked why os.environ isn't used for BASH_VERSION. Lines 305-308 are unchanged and the thread has no author reply, so neither a change nor an explanation is visible."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

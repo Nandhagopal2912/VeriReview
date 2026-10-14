@@ -16,7 +16,8 @@
     "notes": "The reviewer questions why generated keys are editable and suggests displaying them as placeholders. The updated code removes the editable key fields and supplies public_key and private_key through description_placeholders."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

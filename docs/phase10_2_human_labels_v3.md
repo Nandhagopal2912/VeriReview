@@ -161,6 +161,62 @@ recorded, not padded.
 their human labels; rule changes on dev data only; a pre-registered protocol; and **one** blind
 run of the v3 test split, the current rules against the new ones.
 
+## 3. Second annotator and adjudication (added 2026-10-14)
+
+After Phase 10.3, a second annotator (Nandha, the project owner) labelled 36 of the v2 real-world
+cases blind (`v2/FREEZE_LOG.md` entry 7). They used `rw-v2-second.html`, rebuilt with sheet
+version 2, which pre-selects nothing. The 36 are the 21 cases where Claude and Jordan disagreed,
+plus 15 drawn at random. The second annotator had seen system results before, so this is not a
+fully independent opinion.
+
+`verireview agreement` (real output):
+
+```text
+Jordan vs Nandha: 36 common case(s)
+  only Jordan: 24, only Nandha: 0
+  inclusion                kappa 0.000  (observed 0.778, n=36)
+  verdict (4-class)        kappa 0.325  (observed 0.714, n=28)
+  valid vs invalid         kappa 0.353  (observed 0.864, n=22)
+  verdict, api_behavior   kappa undefined  (observed 1.000, n=2)
+  verdict, error_handling kappa undefined  (observed 1.000, n=2)
+  verdict, other          kappa 0.571  (observed 0.778, n=9)
+  verdict, testing        kappa 0.059  (observed 0.500, n=8)
+  disagreements to adjudicate: 19
+```
+
+The pooled kappa mixes two very different groups:
+
+| Cases | Same verdict |
+|---|---|
+| 15 drawn at random | **15 of 15** (14 satisfied, 1 uncertain: easy cases, so kappa 1.0 says little) |
+| 21 where Claude and Jordan disagreed | 5 of 21 |
+
+The largest systematic difference is exclusion. Jordan excluded 8 cases as `no_requirement`, and
+Nandha excluded none. 5 of those were empty suggestion blocks or "not blocking" remarks.
+
+**Adjudication.** The two annotators settled the 19 disagreements together, each with a written
+reason, on the adjudication page (rebuilt so that no annotator is pre-selected): 11 Jordan's
+label, 4 Nandha's, 4 combined. `build-gold` then wrote the 36 labels (17 agreed, 19 adjudicated).
+The other 24 v2 cases keep Jordan's single label. v2 real-world now includes 55 cases: 45
+satisfied, 6 not satisfied, 4 uncertain.
+
+**The recorded v2 run, re-scored again** (stored predictions; real output):
+
+```text
+F of phase10_1_test.json against the current real-world labels (v2: human 60); stored predictions, no verifier run
+  real-world as recorded                  n= 57  acc 0.456 [0.33, 0.60]  FAR 0.000 [0.00, 0.00]  FBR 0.020  cov 0.439  right-when-decided 0.920
+  real-world same cases, recorded labels  n= 52  acc 0.442 [0.31, 0.58]  FAR 0.000 [0.00, 0.00]  FBR 0.022  cov 0.442  right-when-decided 0.913
+  real-world same cases, current labels   n= 52  acc 0.462 [0.33, 0.60]  FAR 0.200 [0.00, 0.67]  FBR 0.000  cov 0.442  right-when-decided 0.913
+```
+
+There is still 1 real-world false acceptance, but it is a different case:
+- The pydantic 13690 docstring case, a false acceptance under Jordan's labels alone, is now
+  satisfied: the system was right.
+- An empty-suggestion case (pydantic 13611, comment 3747171293) is now not satisfied, while the
+  system said satisfied. The single highlighted line (658) no longer appears in the new code. The
+  adjudicators judged that the targeted line was not removed. This one is worth a second look by
+  the adjudicators; it is recorded as decided.
+
 ## Commands
 
 ```bash
@@ -173,6 +229,11 @@ uv run verireview annotation-sheet --batch rw-v3 --benchmark-version v3
 uv run verireview annotation-sheet --batch rw-v3-shared --benchmark-version v3 --cases dataset/raw/sheets/rw-v3-shared.ids.txt
 uv run verireview build-gold dataset/annotations/jordan/rw-v3.json --single-source human --benchmark-version v3
 uv run verireview benchmark-freeze --benchmark-version v3
+# second annotator and adjudication (2026-10-14)
+uv run verireview agreement dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json
+uv run verireview adjudication-sheet dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json --batch rw-v2-second --benchmark-version v2
+uv run verireview build-gold dataset/annotations/jordan/rw-v2.json dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json --adjudication dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second.json --benchmark-version v2
+uv run verireview rescore-report experiments/phase10_1_test.json --out experiments/phase10_2_v2_rescored_adjudicated.json
 ```
 
 `rescore-report` scores against the labels of the report's own benchmark version (a v2 report
@@ -180,13 +241,13 @@ against the v2 labels), whatever the current version is.
 
 ## Limitations
 
-- **One annotator, for v2 and for v3.** No adjudication, and no human–human agreement can be
-  measured. The same person labelled both. The v1 real-world cases (dev data) still have
+- **One annotator, for v3 and 24 of the v2 cases.** Since 2026-10-14, 36 v2 cases have two
+  annotators and adjudicated labels (section 3); the second annotator was not fully independent. The v1 real-world cases (dev data) still have
   provisional model labels.
 - **Few bad real-world cases.** v3 has 5 not-satisfied and 2 partially satisfied real-world cases
   among 58, so a real-world false-acceptance rate will again rest on about 7 cases.
 - **The authored test cases come from the rules' author** (written blind, same recipe).
-- **The labelling page pre-selects "validation" and "satisfied"** for a new requirement, which can
+- **(Fixed 2026-10-14, sheet version 2.) The labelling page pre-selected "validation" and "satisfied"** for a new requirement, which can
   nudge an annotator. In the v3 export only 2 of 58 included cases sit at exactly those values, so
   there is no sign that defaults were left untouched, but the page should start empty next time.
 - **Nothing was improved yet.** This phase changed labels and built the test set; the verifier's

@@ -21,8 +21,11 @@
     "notes": "Reviewer asked (as a question) whether _is_plottable is needed if _get_plot_converter signals non-plottability; the author agreed and implemented it (2bd6cb4). In base.py _is_plottable is removed and _get_plot_converter now returns [] by default. The sentinel is [] rather than the None the reviewer hypothesized. Other changes in the diff (GH#46093 name checks, docstring sections) are unrelated."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The author removed the redundant _is_plottable attribute and modified _get_plot_converter() to return an empty list by default, indicating that a dtype is not plottable. Although the reviewer proposed returning None, the empty list achieves the same intended behavior. The implementation directly addresses the reviewer's concern, so the comment is satisfied.",
   "label_source": "human"
 }

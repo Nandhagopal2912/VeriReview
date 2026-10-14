@@ -34,7 +34,7 @@ so nothing can fail or block today.
 | **What that means** | Still not safe enough to gate merges: 5 bad fixes were accepted on the new test set. **Use as an advisory flag for human review** |
 | **Real-world (v3, one human annotator)** | decides 13 of 58 fresh cases, 8 correctly, **no bad fix accepted**; the other 45 go to human review. Unchanged by the Phase 10.3 rules |
 | **Earlier: blind test v2 (Phase 10.1)** | accuracy 0.65, false acceptance 0.15 on 147 cases; +0.23 accuracy over the Phase 10 rules. Re-scored with one human annotator's labels in Phase 10.2: the model labels had hidden one false acceptance ([details](docs/phase10_2_human_labels_v3.md)) |
-| **Next phase** | Awaiting the owner's direction. The v3 test split has been used; any further rule change needs a **v4** test set frozen first. The lesson of 10.3 is that single-pattern fixes do not generalise, so the useful next steps are data: a second annotator (kappa), more human-labelled real-world cases, and the data that could ever open the enforcement gate (≥ 59 bad and 59 good cases per category). Phase 8b (semantic evidence in the verdict) stays unjustified (ADR-002) |
+| **Next phase** | Awaiting the owner's direction. The v3 test split has been used; any further rule change needs a **v4** test set frozen first. The lesson of 10.3 is that single-pattern fixes do not generalise, so the useful next steps are data: more human-labelled real-world cases (a second annotator is done for 36 v2 cases, κ 0.33), and the data that could ever open the enforcement gate (≥ 59 bad and 59 good cases per category). Phase 8b (semantic evidence in the verdict) stays unjustified (ADR-002) |
 | **NLP / code model** | similarity baselines and UniXcoder: held-out ROC-AUC 0.56–0.76, but 12.5–87.5% false acceptance at the dev-tuned threshold. Used as **neutral evidence only** |
 | **Prompt injection** | **0 outcome changes in 2,576 injected variants** (code comments, tests, replies, commit messages, PR title), unchanged after the Phase 10.1 and 10.3 rule work |
 | **Requirement extraction** | blind held-out (Phase 4): count exact 0.844, category F1 0.909; now 0.938 / 0.974 (no longer blind) |
@@ -452,8 +452,14 @@ What the real data (v1) showed:
   provisional when the v2 test ran). The blind spot was real: the human found 7 not-satisfied
   cases where Claude had 3, and one of them is a false acceptance the model labels hid
   ([Phase 10.2](docs/phase10_2_human_labels_v3.md)).
-- Agreement between two humans (κ) is still not measurable: there is one annotator. Human against
-  model labels: κ 0.60 on the verdict.
+- **A second human annotator** (the project owner, not fully independent) labelled 36 of the v2
+  cases (2026-10-14). On the 15 drawn at random both humans agree on all 15 (easy cases). On the 21
+  that Claude and Jordan had disputed, the two humans agree on only 5. Pooled verdict κ is 0.33,
+  below the 0.6 target. The 19 disagreements were adjudicated together, with written reasons, and
+  those 36 cases now have adjudicated labels. Re-scoring the recorded v2 run against them still
+  gives 1 real-world false acceptance, but in a different case
+  ([details](docs/phase10_2_human_labels_v3.md#3-second-annotator-and-adjudication-added-2026-10-14)).
+  Human against model labels: κ 0.60.
 
 ### Prompt injection
 
@@ -596,8 +602,10 @@ content is treated as untrusted data.
   time and LOW 26%. HIGH is never emitted.
 - **Rule fixes generalise poorly.** Phase 10.3 fixed 11 dev cases and changed 2 of 148 fresh
   ones. Hand-written fixes for patterns seen in dev rarely cover the next set of real reviews.
-- **Human labels from one annotator, for part of the data.** The v2 and v3 real-world cases have
-  one human annotator's labels (not adjudicated, no human–human agreement). The controlled and
+- **Human labels are thin.** The v3 real-world cases and 24 of the v2 cases have one human
+  annotator's labels. 36 v2 cases have two annotators and adjudicated labels, and on the hard ones
+  the two humans agreed only 5 times in 21 (κ 0.33 overall): what counts as "satisfied" is often
+  genuinely disputed. The controlled and
   adversarial cases come from the rules' author (written blind), and the v1 real-world labels are
   still Claude's. The v1, v2 and v3 test splits have each been used once. Further rule changes
   need a new blind set (v4), frozen first.

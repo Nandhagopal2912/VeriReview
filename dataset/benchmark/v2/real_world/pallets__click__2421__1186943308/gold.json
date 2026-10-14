@@ -31,8 +31,11 @@
     "notes": "Author added a yield fixture (349-355) that copies _available_shells, clears it, yields, then clears and restores the copy; applied via usefixtures to all shell-registration tests, and the in-test .clear() calls are removed. Extra assertions and a new test (test_add_completion_class_with_name) were added but not requested. Teardown after yield runs even if the test fails, so isolation holds."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The author implemented the reviewer's requested approach using a pytest fixture with yield. The fixture saves the original _available_shells contents, clears the dictionary before each test, and restores the saved contents afterward. It is applied to all three relevant tests, preventing shared-state interference. All reviewer requirements are fully satisfied.",
   "label_source": "human"
 }

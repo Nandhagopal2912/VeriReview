@@ -10,8 +10,11 @@
     "notes": ""
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The reviewer provided an empty code suggestion and stated, \"It's not blocking,\" without specifying any actionable change or concrete requirement. The subsequent code changes cannot be linked to an identifiable request. Therefore, the comment should be excluded rather than marked uncertain.",
   "label_source": "human"
 }

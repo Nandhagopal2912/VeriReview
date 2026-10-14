@@ -16,7 +16,8 @@
     "notes": "The reviewer recommends moving token persistence into the API layer. The author subsequently confirms that upstream version 0.18.4 implements an on_auth_data_update callback and that the integration's previous persistence code has been removed."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

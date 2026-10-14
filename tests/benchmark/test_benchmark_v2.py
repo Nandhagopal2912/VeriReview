@@ -24,7 +24,10 @@ CASES = [f for name in FROZEN_V2 for f in iter_fixtures(V2 / name)]
 # 2026-10-11 (FREEZE_LOG entry 6): the provisional Claude labels were replaced by one human
 # annotator's labels; only the gold.json files changed. Until then the hash was
 # 34133f451723607e597faa8b89f128a89d95219006bf5275eac344872f846dd6.
-REAL_WORLD_V2_SHA256 = "7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1"
+# 2026-10-14 (FREEZE_LOG entry 7): a second annotator labelled 36 of the cases and the 19
+# disagreements were adjudicated; again only gold.json files changed. Until then the hash was
+# 7c2627763b2d5e3c6f5eae0823e016fbf3450e47867a0e07e4a752ee9332c3b1.
+REAL_WORLD_V2_SHA256 = "9f57d62d6cac10412f1083236bdcc8b1598352d333126736789fce1f46f47998"
 # The cases themselves (case.json + provenance.json, no labels): unchanged since the freeze.
 REAL_WORLD_V2_CASES_SHA256 = "9dd0d8bd2f25589743501fcc9274040c8cbe0fa9721bb0295d4b32bd4660bc87"
 
@@ -56,12 +59,15 @@ def test_v2_real_world_cases_are_unchanged_by_the_relabelling() -> None:
     assert digest.hexdigest() == REAL_WORLD_V2_CASES_SHA256
 
 
-def test_v2_real_world_gold_is_human_from_one_annotator() -> None:
-    golds = [rw.gold for rw in iter_real_world(V2 / "real_world")]
+def test_v2_real_world_gold_is_human_two_annotators_for_36() -> None:
+    golds = [g for rw in iter_real_world(V2 / "real_world") if (g := rw.gold) is not None]
 
-    assert len(golds) == 60 and all(g is not None for g in golds)
-    assert {g.label_source for g in golds if g} == {"human"}
-    assert {len(g.annotators) for g in golds if g} == {1}  # not adjudicated: say so in reports
+    assert len(golds) == 60
+    assert {g.label_source for g in golds} == {"human"}
+    two = [g for g in golds if len(g.annotators) == 2]
+    assert len(two) == 36  # 17 agreed + 19 adjudicated; the other 24: one annotator, say so
+    assert sum(not g.agreed for g in two) == 19
+    assert all(g.adjudication_reason for g in two if not g.agreed)
 
 
 def test_v2_real_world_cases_come_from_pull_requests_unused_in_v1() -> None:

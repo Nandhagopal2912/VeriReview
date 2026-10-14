@@ -16,7 +16,8 @@
     "notes": "Reviewer pointed out that object in include_type makes the issubclass predicate match everything. The author proposed np.object_, and the after code uses np.object_ (core.py:715) with the comment updated. The reviewer didn't explicitly confirm the replacement, but the match-everything behavior is gone. The test diff (conftest.py) is unrelated."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

@@ -21,8 +21,11 @@
     "notes": "Reviewer said the categorical plot test shouldn't be an xfail and should assert the TypeError with pytest.raises, and the same for some other dtypes. Categorical: xfail removed and replaced by pytest.raises (183-187), also switching the fixture to plot_data. The other dtypes' test files are not in this window, so the second part can't be verified."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The author replaced pytest.mark.xfail with with pytest.raises(TypeError, match=\"no numeric data to plot\") in the categorical plotting test, satisfying the reviewer's primary request. However, the reviewer also suggested applying the same approach to similar tests for other dtypes. Since those test files are not included in the supplied changes, it is unclear whether that broader request was addressed. Therefore, UNCERTAIN is more appropriate than fully SATISFIED.",
   "label_source": "human"
 }

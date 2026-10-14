@@ -21,8 +21,11 @@
     "notes": "Reviewer comment is a hunch about \"datetimetz\" being covered by plottable_ea_dtypes; the author later describes an offline agreement to move the Timestamp/Period pairs into the ExtensionDtypes (fec4d87), which is not in this diff. \"datetimetz\" is removed from plottable_types, but get_pairs still hard-codes (Timestamp, ...) and (Period, ...) at 107-108, and the dtype-side change can't be verified from converter.py."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "he reviewer suggested handling plotting converter registrations through the extension-dtype mechanism. The changes introduce plottable_ea_pairs() and remove hard-coded dtype strings from plottable_types(). However, get_pairs() still explicitly registers Timestamp and Period converters. Although the author references a separate commit moving these registrations into their respective ExtensionDtype classes, those changes are not visible in the supplied diff. Therefore, full satisfaction cannot be independently verified.",
   "label_source": "human"
 }

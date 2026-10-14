@@ -1,17 +1,26 @@
 {
   "label": {
     "case_id": "pytest-dev__pytest__14127__2714516856",
-    "include": false,
-    "exclusion_reason": "no_requirement",
-    "requirements": [],
+    "include": true,
+    "requirements": [
+      {
+        "category": "other",
+        "description": "Suggested following the project's documentation convention by placing descriptive comments directly above individual RegisteredMarker members (name, signature, and description) instead of documenting them together in the class docstring.",
+        "status": "satisfied"
+      }
+    ],
     "ambiguous": false,
+    "verdict": "SATISFIED",
     "evidence": "",
-    "confidence": "medium",
+    "confidence": "high",
     "notes": ""
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "Reason: The reviewer explicitly suggested following pytest's documentation convention by moving the descriptions of RegisteredMarker members from the class docstring to #: comments immediately above each attribute.\nThe subsequent diff confirms that the author implemented the suggested change:\n- Simplified the class docstring to \"\"\"A marker registered in the configuration.\"\"\".\n- Added individual #: documentation comments above name, signature, and description.\n- Preserved the original descriptions.\nAlthough the reviewer described the suggestion as minor, it was an actionable request with a concrete code suggestion that was implemented.\nTherefore, SATISFIED is correct, while A's Excluded: no_requirement overlooks the explicit suggestion.",
   "label_source": "human"
 }

@@ -10,8 +10,11 @@
     "notes": ""
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The empty GitHub suggestion block targets the assertion checking that a Cyrillic 'а' is rejected by the re.ASCII pattern. An empty suggestion represents a deletion request. The subsequent diff removes both with pytest.raises(ValidationError): and the corresponding ta_ascii.validate_python('аdmin') assertion, confirming that the suggested deletion was implemented.",
   "label_source": "human"
 }

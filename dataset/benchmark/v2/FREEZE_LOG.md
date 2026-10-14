@@ -38,6 +38,29 @@ Order of events, recorded as they happened:
      labels include have no stored prediction and are not scored.
    - No rule was changed for or after this relabelling. The split stays a used test split: it
      becomes dev data only once a v3 test set is frozen.
+7. **2026-10-14**: a second annotator (Nandha, the project owner) labelled 36 of the cases blind,
+   from `rw-v2-second.html` (sheet version 2: nothing pre-selected): the 21 where Claude and
+   Jordan disagreed, plus 15 drawn at random (seed 20261011). Export:
+   `dataset/annotations/nandha/annotations-Nandha-rw-v2-second.json`.
+   - Agreement with Jordan (`verireview agreement`): random 15: 15 of 15 the same (14 satisfied,
+     1 uncertain: easy cases). Disputed 21: 5 of 21 the same. All 36: verdict kappa 0.33 (20 of
+     28 both included), 19 disagreements. Nandha excluded no case; Jordan had excluded 8 as
+     `no_requirement`. Nandha had seen system results before, so this is not a fully
+     independent second opinion.
+   - The 19 disagreements were adjudicated by the two annotators together, each with a written
+     reason (`dataset/annotations/jordon-nandha/adjudication-jordon-nandha-rw-v2-second.json`):
+     11 Jordan's label, 4 Nandha's, 4 combined.
+   - `build-gold … --adjudication …` wrote the 36 `gold.json` files (17 agreed, 19
+     adjudicated). The other 24 cases keep Jordan's single label. Included 55 (was 52):
+     45 satisfied, 6 not satisfied, 4 uncertain. Again only `gold.json` files changed (the
+     cases hash above still holds). `real_world_test_hash` went from `7c262776…332c3b1` to
+     `9f57d62d6cac10412f1083236bdcc8b1598352d333126736789fce1f46f47998`.
+   - The recorded run was re-scored again, not re-run
+     (`experiments/phase10_2_v2_rescored_adjudicated.json`). On the 52 cases with a stored
+     prediction, real-world false acceptances are still 1, but a different case. The pydantic
+     13690 docstring case is now satisfied (the system was right). An empty-suggestion case
+     (pydantic 13611, 3747171293) is now not satisfied, while the system said satisfied.
+   - No rule was changed. v2 is dev data (since the v3 freeze).
 
 Caveat: the cases were written by the same author as the rules, after the v1 error analysis. The
 recipe (categories, verdict mix, difficult-case types) was kept identical to v1 to limit targeting,

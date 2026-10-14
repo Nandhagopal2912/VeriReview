@@ -16,7 +16,8 @@
     "notes": "The diff removes setup logic from async_setup_entry() and calls the coordinator's initialization method, but the coordinator's _async_setup() implementation isn't shown, so the requested relocation cannot be verified."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
   "agreed": true,
   "label_source": "human"

@@ -21,8 +21,11 @@
     "notes": "Reviewer asked whether the bool include_bool handling belongs in the base test; the author said they'd change it. The include_bool/is_bool_dtype special case is gone from test_masked.py, but the base test file isn't in the diff, so I can't confirm it was moved there. The masked file now has new x/y-axis overrides expecting TypeError with NA values, which is different handling rather than a move."
   },
   "annotators": [
-    "Jordan"
+    "Jordan",
+    "Nandha"
   ],
-  "agreed": true,
+  "agreed": false,
+  "adjudicator": "jordon-nandha",
+  "adjudication_reason": "The reviewer suggested moving the boolean-specific plotting logic into the shared base test. The subsequent changes remove the original include_bool handling from test_masked.py, but introduce new plotting test overrides instead. Since the shared base test implementation is not included in the supplied diff, it cannot be verified whether the requested logic was moved there. Therefore, satisfaction remains uncertain rather than definitively not satisfied.",
   "label_source": "human"
 }

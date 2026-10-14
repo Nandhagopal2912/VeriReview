@@ -21,7 +21,7 @@ from pydantic import BaseModel
 from verireview.contracts import ReviewCase
 from verireview.ingestion import make_unified_diff
 
-SHEET_VERSION = "phase9-sheet-1"
+SHEET_VERSION = "phase9-sheet-2"  # 2: nothing pre-selected (Phase 10.3)
 EXCERPT_RADIUS = 25
 Mode = Literal["annotate", "calibration", "adjudicate"]
 

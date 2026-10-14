@@ -81,16 +81,23 @@ function deriveVerdict(label) {
   if (s.has("uncertain")) return "UNCERTAIN";
   return "SATISFIED";
 }
+// Nothing is pre-selected: a default category or status would nudge every annotator the same way.
+function blankRequirement() { return { category: "", description: "", status: "" }; }
 function blankLabel(id) {
-  return { case_id: id, include: true, exclusion_reason: null, requirements: [{ category: "validation", description: "", status: "satisfied" }],
-           ambiguous: false, evidence: "", confidence: "medium", notes: "" };
+  return { case_id: id, include: true, exclusion_reason: null, requirements: [blankRequirement()],
+           ambiguous: false, evidence: "", confidence: "", notes: "" };
 }
 function problems(label) {
   if (!label) return ["not labelled"];
   if (!label.include) return label.exclusion_reason ? [] : ["choose an exclusion reason"];
   const out = [];
   if (!label.requirements.length) out.push("add at least one requirement");
-  label.requirements.forEach((r, i) => { if ((r.description || "").trim().length < 3) out.push("R" + (i + 1) + ": describe the requirement"); });
+  label.requirements.forEach((r, i) => {
+    if (!r.category) out.push("R" + (i + 1) + ": choose a category");
+    if ((r.description || "").trim().length < 3) out.push("R" + (i + 1) + ": describe the requirement");
+    if (!r.status) out.push("R" + (i + 1) + ": choose a status");
+  });
+  if (!label.confidence) out.push("choose your confidence");
   return out;
 }
 function finished(label) { return label && label.done && problems(label).length === 0; }
@@ -129,17 +136,19 @@ function caseView(c) {
   return parts;
 }
 
-function select(options, value, onchange) {
-  return el("select", { onchange: e => onchange(e.target.value) }, options.map(o => el("option", { value: o, selected: o === value }, o)));
+function select(options, value, onchange, placeholder) {
+  const first = placeholder && !value ? [el("option", { value: "", selected: true, disabled: true }, placeholder)] : [];
+  return el("select", { onchange: e => onchange(e.target.value) }, first, options.map(o => el("option", { value: o, selected: o === value }, o)));
 }
 function labelForm(label, onchange) {
   const upd = () => { onchange(label); };
   const reqRows = label.requirements.map((r, i) => el("div", { class: "row" },
-    select(CATEGORIES, r.category, v => { r.category = v; upd(); }),
+    select(CATEGORIES, r.category, v => { r.category = v; upd(); }, "— category —"),
     el("input", { type: "text", value: r.description, placeholder: "R" + (i + 1) + ": what was asked", oninput: e => { r.description = e.target.value; onchange(label, true); } }),
-    select(STATUSES, r.status, v => { r.status = v; upd(); }),
+    select(STATUSES, r.status, v => { r.status = v; upd(); }, "— status —"),
     el("button", { type: "button", title: "remove", onclick: () => { label.requirements.splice(i, 1); upd(); } }, "×")));
-  const verdict = label.include ? deriveVerdict(label) : "excluded";
+  const unset = label.requirements.some(r => !r.status) && !label.ambiguous;
+  const verdict = !label.include ? "excluded" : unset ? "— (choose every status)" : deriveVerdict(label);
   const issues = problems(label);
   return el("form", { onsubmit: e => e.preventDefault() },
     el("fieldset", {}, el("legend", {}, "Include this case?"),
@@ -147,11 +156,11 @@ function labelForm(label, onchange) {
       el("label", {}, el("input", { type: "radio", name: "inc", checked: !label.include, onchange: () => { label.include = false; upd(); } }), " no, because "),
       select(["", ...REASONS], label.exclusion_reason || "", v => { label.exclusion_reason = v || null; upd(); })),
     label.include ? el("fieldset", {}, el("legend", {}, "Requirements (category · description · status)"), ...reqRows,
-      el("button", { type: "button", onclick: () => { label.requirements.push({ category: "validation", description: "", status: "satisfied" }); upd(); } }, "+ requirement"),
+      el("button", { type: "button", onclick: () => { label.requirements.push(blankRequirement()); upd(); } }, "+ requirement"),
       el("p", {}, el("label", {}, el("input", { type: "checkbox", checked: label.ambiguous, onchange: e => { label.ambiguous = e.target.checked; upd(); } }), " The request is ambiguous (guide §5.4)"))) : null,
     el("p", {}, "Verdict (derived, guide §5): ", el("span", { class: "verdict" }, verdict)),
     el("label", {}, "Evidence (file:line in the after code, or 'nothing added')", el("textarea", { oninput: e => { label.evidence = e.target.value; onchange(label, true); } }, label.evidence)),
-    el("label", {}, "Your confidence ", select(["high","medium","low"], label.confidence, v => { label.confidence = v; upd(); })),
+    el("label", {}, "Your confidence ", select(["high","medium","low"], label.confidence, v => { label.confidence = v; upd(); }, "— choose —")),
     el("label", {}, "Notes", el("textarea", { oninput: e => { label.notes = e.target.value; onchange(label, true); } }, label.notes)),
     el("p", {}, el("label", {}, el("input", { type: "checkbox", checked: !!label.done, onchange: e => { label.done = e.target.checked; upd(); } }), " Done with this case"), " ",
       issues.length && label.done ? el("span", { class: "err" }, issues.join("; ")) : null));

@@ -80,3 +80,13 @@ def test_multi_line_comment_selection_is_shown() -> None:
     assert sc.selection_start == 16
     assert sheet_case("c", make_case(before, before, 20)).selection_start is None
     assert "c.selection_start || c.anchor_line" in render_sheet([sc], "b")
+
+
+def test_nothing_is_pre_selected_for_the_annotator() -> None:
+    # A default category or status nudges every annotator towards the same answer.
+    html = render_sheet([sheet_case("c", make_case("x = 1\n", "x = 2\n", 1))], "b")
+
+    assert 'category: "", description: "", status: ""' in html
+    assert 'confidence: ""' in html
+    assert 'category: "validation"' not in html
+    assert 'status: "satisfied"' not in html

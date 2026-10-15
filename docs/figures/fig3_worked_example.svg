@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 410" width="400" height="410" font-family="'Times New Roman', Times, serif" role="img" aria-labelledby="t d">
+<title id="t">Worked example: request-level verification</title>
+<desc id="d">A review comment asks to validate username and return HTTP 400. It is split into two requirements, each checked against the changed code. A guard on username raises ValueError before use, so R1 is satisfied; there is no HTTP 400 response, so R2 is not satisfied. The verdict is partially satisfied, with medium confidence, and goes to human review.</desc>
+<defs><marker id="head" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#000000"/></marker></defs>
+<rect width="400" height="410" fill="#ffffff"/>
+<rect x="8" y="8" width="384" height="50" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="200" y="22.7764" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">REVIEW COMMENT</text>
+<text x="200" y="36.9528" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">“Please validate `username` (non-empty, max 32 chars)</text>
+<text x="200" y="50.9828" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">and return HTTP 400 on invalid input.”</text>
+<line x1="101" y1="58" x2="101" y2="84" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<line x1="299" y1="58" x2="299" y2="84" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<text x="200" y="75" font-size="11" font-weight="normal" font-style="italic" text-anchor="middle" fill="#000000">split into requirements</text>
+<rect x="8" y="84" width="186" height="42" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="101" y="102.096" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">R1  validation</text>
+<text x="101" y="115.809" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">username: non-empty, ≤ 32 chars</text>
+<rect x="206" y="84" width="186" height="42" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="299" y="102.096" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">R2  API behaviour</text>
+<text x="299" y="115.809" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">HTTP 400 on invalid input</text>
+<line x1="101" y1="126" x2="101" y2="150" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<line x1="299" y1="126" x2="299" y2="150" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="8" y="150" width="384" height="104" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="200" y="166" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">CHECKED AGAINST THE CHANGED CODE (signup.py)</text>
+<text x="30" y="186" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d" font-family="Consolas, 'Courier New', monospace">10</text>
+<text x="38" y="186" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000" font-family="Consolas, 'Courier New', monospace" xml:space="preserve">username = body.get("username", "")</text>
+<text x="30" y="201" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d" font-family="Consolas, 'Courier New', monospace">11</text>
+<text x="38" y="201" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000" font-family="Consolas, 'Courier New', monospace" xml:space="preserve">if not username or len(username) &gt; 32:</text>
+<text x="30" y="216" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d" font-family="Consolas, 'Courier New', monospace">12</text>
+<text x="38" y="216" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000" font-family="Consolas, 'Courier New', monospace" xml:space="preserve">    raise ValueError("invalid username")</text>
+<text x="30" y="231" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d" font-family="Consolas, 'Courier New', monospace">13</text>
+<text x="38" y="231" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000" font-family="Consolas, 'Courier New', monospace" xml:space="preserve">account = register(username, ...)</text>
+<text x="30" y="246" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d" font-family="Consolas, 'Courier New', monospace">14</text>
+<text x="38" y="246" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000" font-family="Consolas, 'Courier New', monospace" xml:space="preserve">return jsonify(account), 201</text>
+<line x1="101" y1="254" x2="101" y2="278" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<line x1="299" y1="254" x2="299" y2="278" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="8" y="278" width="186" height="56" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="101" y="296.386" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">✓ R1 satisfied</text>
+<text x="101" y="310.099" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">guard raises ValueError</text>
+<text x="101" y="323.519" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">before use (lines 11–12)</text>
+<rect x="206" y="278" width="186" height="56" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="299" y="296.386" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">✗ R2 not satisfied</text>
+<text x="299" y="310.099" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">no HTTP 400 response on</text>
+<text x="299" y="323.519" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">the invalid-input branch</text>
+<line x1="101" y1="334" x2="160" y2="356" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<line x1="299" y1="334" x2="240" y2="356" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="70" y="356" width="260" height="46" fill="#ececec" stroke="#000000" stroke-width="1.4"/>
+<text x="200" y="376.109" font-size="13" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">PARTIALLY SATISFIED</text>
+<text x="200" y="390.578" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">confidence MEDIUM · human review</text>
+</svg>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 404" width="430" height="404" font-family="'Times New Roman', Times, serif" role="img" aria-labelledby="t d">
+<title id="t">VeriReview system architecture</title>
+<desc id="d">A pipeline from the source code hosting service through the advisory interface, ingestion, requirement extraction, evidence generation, aggregation, explanation and policy / staged enforcement. The policy stage writes audit records to a data store shown on a read-only dashboard, and posts a neutral check back to the hosting service.</desc>
+<defs><marker id="head" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#000000"/></marker></defs>
+<rect width="430" height="404" fill="#ffffff"/>
+<rect x="145" y="8" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="23.4014" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">SOURCE CODE HOSTING SERVICE</text>
+<text x="270" y="36.6506" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">e.g., a pull-request platform</text>
+<line x1="270" y1="44" x2="270" y2="56" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="56" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="71.4014" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">ADVISORY INTERFACE</text>
+<text x="270" y="84.6506" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">signature check · queue · worker</text>
+<line x1="270" y1="92" x2="270" y2="104" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="104" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="119.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">INGESTION</text>
+<text x="270" y="132.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">temporal-window reconstruction</text>
+<line x1="270" y1="140" x2="270" y2="152" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="152" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="167.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">REQUIREMENT EXTRACTION</text>
+<text x="270" y="180.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">categories · ambiguity score</text>
+<line x1="270" y1="188" x2="270" y2="200" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="200" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="215.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">EVIDENCE GENERATION</text>
+<text x="270" y="228.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">structural facts · rules · code model*</text>
+<line x1="270" y1="236" x2="270" y2="248" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="248" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="263.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">AGGREGATION</text>
+<text x="270" y="276.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">verdict · confidence</text>
+<line x1="270" y1="284" x2="270" y2="296" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="296" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="311.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">EXPLANATION</text>
+<text x="270" y="324.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">cites file:lines@commit</text>
+<line x1="270" y1="332" x2="270" y2="344" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="145" y="344" width="250" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="270" y="359.401" font-size="12" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">POLICY / STAGED ENFORCEMENT</text>
+<text x="270" y="372.651" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">four locks · statistical gate</text>
+<rect x="8" y="344" width="112" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="64" y="359.243" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">DATA STORE</text>
+<text x="64" y="372.346" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">audit records</text>
+<line x1="145" y1="362" x2="120" y2="362" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<rect x="8" y="296" width="112" height="36" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="64" y="311.243" font-size="11.5" font-weight="bold" font-style="normal" text-anchor="middle" fill="#000000">DASHBOARD</text>
+<text x="64" y="324.346" font-size="10.5" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">read-only</text>
+<line x1="64" y1="344" x2="64" y2="332" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<polyline points="395,362 415,362 415,26" fill="none" stroke="#000000" stroke-width="1.4"/>
+<line x1="415" y1="26" x2="395" y2="26" stroke="#000000" stroke-width="1.4" marker-end="url(#head)"/>
+<text x="423" y="194" font-size="10.5" font-weight="normal" font-style="italic" text-anchor="middle" fill="#000000" transform="rotate(90 423 194)">neutral check posted back</text>
+<text x="8" y="400" font-size="9.5" font-weight="normal" font-style="italic" text-anchor="start" fill="#3d3d3d">* neutral evidence only; never changes a verdict</text>
+</svg>

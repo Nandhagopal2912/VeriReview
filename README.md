@@ -636,5 +636,7 @@ content is treated as untrusted data.
   [11 advisory mode](docs/phase11_github_advisory.md) · [12 staged enforcement](docs/phase12_staged_enforcement.md) ·
   [13 dashboard](docs/phase13_dashboard.md)
 - Security model: [docs/security_model.md](docs/security_model.md)
+- Related work and what is new: [docs/related_work.md](docs/related_work.md)
+- Threats to validity: [docs/threats_to_validity.md](docs/threats_to_validity.md) · Replication package: [REPLICATION.md](REPLICATION.md) (all three blind test runs re-run from their commits: identical, case by case)
 - Annotation guide: [docs/annotation_guide.md](docs/annotation_guide.md)
 - Decisions: [docs/adr/](docs/adr/)

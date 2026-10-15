@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 290" width="380" height="290" font-family="'Times New Roman', Times, serif" role="img" aria-labelledby="t d">
+<title id="t">False acceptance against false blocking, round-3 blind test</title>
+<desc id="d">Each system's false-acceptance rate (bad fixes accepted) against its false-blocking rate (good fixes rejected) on 148 blind test cases. Change-location, code-model, structural and requirement baselines accept 61 to 98 percent of bad fixes; lexical and embedding baselines reject 89 to 93 percent of good fixes; VeriReview's rules are low on both, at 8.8 and 11.1 percent.</desc>
+<defs><marker id="head" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#000000"/></marker></defs>
+<rect width="380" height="290" fill="#ffffff"/>
+<rect x="52" y="180" width="76.5" height="56" fill="#ececec"/>
+<line x1="52" y1="12" x2="52" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<line x1="52" y1="236" x2="358" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<text x="52" y="251" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#3d3d3d">0%</text>
+<text x="47" y="240" font-size="11" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d">0%</text>
+<line x1="128.5" y1="12" x2="128.5" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<line x1="52" y1="180" x2="358" y2="180" stroke="#cfcfcf" stroke-width="1"/>
+<text x="128.5" y="251" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#3d3d3d">25%</text>
+<text x="47" y="184" font-size="11" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d">25%</text>
+<line x1="205" y1="12" x2="205" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<line x1="52" y1="124" x2="358" y2="124" stroke="#cfcfcf" stroke-width="1"/>
+<text x="205" y="251" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#3d3d3d">50%</text>
+<text x="47" y="128" font-size="11" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d">50%</text>
+<line x1="281.5" y1="12" x2="281.5" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<line x1="52" y1="68" x2="358" y2="68" stroke="#cfcfcf" stroke-width="1"/>
+<text x="281.5" y="251" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#3d3d3d">75%</text>
+<text x="47" y="72" font-size="11" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d">75%</text>
+<line x1="358" y1="12" x2="358" y2="236" stroke="#cfcfcf" stroke-width="1"/>
+<line x1="52" y1="12" x2="358" y2="12" stroke="#cfcfcf" stroke-width="1"/>
+<text x="358" y="251" font-size="11" font-weight="normal" font-style="normal" text-anchor="middle" fill="#3d3d3d">100%</text>
+<text x="47" y="16" font-size="11" font-weight="normal" font-style="normal" text-anchor="end" fill="#3d3d3d">100%</text>
+<line x1="52" y1="236" x2="358" y2="236" stroke="#3d3d3d" stroke-width="1"/>
+<line x1="52" y1="12" x2="52" y2="236" stroke="#3d3d3d" stroke-width="1"/>
+<text x="205" y="270" font-size="12" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000">Good fixes rejected (false-blocking rate)</text>
+<text x="12" y="124" font-size="12" font-weight="normal" font-style="normal" text-anchor="middle" fill="#000000" transform="rotate(-90 12 124)">Bad fixes accepted (FAR)</text>
+<circle cx="56.284" cy="16.032" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="65.284" y="20.032" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000">L  change near comment</text>
+<circle cx="81.682" cy="51.2" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="90.682" y="55.2" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000">B′  UniXcoder similarity</text>
+<circle cx="73.114" cy="78.752" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="82.114" y="82.752" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000">S  changed structure</text>
+<circle cx="64.852" cy="98.464" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="73.852" y="102.464" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="start" fill="#000000">R  requirements + structure</text>
+<circle cx="324.034" cy="231.968" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<circle cx="336.886" cy="236" r="4.5" fill="#ffffff" stroke="#000000" stroke-width="1.4"/>
+<text x="358" y="220.968" font-size="11.5" font-weight="normal" font-style="normal" text-anchor="end" fill="#000000">A lexical, B embeddings</text>
+<path d="M85.966,209.288 L92.966,216.288 L85.966,223.288 L78.966,216.288 z" fill="#000000" stroke="#ffffff" stroke-width="2"/>
+<text x="96.966" y="214.288" font-size="12" font-weight="bold" font-style="normal" text-anchor="start" fill="#000000">VeriReview (rules)</text>
+<text x="96.966" y="228.288" font-size="11" font-weight="normal" font-style="normal" text-anchor="start" fill="#3d3d3d">FAR 8.8%, FBR 11.1%</text>
+</svg>
